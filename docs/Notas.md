@@ -66,4 +66,11 @@ Páginas de bancos de proyectos usadas para estudio:
 - el proponente puede también ser una empresa?
 - preguntar si los profesores cumplen simpre un mismo rol (ejemplo el profe x es simpre cordinador pero nunca director)
 - verificar si se tiene que poner apartado para el rol de cada etudiante
-- 
+
+## 2026-04-12
+- diagramas de flujos del proceso de proponer proyectos
+- diferentes 'formularios' de proyectos, dependiendo si es empresa, estudiante, persona jurídica  etc
+- diferentes tipos de proyectos, categorías, etiquetas
+- definir actores / roles, interés
+- etapas de los proyectos
+- base de datos para proyectos y relacionados
