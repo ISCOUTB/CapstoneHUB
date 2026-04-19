@@ -29,3 +29,17 @@ export class ProjectPersistenceError extends Error {
     this.name = 'ProjectPersistenceError';
   }
 }
+
+export class InvalidProposerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidProposerError';
+  }
+}
+
+export class DuplicateActorRoleAssignmentError extends Error {
+  constructor(actorId: string) {
+    super(`Actor ${actorId} already has a role in this project`);
+    this.name = 'DuplicateActorRoleAssignmentError';
+  }
+}

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Project } from '../../domain/project.entity';
 import { IProjectRepository } from '../../domain/ports/project.repository.port';
+import { ProjectActorRole, ProposerType } from '../../domain/project.types';
 
 @Injectable()
 export class InMemoryProjectRepository implements IProjectRepository {
@@ -52,9 +53,21 @@ export class InMemoryProjectRepository implements IProjectRepository {
       .map((project) => Project.rehydrate(project.toPrimitives()));
   }
 
-  async findByProposer(proposerName: string): Promise<Project[]> {
+  async findByProposerType(type: ProposerType): Promise<Project[]> {
     return [...this.projects.values()]
-      .filter((project) => project.proposerName === proposerName)
+      .filter((project) => project.proposer.type === type)
+      .map((project) => Project.rehydrate(project.toPrimitives()));
+  }
+
+  async findByActorId(actorId: string): Promise<Project[]> {
+    return [...this.projects.values()]
+      .filter((project) => project.actors.some((actor) => actor.actorId === actorId))
+      .map((project) => Project.rehydrate(project.toPrimitives()));
+  }
+
+  async findByActorRole(role: ProjectActorRole): Promise<Project[]> {
+    return [...this.projects.values()]
+      .filter((project) => project.actors.some((actor) => actor.role === role))
       .map((project) => Project.rehydrate(project.toPrimitives()));
   }
 

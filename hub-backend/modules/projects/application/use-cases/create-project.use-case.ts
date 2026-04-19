@@ -1,27 +1,28 @@
 import { Project } from '../../domain/project.entity';
 import { ProjectType } from '../../domain/project-type.enum';
 import { IProjectRepository } from '../../domain/ports/project.repository.port';
+import { ProjectActor, ProjectProposer } from '../../domain/project.types';
 import {
+  DuplicateActorRoleAssignmentError,
+  InvalidProposerError,
   ProjectCodeAlreadyExistsError,
   ProjectPersistenceError,
 } from '../../domain/exceptions/project.exceptions';
 
-export class CreateProjectDto {
+export interface CreateProjectDto {
   projectCode: string;
   name: string;
   description: string;
   context: string;
   type: ProjectType;
   schools: string[];
-  proposerName: string;
-  proposerEmail?: string;
-  directorName?: string;
-  coordinatorName?: string;
+  proposer: ProjectProposer;
+  actors?: ProjectActor[];
   startDate: Date;
   estimatedCost?: number;
 }
 
-export class ProjectResponseDto {
+export interface ProjectResponseDto {
   id: string;
   projectCode: string;
   name: string;
@@ -30,11 +31,8 @@ export class ProjectResponseDto {
   type: ProjectType;
   status: string;
   schools: string[];
-  proposerName: string;
-  proposerEmail?: string;
-  directorName?: string;
-  coordinatorName?: string;
-  assignedStudents: string[];
+  proposer: ProjectProposer;
+  actors: ProjectActor[];
   startDate: Date;
   endDate?: Date;
   estimatedCost?: number;
@@ -63,10 +61,8 @@ export class CreateProjectUseCase {
         context: input.context,
         type: input.type,
         schools: input.schools,
-        proposerName: input.proposerName,
-        proposerEmail: input.proposerEmail,
-        directorName: input.directorName,
-        coordinatorName: input.coordinatorName,
+        proposer: input.proposer,
+        actors: input.actors,
         startDate: input.startDate,
         estimatedCost: input.estimatedCost,
       });
@@ -77,7 +73,11 @@ export class CreateProjectUseCase {
       // Retornar DTO
       return this.mapToResponse(project);
     } catch (error) {
-      if (error instanceof ProjectCodeAlreadyExistsError) {
+      if (
+        error instanceof ProjectCodeAlreadyExistsError ||
+        error instanceof InvalidProposerError ||
+        error instanceof DuplicateActorRoleAssignmentError
+      ) {
         throw error;
       }
       throw new ProjectPersistenceError('Error creating project', error as Error);
@@ -99,11 +99,8 @@ export class CreateProjectUseCase {
       type: props.type,
       status: props.status,
       schools: props.schools,
-      proposerName: props.proposerName,
-      proposerEmail: props.proposerEmail,
-      directorName: props.directorName,
-      coordinatorName: props.coordinatorName,
-      assignedStudents: props.assignedStudents || [],
+      proposer: props.proposer,
+      actors: props.actors,
       startDate: props.startDate,
       endDate: props.endDate,
       estimatedCost: props.estimatedCost,

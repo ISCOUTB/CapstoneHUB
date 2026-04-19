@@ -8,7 +8,7 @@ import {
   ProjectPersistenceError,
 } from '../../domain/exceptions/project.exceptions';
 
-export class UpdateProjectStatusDto {
+export interface UpdateProjectStatusDto {
   projectId: string;
   newStatus: ProjectStatus;
 }
@@ -58,11 +58,8 @@ export class UpdateProjectStatusUseCase {
       type: props.type,
       status: props.status,
       schools: props.schools,
-      proposerName: props.proposerName,
-      proposerEmail: props.proposerEmail,
-      directorName: props.directorName,
-      coordinatorName: props.coordinatorName,
-      assignedStudents: props.assignedStudents || [],
+      proposer: props.proposer,
+      actors: props.actors,
       startDate: props.startDate,
       endDate: props.endDate,
       estimatedCost: props.estimatedCost,

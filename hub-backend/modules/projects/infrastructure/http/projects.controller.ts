@@ -22,7 +22,9 @@ import {
 import { ProjectStatus } from '../../domain/project-status.enum';
 import { ProjectType } from '../../domain/project-type.enum';
 import {
+  DuplicateActorRoleAssignmentError,
   InvalidProjectStatusTransitionError,
+  InvalidProposerError,
   ProjectCodeAlreadyExistsError,
   ProjectNotFoundError,
 } from '../../domain/exceptions/project.exceptions';
@@ -30,23 +32,48 @@ import {
   PROJECT_REPOSITORY,
 } from '../../domain/ports/project.repository.port';
 import type { IProjectRepository } from '../../domain/ports/project.repository.port';
+import { ProjectActor, ProjectActorRole, ProjectProposer, ProposerType } from '../../domain/project.types';
 
-class CreateProjectRequest {
+interface NaturalPersonProposerRequest {
+  type: ProposerType.NATURAL_PERSON;
+  fullName: string;
+  idNumber: string;
+  age: number;
+  email: string;
+}
+
+interface LegalEntityProposerRequest {
+  type: ProposerType.LEGAL_ENTITY;
+  legalName: string;
+  taxId: string;
+  email: string;
+  phone: string;
+  contactUrl?: string;
+}
+
+type ProposerRequest = NaturalPersonProposerRequest | LegalEntityProposerRequest;
+
+interface ProjectActorRequest {
+  actorId: string;
+  fullName: string;
+  email?: string;
+  role: ProjectActorRole;
+}
+
+interface CreateProjectRequest {
   projectCode: string;
   name: string;
   description: string;
   context: string;
   type: 'engineering' | 'consulting';
   schools: string[];
-  proposerName: string;
-  proposerEmail?: string;
-  directorName?: string;
-  coordinatorName?: string;
+  proposer: ProposerRequest;
+  actors?: ProjectActorRequest[];
   startDate: string;
   estimatedCost?: number;
 }
 
-class UpdateProjectStatusRequest {
+interface UpdateProjectStatusRequest {
   status: ProjectStatus;
 }
 
@@ -64,12 +91,19 @@ export class ProjectsController {
 
       const useCase = new CreateProjectUseCase(this.projectRepository);
       const input: CreateProjectDto = {
-        ...body,
+        projectCode: body.projectCode,
+        name: body.name,
+        description: body.description,
+        context: body.context,
         type:
           body.type === 'engineering'
             ? ProjectType.ENGINEERING
             : ProjectType.CONSULTING,
+        schools: body.schools,
+        proposer: this.mapProposer(body.proposer),
+        actors: this.mapActors(body.actors || []),
         startDate: new Date(body.startDate),
+        estimatedCost: body.estimatedCost,
       };
 
       return await useCase.execute(input);
@@ -133,14 +167,59 @@ export class ProjectsController {
       throw new BadRequestException('schools is required and must be a non-empty array');
     }
 
-    if (!body.proposerName) {
-      throw new BadRequestException('proposerName is required');
+    if (!body.proposer) {
+      throw new BadRequestException('proposer is required');
+    }
+
+    if (!body.actors || !Array.isArray(body.actors)) {
+      throw new BadRequestException('actors must be an array');
+    }
+
+    const seen = new Set<string>();
+    for (const actor of body.actors) {
+      if (!actor.actorId || !actor.fullName || !actor.role) {
+        throw new BadRequestException('each actor requires actorId, fullName and role');
+      }
+      if (seen.has(actor.actorId)) {
+        throw new BadRequestException(`actor ${actor.actorId} appears more than once`);
+      }
+      seen.add(actor.actorId);
     }
 
     const parsedDate = new Date(body.startDate);
     if (Number.isNaN(parsedDate.getTime())) {
       throw new BadRequestException('startDate must be a valid ISO date string');
     }
+  }
+
+  private mapProposer(proposer: ProposerRequest): ProjectProposer {
+    if (proposer.type === ProposerType.NATURAL_PERSON) {
+      return {
+        type: ProposerType.NATURAL_PERSON,
+        fullName: proposer.fullName,
+        idNumber: proposer.idNumber,
+        age: proposer.age,
+        email: proposer.email,
+      };
+    }
+
+    return {
+      type: ProposerType.LEGAL_ENTITY,
+      legalName: proposer.legalName,
+      taxId: proposer.taxId,
+      email: proposer.email,
+      phone: proposer.phone,
+      contactUrl: proposer.contactUrl,
+    };
+  }
+
+  private mapActors(actors: ProjectActorRequest[]): ProjectActor[] {
+    return actors.map((actor) => ({
+      actorId: actor.actorId,
+      fullName: actor.fullName,
+      email: actor.email,
+      role: actor.role,
+    }));
   }
 
   private handleError(error: unknown): never {
@@ -157,6 +236,14 @@ export class ProjectsController {
     }
 
     if (error instanceof InvalidProjectStatusTransitionError) {
+      throw new BadRequestException(error.message);
+    }
+
+    if (error instanceof InvalidProposerError) {
+      throw new BadRequestException(error.message);
+    }
+
+    if (error instanceof DuplicateActorRoleAssignmentError) {
       throw new BadRequestException(error.message);
     }
 

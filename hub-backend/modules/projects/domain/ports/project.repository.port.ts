@@ -1,4 +1,5 @@
 import { Project } from '../project.entity';
+import { ProjectActorRole, ProposerType } from '../project.types';
 
 export interface IProjectRepository {
   /**
@@ -42,9 +43,19 @@ export interface IProjectRepository {
   findByType(type: string): Promise<Project[]>;
 
   /**
-   * Obtiene proyectos por proponente
+    * Obtiene proyectos por tipo de proponente
    */
-  findByProposer(proposerName: string): Promise<Project[]>;
+    findByProposerType(type: ProposerType): Promise<Project[]>;
+
+    /**
+    * Obtiene proyectos donde participa un actor
+    */
+    findByActorId(actorId: string): Promise<Project[]>;
+
+    /**
+    * Obtiene proyectos por rol de actor
+    */
+    findByActorRole(role: ProjectActorRole): Promise<Project[]>;
 
   /**
    * Elimina un proyecto por su ID (soft delete)
