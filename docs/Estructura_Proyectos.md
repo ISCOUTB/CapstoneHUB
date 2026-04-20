@@ -61,7 +61,7 @@ Después de la investigación de varios bancos de proyectos hemos llegado a la c
 * Escuela de Negocios, Leyes y Sociedad  
 * Escuela de Ingeniería, Arquitectura & Diseño  
 * Software  
-* …
+* Consultoría
 
 ## Referencias
 
