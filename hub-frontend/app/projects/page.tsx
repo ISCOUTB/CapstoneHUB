@@ -106,7 +106,7 @@ export default async function ProjectsPage() {
 
         {!error && projects.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
-            No projects found in the backend yet.
+            No se encontraron proyectos aún.
           </div>
         ) : null}
 
