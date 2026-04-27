@@ -24,7 +24,7 @@ services:
     container_name: backend
     build: ./hub-backend
     env_file:
-      - .env
+      - ./hub-backend/.env
     depends_on:
       db:
         condition: service_healthy
