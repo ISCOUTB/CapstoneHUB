@@ -1,52 +1,49 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Project } from './interfaces/projects.interface';
+import { Injectable } from '@nestjs/common';
+import { Project, Prisma } from '../generated/prisma/client';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class ProjectsService {
-  private readonly projects: Project[] = [];
+  constructor(private prisma: PrismaService) {}
 
-  create(project: Project): Project {
-    this.projects.push(project);
-    return project;
+  async project(
+    projectWhereUniqueInput: Prisma.ProjectWhereUniqueInput,
+  ): Promise<Project | null> {
+    return this.prisma.project.findUnique({
+      where: projectWhereUniqueInput,
+    });
   }
 
-  findAll(): Project[] {
-    return this.projects;
+  async projects(params: {
+    skip?: number;
+    take?: number;
+    cursor?: Prisma.ProjectWhereUniqueInput;
+    where?: Prisma.ProjectWhereInput;
+    orderBy?: Prisma.ProjectOrderByWithRelationInput;
+  }): Promise<Project[]> {
+    const { skip, take, cursor, where, orderBy } = params;
+    return this.prisma.project.findMany({
+      skip,
+      take,
+      cursor,
+      where,
+      orderBy,
+    });
   }
 
-  findById(id: string): Project {
-    const index = this.getIndex(id);
-    return this.projects[index];
+  async createProject(data: Prisma.ProjectCreateInput): Promise<Project> {
+    return this.prisma.project.create({ data });
   }
 
-  updateById(id: string, update: Partial<Project>): Project {
-    const index = this.getIndex(id);
-    const updatedProject = {
-      ...this.projects[index],
-      ...update,
-    };
-
-    this.projects[index] = updatedProject;
-    return updatedProject;
+  async updateProject(params: {
+    where: Prisma.ProjectWhereUniqueInput;
+    data: Prisma.ProjectUpdateInput;
+  }): Promise<Project> {
+    const { where, data } = params;
+    return this.prisma.project.update({ data, where });
   }
 
-  deleteById(id: string): Project {
-    const index = this.getIndex(id);
-    const [deletedProject] = this.projects.splice(index, 1);
-    return deletedProject;
-  }
-
-  private getIndex(id: string): number {
-    const index = Number.parseInt(id, 10);
-
-    if (
-      Number.isNaN(index) ||
-      index < 0 ||
-      index >= this.projects.length
-    ) {
-      throw new NotFoundException('Proyecto no encontrado');
-    }
-
-    return index;
+  async deleteProject(where: Prisma.ProjectWhereUniqueInput): Promise<Project> {
+    return this.prisma.project.delete({ where });
   }
 }

@@ -1,69 +1,64 @@
-import { Controller, Get, Post, Patch, Body, Param, Delete } from '@nestjs/common';
-import { CreateProjectDTO } from './dto/create-project.dto';
-import { UpdateProjectDTO } from './dto/update-project.dto';
-import { ResponseProjectDTO } from './dto/response-project.dto';
-import { ResponseProjectByIdDTO } from './dto/response-project-by-id.dto';
-import { ResponseProjectDeleteDTO } from './dto/response-project-delete.dto';
-import { ResponseProjectUpdateDTO } from './dto/response-project-update.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Put,
+} from '@nestjs/common';
 import { ProjectsService } from './projects.service';
-import { Project } from './interfaces/projects.interface';
+import { Project as ProjectModel } from '../generated/prisma/client';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private projectService: ProjectsService) {}
 
-  @Post()
-  create(@Body() createProjectDto: CreateProjectDTO): ResponseProjectDTO {
-    const createdProject = this.projectService.create(createProjectDto);
-
-    return {
-      count: 1,
-      message: 'item creado con exito',
-      data: [createdProject],
-    };
+  @Get(':id')
+  async getProjectById(@Param('id') id: string): Promise<ProjectModel | null> {
+    return this.projectService.project({ id: Number(id) });
   }
 
   @Get()
-  async findAll(): Promise<Project[]> {
-    return this.projectService.findAll();
+  async getProjects(): Promise<ProjectModel[]> {
+    return this.projectService.projects({});
   }
 
-  @Get(':id')
-  findById(@Param('id') id: string): ResponseProjectByIdDTO {
-    const project = this.projectService.findById(id);
-
-    return {
-      count: 1,
-      message: 'item encontrado con exito',
-      data: [project],
-    };
+  @Post()
+  async createProject(
+    @Body()
+    projectData: {
+      name: string;
+      description: string;
+      projectCode: string;
+      context: string;
+    },
+  ): Promise<ProjectModel> {
+    const { name, description, projectCode, context } = projectData;
+    const startDate = new Date();
+    return this.projectService.createProject({
+      name,
+      description,
+      projectCode,
+      context,
+      startDate,
+    });
   }
 
-  @Patch(':id')
-  updateById(
+  @Put(':id')
+  async projectUpdateName(
     @Param('id') id: string,
-    @Body() updateProjectDto: UpdateProjectDTO,
-  ): ResponseProjectUpdateDTO {
-    const updatedProject = this.projectService.updateById(
-      id,
-      updateProjectDto,
-    );
-
-    return {
-      count: 1,
-      message: 'item actualizado con exito',
-      data: [updatedProject],
-    };
+    @Body() data: { newName: string },
+  ): Promise<ProjectModel> {
+    const { newName } = data;
+    return this.projectService.updateProject({
+      where: { id: Number(id) },
+      data: { name: newName },
+    });
   }
 
   @Delete(':id')
-  deleteById(@Param('id') id: string): ResponseProjectDeleteDTO {
-    const deletedProject = this.projectService.deleteById(id);
-
-    return {
-      count: 1,
-      message: 'item eliminado con exito',
-      data: [deletedProject],
-    };
+  async deleteProject(@Param('id') id: string): Promise<ProjectModel> {
+    return this.projectService.deleteProject({ id: Number(id) });
   }
 }
