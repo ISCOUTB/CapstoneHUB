@@ -1,4 +1,4 @@
--- script de initializacion de la base de datos
+-- (deprecado) script de initializacion de la base de datos
 
 -- directores, coordinadores, estudiantes, evaluadores, administradores...
 CREATE TABLE IF NOT EXISTS actor (

@@ -1,7 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +7,154 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum ProjectStatus {
+  proposed
+  under_review
+  approved
+  assigned
+  in_progress
+  closed
+  rejected
+}
+
+enum ActorRole {
+  director
+  coordinator
+  student
+  evaluator
+  administrator
+}
+
+model Actor {
+  id        Int      @id @default(autoincrement())
+  fullName  String   @map("full_name") @db.VarChar(255)
+  email     String?  @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  projectActorAssignments ProjectActorAssignment[]
+  projectStatusHistories  ProjectStatusHistory[]
+
+  @@index([email], map: "idx_actor_email")
+  @@index([fullName], map: "idx_actor_full_name")
+  @@map("actor")
+}
+
+model Project {
+  id            Int           @id @default(autoincrement())
+  projectCode   String        @unique(map: "uk_project_code") @map("project_code") @db.VarChar(100)
+  name          String        @db.VarChar(255)
+  description   String        @db.Text
+  context       String        @db.Text
+  status        ProjectStatus @default(proposed)
+  startDate     DateTime      @map("start_date")
+  endDate       DateTime?     @map("end_date")
+  estimatedCost Decimal?      @map("estimated_cost") @db.Decimal(12, 2)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  schools          ProjectSchool[]
+  naturalProposer  ProjectNaturalProposer?
+  legalProposer    ProjectLegalProposer?
+  actorAssignments ProjectActorAssignment[]
+  observations     ProjectObservation[]
+  statusHistory    ProjectStatusHistory[]
+
+  @@index([status], map: "idx_project_status")
+  @@index([startDate], map: "idx_project_start_date")
+  @@index([createdAt], map: "idx_project_created_at")
+  @@map("project")
+}
+
+model ProjectSchool {
+  projectId  Int      @map("project_id")
+  schoolName String   @map("school_name") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, schoolName])
+  @@index([schoolName], map: "idx_project_school_name")
+  @@map("project_school")
+}
+
+model ProjectNaturalProposer {
+  projectId Int      @id @map("project_id")
+  fullName  String   @map("full_name") @db.VarChar(255)
+  idNumber  String   @unique(map: "uk_project_natural_id_number") @map("id_number") @db.VarChar(50)
+  age       Int
+  email     String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([idNumber], map: "idx_project_natural_id_number")
+  @@index([email], map: "idx_project_natural_email")
+  @@map("project_natural_proposer")
+}
+
+model ProjectLegalProposer {
+  projectId  Int      @id @map("project_id")
+  legalName  String   @map("legal_name") @db.VarChar(255)
+  nit        String   @unique(map: "uk_project_legal_nit") @db.VarChar(50)
+  email      String   @db.VarChar(255)
+  phone      String   @db.VarChar(20)
+  contactUrl String?  @map("contact_url") @db.VarChar(255)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([nit], map: "idx_project_legal_nit")
+  @@index([email], map: "idx_project_legal_email")
+  @@map("project_legal_proposer")
+}
+
+model ProjectActorAssignment {
+  id         Int       @id @default(autoincrement())
+  projectId  Int       @map("project_id")
+  actorId    Int       @map("actor_id")
+  role       ActorRole
+  assignedAt DateTime  @default(now()) @map("assigned_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actor   Actor   @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, actorId], map: "uk_project_actor")
+  @@index([projectId], map: "idx_project_actor_project_id")
+  @@index([actorId], map: "idx_project_actor_actor_id")
+  @@index([role], map: "idx_project_actor_role")
+  @@map("project_actor_assignment")
+}
+
+model ProjectObservation {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId], map: "idx_project_observation_project_id")
+  @@index([createdAt], map: "idx_project_observation_created_at")
+  @@map("project_observation")
+}
+
+model ProjectStatusHistory {
+  id             Int            @id @default(autoincrement())
+  projectId      Int            @map("project_id")
+  previousStatus ProjectStatus? @map("previous_status")
+  nextStatus     ProjectStatus  @map("next_status")
+  description    String?        @db.Text
+  authorActorId  Int?           @map("author_actor_id")
+  changedAt      DateTime       @default(now()) @map("changed_at")
+
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorActor Actor?  @relation(fields: [authorActorId], references: [id], onDelete: SetNull)
+
+  @@index([projectId], map: "idx_project_status_history_project_id")
+  @@index([nextStatus], map: "idx_project_status_history_next_status")
+  @@index([changedAt], map: "idx_project_status_history_changed_at")
+  @@map("project_status_history")
 }
