@@ -4,9 +4,10 @@ import { AppService } from './app.service';
 import { ProjectsModule } from './projects/projects.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { ProjectsController } from './projects/projects.controller';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [ProjectsModule],
+  imports: [ProjectsModule, ConfigModule.forRoot()],
   controllers: [AppController],
   providers: [AppService],
 })
