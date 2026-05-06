@@ -25,9 +25,9 @@ services:
 
   backend:
     container_name: backend
-    build: ../hub-backend
+    build: ./hub-backend
     env_file:
-      - ../hub-backend/.env
+      - ./hub-backend/.env
     depends_on:
       db:
         condition: service_healthy
@@ -37,9 +37,9 @@ services:
 
   frontend:
     container_name: frontend
-    build: ../hub-frontend
+    build: ./hub-frontend
     env_file:
-      - ../hub-frontend/.env
+      - ./hub-frontend/.env
     restart: unless-stopped
     ports:
       - "3000:3000"
