@@ -2,23 +2,21 @@
 
 FROM node:24-slim
 
-# Set the working directory inside the container
+# install libssl for prisma to work fine
+RUN apt-get update -y \
+&& apt-get install -y openssl
+
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+COPY ./package.json ./
+COPY ./package-lock.json ./
 
-# Install the application dependencies
 RUN npm install
 
-# Copy the rest of the application files
 COPY . .
 
-# Build the NestJS application
 RUN npm run build
 
-# Expose the application port
 EXPOSE 3001
 
-# Command to run the application
-CMD ["node", "dist/main"]
+CMD ["sh", "-c",  "npm run db:deploy && node dist/src/main"]
