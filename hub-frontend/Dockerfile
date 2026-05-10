@@ -65,7 +65,11 @@ ENV HOSTNAME="0.0.0.0"
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy production assets
+<<<<<<< HEAD
 COPY --from=builder --chown=root:root --chmod=755 /app/public ./public
+=======
+COPY --from=builder --chown=node:node --chmod=755 /app/public ./public
+>>>>>>> cf8dddd3809c97f036bf6a89f0c02e18ba533361
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -73,8 +77,13 @@ RUN chown node:node .next
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
+<<<<<<< HEAD
 COPY --from=builder --chown=root:root --chmod=755 /app/.next/standalone ./
 COPY --from=builder --chown=root:root --chmod=755 /app/.next/static ./.next/static
+=======
+COPY --from=builder --chown=node:node --chmod=755 /app/.next/standalone ./
+COPY --from=builder --chown=node:node --chmod=755 /app/.next/static ./.next/static
+>>>>>>> cf8dddd3809c97f036bf6a89f0c02e18ba533361
 
 USER node
 
