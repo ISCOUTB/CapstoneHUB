@@ -32,6 +32,8 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - prisma-network
     ports:
       - "3001:3001"
 
@@ -43,6 +45,9 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    networks:
+      - prisma-network
 
 networks:
   prisma-network:
+    name: prisma-network

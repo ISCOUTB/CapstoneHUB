@@ -5,10 +5,8 @@ ARG NODE_VERSION=24-slim
 
 FROM node:${NODE_VERSION} AS dependencies
 
-# Set working directory
 WORKDIR /app
 
-# Copy package-related files first to leverage Docker's caching mechanism
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
 
 # Install project dependencies with frozen lockfile for reproducible builds
@@ -29,13 +27,11 @@ RUN --mount=type=cache,target=/root/.npm \
 
 FROM node:${NODE_VERSION} AS builder
 
-# Set working directory
 WORKDIR /app
 
 # Copy project dependencies from dependencies stage
 COPY --from=dependencies /app/node_modules ./node_modules
 
-# Copy application source code
 COPY . .
 
 ENV NODE_ENV=production
@@ -59,10 +55,8 @@ RUN if [ -f package-lock.json ]; then \
 
 FROM node:${NODE_VERSION} AS runner
 
-# Set working directory
 WORKDIR /app
 
-# Set production environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
@@ -71,7 +65,7 @@ ENV HOSTNAME="0.0.0.0"
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy production assets
-COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=root:root --chmod=755 /app/public ./public
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
@@ -79,14 +73,11 @@ RUN chown node:node .next
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=node:node /app/.next/standalone ./
-COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+COPY --from=builder --chown=root:root --chmod=755 /app/.next/standalone ./
+COPY --from=builder --chown=root:root --chmod=755 /app/.next/static ./.next/static
 
-# Switch to non-root user for security best practices
 USER node
 
-# Expose port 3000 to allow HTTP traffic
 EXPOSE 3000
 
-# Start Next.js standalone server
 CMD ["node", "server.js"]
