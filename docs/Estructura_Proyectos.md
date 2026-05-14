@@ -2,31 +2,31 @@
 
 ### Persona natural
 
-* Nombre proyecto (máximo 100 caracteres)
-* Nombre (primer nombre y primer apellido)
-* Número de cédula (10 dígitos numéricos)
-* Edad (2 dígitos numéricos)
-* Correo electrónico (máximo 64 caracteres antes del @)
-* Descripción del proyecto (resumen breve del proyecto, objetivos y funcionamiento)
-* Localización del proyecto (ciudad, departamento y país)
-* Tiempo de ejecución (duración estimada en días, semanas o meses)
-* Costo total del proyecto (presupuesto total estimado)
-* Justificación del proyecto (explicación de la importancia o necesidad del proyecto)
+* Nombre proyecto (tipo: string / máximo 100 caracteres)
+* Nombre (tipo: string / primer nombre y primer apellido)
+* Número de cédula (tipo: integer/string numérico / 10 dígitos)
+* Edad (tipo: integer / 2 dígitos numéricos)
+* Correo electrónico (tipo: email/string / máximo 64 caracteres antes del @)
+* Descripción del proyecto (tipo: text/string largo / resumen breve del proyecto, objetivos y funcionamiento)
+* Localización del proyecto (tipo: string / ciudad, departamento y país)
+* Tiempo de ejecución (tipo: string o integer / duración estimada en días, semanas o meses)
+* Costo total del proyecto (tipo: float/decimal / presupuesto total estimado)
+* Justificación del proyecto (tipo: text/string largo / explicación de la importancia o necesidad del proyecto)
 
 ### Persona jurídica
 
-* Nombre del proyecto (nombre oficial del proyecto)
-* Nombre de la organización (nombre legal de la empresa o entidad)
-* Correo (correo electrónico oficial de contacto)
-* URL (medios de contacto) (sitio web o enlace oficial de contacto)
-* NIT (Número de Identificación Tributaria)
-* Localidad (ciudad o ubicación principal)
-* Teléfono (número de contacto oficial)
-* Descripción del proyecto (explicación breve del proyecto y sus objetivos)
-* Localización del proyecto (lugar donde se ejecutará el proyecto)
-* Tiempo de ejecución (duración aproximada del proyecto)
-* Costo total del proyecto (valor total estimado)
-* Justificación del proyecto (motivo o impacto esperado del proyecto)
+* Nombre del proyecto (tipo: string / nombre oficial del proyecto)
+* Nombre de la organización (tipo: string / nombre legal de la empresa o entidad)
+* Correo (tipo: email/string / correo electrónico oficial de contacto)
+* URL (medios de contacto) (tipo: url/string / sitio web o enlace oficial de contacto)
+* NIT (tipo: integer/string numérico / Número de Identificación Tributaria)
+* Localidad (tipo: string / ciudad o ubicación principal)
+* Teléfono (tipo: string numérico / número de contacto oficial)
+* Descripción del proyecto (tipo: text/string largo / explicación breve del proyecto y sus objetivos)
+* Localización del proyecto (tipo: string / lugar donde se ejecutará el proyecto)
+* Tiempo de ejecución (tipo: string o integer / duración aproximada del proyecto)
+* Costo total del proyecto (tipo: float/decimal / valor total estimado)
+* Justificación del proyecto (tipo: text/string largo / motivo o impacto esperado del proyecto)
 
 ## Estructura interna de un proyecto
 
