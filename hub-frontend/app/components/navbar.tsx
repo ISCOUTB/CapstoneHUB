@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -14,22 +14,34 @@ export default function Navbar() {
         <Link
           href="/"
           className={`text-lg font-semibold transition ${
-            isActive('/')
-              ? 'text-slate-900'
-              : 'text-slate-600 hover:text-slate-900'
+            isActive("/")
+              ? "text-slate-900"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          capstonehub
+          CapstoneHUB
         </Link>
+
         <Link
           href="/projects"
           className={`text-sm font-medium transition ${
-            isActive('/projects')
-              ? 'text-slate-900 border-b-2 border-slate-900'
-              : 'text-slate-600 hover:text-slate-900'
+            isActive("/projects")
+              ? "text-slate-900 border-b-2 border-slate-900"
+              : "text-slate-600 hover:text-slate-900"
           }`}
         >
-          projects
+          Proyectos
+        </Link>
+
+        <Link
+          href="/submmit"
+          className={`text-sm font-medium transition ${
+            isActive("/submmit")
+              ? "text-slate-900 border-b-2 border-slate-900"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          Proponer
         </Link>
       </div>
     </nav>
