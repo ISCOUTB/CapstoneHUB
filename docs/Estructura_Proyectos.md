@@ -2,31 +2,31 @@
 
 ### Persona natural
 
-* Nombre proyecto  
-* Nombre  
-* Numero de cedula  
-* Edad  
-* Correo electrónico  
-* Descripción del proyecto  
-* Localización del proyecto  
-* Tiempo de ejecución  
-* Costo total del proyecto  
-* Justificación del proyecto
+* Nombre proyecto (máximo 100 caracteres)
+* Nombre (primer nombre y primer apellido)
+* Número de cédula (10 dígitos numéricos)
+* Edad (2 dígitos numéricos)
+* Correo electrónico (máximo 64 caracteres antes del @)
+* Descripción del proyecto (resumen breve del proyecto, objetivos y funcionamiento)
+* Localización del proyecto (ciudad, departamento y país)
+* Tiempo de ejecución (duración estimada en días, semanas o meses)
+* Costo total del proyecto (presupuesto total estimado)
+* Justificación del proyecto (explicación de la importancia o necesidad del proyecto)
 
 ### Persona jurídica
 
-* Nombre del proyecto  
-* Nombre de la organización  
-* Correo:  
-* URL (medios de contacto)  
-* NIT  
-* Localidad  
-* Teléfono  
-* Descripción del proyecto  
-* Localización del proyecto  
-* Tiempo de ejecución  
-* Costo total del proyecto  
-* Justificación del proyecto
+* Nombre del proyecto (nombre oficial del proyecto)
+* Nombre de la organización (nombre legal de la empresa o entidad)
+* Correo (correo electrónico oficial de contacto)
+* URL (medios de contacto) (sitio web o enlace oficial de contacto)
+* NIT (Número de Identificación Tributaria)
+* Localidad (ciudad o ubicación principal)
+* Teléfono (número de contacto oficial)
+* Descripción del proyecto (explicación breve del proyecto y sus objetivos)
+* Localización del proyecto (lugar donde se ejecutará el proyecto)
+* Tiempo de ejecución (duración aproximada del proyecto)
+* Costo total del proyecto (valor total estimado)
+* Justificación del proyecto (motivo o impacto esperado del proyecto)
 
 ## Estructura interna de un proyecto
 
@@ -62,6 +62,28 @@ Después de la investigación de varios bancos de proyectos hemos llegado a la c
 * Escuela de Ingeniería, Arquitectura & Diseño  
 * Software  
 * Consultoría
+
+## Diferencias entre registro externo vs SSO
+
+* Registro externo (permite a cualquier usuario crear una cuenta utilizando un correo electrónico personal o externo a la universidad)
+
+* SSO - Single Sign-On (permite iniciar sesión utilizando la cuenta institucional de la universidad sin necesidad de crear una cuenta nueva)
+
+* Acceso en registro externo (el usuario debe registrarse manualmente y crear sus propias credenciales)
+
+* Acceso en SSO (el usuario utiliza directamente las credenciales oficiales proporcionadas por la universidad)
+
+* Seguridad en registro externo (depende de la gestión individual de contraseñas y validaciones de cada usuario)
+
+* Seguridad en SSO (centraliza la autenticación mediante los sistemas de seguridad institucionales de la universidad)
+
+* Usuarios objetivo del registro externo (personas externas a la universidad, empresas o colaboradores)
+
+* Usuarios objetivo del SSO (estudiantes, docentes y personal administrativo con cuenta institucional)
+
+* Gestión de cuentas en registro externo (las cuentas son administradas directamente por la plataforma)
+
+* Gestión de cuentas en SSO (las cuentas son administradas por los sistemas de autenticación de la universidad)
 
 ## Referencias
 
