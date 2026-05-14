@@ -1,4 +1,4 @@
-CapstoneHUB es un sistema web diseñado para apoyar la gestión integral de proyectos Capstone en entornos de ingeniería aplicada su propósito es facilitar la administración, seguimiento y evaluación de los proyectos de titulación, permitiendo optimizar los recursos disponibles y mejorar la coordinación entre los distintos actores involucrados.
+CapstoneHUB es un servicio diseñado para apoyar la gestión integral de proyectos que permiten a los estudiantes aplicar conocimientos académicos a situaciones del mundo real, a menudo en colaboración con empresas en entornos de ingeniería aplicada su propósito es facilitar la administración, seguimiento y evaluación de los proyectos de titulación, permitiendo optimizar los recursos disponibles y mejorar la coordinación entre los distintos actores involucrados.
 
 A traves de la plataforma, empresas, docentes y organizaciones sociales pueden proponer proyectos, mientras que estudiantes y profesores gestionan el proceso completo de desarrollo, desde la postulación hasta el cierre de esta manera, CapstoneHUB busca centralizar la información, agilizar los procesos de evaluación y fortalecer la colaboración entre estudiantes, supervisores y administradores dentro del ecosistema académico.
 
@@ -6,13 +6,15 @@ A traves de la plataforma, empresas, docentes y organizaciones sociales pueden p
 
 ## General
 
-desarrollar un sistema web de gestion integral para la administracion, postulacipn, evaluacion y seguimiento de proyectos Capstone, que permita centralizar la informacion, optimizar los procesos administrativos y facilitar la coordinacion entre estudiantes, docentes, comite evaluador y organizaciones externas.
+Desarrollar un servicio de gestion integral para la administracion, postulación, evaluacion y seguimiento de proyectos Capstone, que permita centralizar la informacion, optimizar los procesos administrativos y facilitar la coordinacion entre estudiantes, docentes, comite evaluador y organizaciones externas.
 
 ## Específicos
 
-- Diseñar e implementar una plataforma que permita la postulación y evaluacion de proyectos mediante formularios flexibles y un flujo de revision por parte del comite evaluador.
+- levantamiento requerimientos o diseñar la plataforma 
 
-- Desarrollar funcionalidades para la gestion y seguimiento de proyectos, incluyendo la visualizacion de proyectos disponibles, la asignacion a estudiantes y la carga de entregables durante el desarrollo del proyecto.
+- implementación de funcionalidades.
+
+- pruebas
 
 # Requerimientos 
 
