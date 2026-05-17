@@ -1,80 +1,10 @@
-import Link from 'next/link';
+import Link from "next/link";
+import { getProjects } from "../services/projects";
 
-export const dynamic = 'force-dynamic';
-
-type ProjectProposer =
-  | {
-      type: 'natural_person';
-      fullName: string;
-      idNumber: string;
-      age: number;
-      email: string;
-    }
-  | {
-      type: 'legal_entity';
-      legalName: string;
-      taxId: string;
-      email: string;
-      phone: string;
-      contactUrl?: string;
-    };
-
-type ProjectActor = {
-  actorId: string;
-  fullName: string;
-  email?: string;
-  role: string;
-};
-
-type ProjectItem = {
-  id: string;
-  projectCode: string;
-  name: string;
-  status: string;
-  proposer: ProjectProposer;
-  actors: ProjectActor[];
-};
-
-async function getProjects(): Promise<{ projects: ProjectItem[]; error?: string }> {
-  const backendUrl = process.env.BACKEND_URL?.replace(/\/$/, '');
-
-  if (!backendUrl) {
-    return {
-      projects: [],
-      error: 'Define BACKEND_URL, for example http://localhost:3000',
-    };
-  }
-
-  try {
-    const response = await fetch(`${backendUrl}/projects`, {
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      return {
-        projects: [],
-        error: `Backend responded with status ${response.status}`,
-      };
-    }
-
-    const data = (await response.json()) as ProjectItem[];
-    return {
-      projects: Array.isArray(data) ? data : [],
-    };
-  } catch {
-    return {
-      projects: [],
-      error: 'Unable to reach the backend projects endpoint',
-    };
-  }
-}
+export const dynamic = "force-dynamic";
 
 function formatStatus(status: string): string {
-  return status.replaceAll('_', ' ');
-}
-
-function getProposerLabel(proposer: ProjectProposer): string {
-  return proposer.type === 'legal_entity' ? proposer.legalName : proposer.fullName;
+  return status.replaceAll("_", " ");
 }
 
 export default async function ProjectsPage() {
@@ -112,13 +42,9 @@ export default async function ProjectsPage() {
 
         <div className="grid gap-4">
           {projects.map((project) => (
-            <article
-              key={project.id}
-              className="bg-gray-200 p-5"
-            >
+            <article key={project.id} className="bg-gray-200 p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-500">{project.projectCode}</p>
                   <h2 className="mt-1 text-xl font-semibold text-slate-900">
                     {project.name}
                   </h2>
@@ -130,14 +56,10 @@ export default async function ProjectsPage() {
 
               <div className="mt-4 bg-gray-100 p-4 text-sm text-slate-600">
                 <p>
-                  <span className="font-medium text-slate-700">Proponente: </span>
-                  {getProposerLabel(project.proposer)}
-                </p>
-                <p className="mt-2">
-                  <span className="font-medium text-slate-700">Actores: </span>
-                  {project.actors.length > 0
-                    ? project.actors.map((actor) => actor.fullName).join(', ')
-                    : 'No actors assigned yet'}
+                  <span className="font-medium text-slate-700">
+                    Proponente:{" "}
+                  </span>
+                  {project.name}
                 </p>
               </div>
             </article>

@@ -30,16 +30,14 @@ export class ProjectsController {
     projectData: {
       name: string;
       description: string;
-      projectCode: string;
       context: string;
     },
   ): Promise<ProjectModel> {
-    const { name, description, projectCode, context } = projectData;
+    const { name, description, context } = projectData;
     const startDate = new Date();
     return this.projectService.createProject({
       name,
       description,
-      projectCode,
       context,
       startDate,
     });
