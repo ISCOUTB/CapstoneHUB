@@ -15,7 +15,6 @@ type ProjectActor = {
 
 export type ProjectItem = {
   id: string;
-  projectCode: string;
   name: string;
   status: string;
   proposer: ProjectProposer;

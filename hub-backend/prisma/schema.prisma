@@ -45,7 +45,6 @@ model Actor {
 
 model Project {
   id            Int           @id @default(autoincrement())
-  projectCode   String        @unique(map: "uk_project_code") @map("project_code") @db.VarChar(100)
   name          String        @db.VarChar(255)
   description   String        @db.Text
   context       String        @db.Text

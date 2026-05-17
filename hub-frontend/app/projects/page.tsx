@@ -45,9 +45,6 @@ export default async function ProjectsPage() {
             <article key={project.id} className="bg-gray-200 p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-500">
-                    {project.projectCode}
-                  </p>
                   <h2 className="mt-1 text-xl font-semibold text-slate-900">
                     {project.name}
                   </h2>
@@ -62,13 +59,7 @@ export default async function ProjectsPage() {
                   <span className="font-medium text-slate-700">
                     Proponente:{" "}
                   </span>
-                  {project.proposer}
-                </p>
-                <p className="mt-2">
-                  <span className="font-medium text-slate-700">Actores: </span>
-                  {project.actors.length > 0
-                    ? project.actors.map((actor) => actor.fullName).join(", ")
-                    : "No actors assigned yet"}
+                  {project.name}
                 </p>
               </div>
             </article>

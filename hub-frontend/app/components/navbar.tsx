@@ -34,9 +34,9 @@ export default function Navbar() {
         </Link>
 
         <Link
-          href="/submmit"
+          href="/submit"
           className={`text-sm font-medium transition ${
-            isActive("/submmit")
+            isActive("/submit")
               ? "text-slate-900 border-b-2 border-slate-900"
               : "text-slate-600 hover:text-slate-900"
           }`}
