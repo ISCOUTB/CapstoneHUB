@@ -1,4 +1,4 @@
-import { ProjectItem } from "./schemas";
+import { ProjectDetails, ProjectItem } from "./schemas";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
 
@@ -49,6 +49,32 @@ export async function getProjects(): Promise<{
     return {
       projects: [],
       error: "Unable to reach the backend projects endpoint: " + err,
+    };
+  }
+}
+
+export async function getProjectById(id: string): Promise<{
+  project?: ProjectDetails;
+  error?: string;
+}> {
+  try {
+    const response = await fetch(getApiUrl(`/api/projects/${id}`), {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        error: `Backend responded with status ${response.status}`,
+      };
+    }
+
+    const data = (await response.json()) as ProjectDetails;
+    return {
+      project: data,
+    };
+  } catch (err) {
+    return {
+      error: "Unable to reach the backend project endpoint: " + err,
     };
   }
 }

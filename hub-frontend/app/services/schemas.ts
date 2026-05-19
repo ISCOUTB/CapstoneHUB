@@ -20,3 +20,16 @@ export type ProjectItem = {
   proposer: ProjectProposer;
   actors: ProjectActor[];
 };
+
+export type ProjectDetails = {
+  id: number;
+  name: string;
+  description: string;
+  context: string;
+  status: string;
+  startDate: string;
+  endDate: string | null;
+  estimatedCost: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
