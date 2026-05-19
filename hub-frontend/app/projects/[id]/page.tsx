@@ -99,6 +99,73 @@ export default async function ProjectDetailsPage({
                   {project.context}
                 </p>
               </section>
+
+              <section>
+                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Proponente
+                </h2>
+                {project.proposer ? (
+                  <dl className="mt-3 space-y-3 text-sm text-slate-700">
+                    {project.proposer.type === "natural_person" ? (
+                      <>
+                        <div className="flex items-start justify-between gap-4">
+                          <dt className="text-slate-500">Nombre completo</dt>
+                          <dd className="text-right">
+                            {project.proposer.fullName}
+                          </dd>
+                        </div>
+                        <div className="flex items-start justify-between gap-4">
+                          <dt className="text-slate-500">Cédula</dt>
+                          <dd className="text-right">
+                            {project.proposer.idNumber}
+                          </dd>
+                        </div>
+                        <div className="flex items-start justify-between gap-4">
+                          <dt className="text-slate-500">Correo</dt>
+                          <dd className="text-right">
+                            {project.proposer.email}
+                          </dd>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-start justify-between gap-4">
+                          <dt className="text-slate-500">Razón social</dt>
+                          <dd className="text-right">
+                            {project.proposer.legalName}
+                          </dd>
+                        </div>
+                        <div className="flex items-start justify-between gap-4">
+                          <dt className="text-slate-500">NIT</dt>
+                          <dd className="text-right">{project.proposer.nit}</dd>
+                        </div>
+                        <div className="flex items-start justify-between gap-4">
+                          <dt className="text-slate-500">Correo</dt>
+                          <dd className="text-right">
+                            {project.proposer.email}
+                          </dd>
+                        </div>
+                        <div className="flex items-start justify-between gap-4">
+                          <dt className="text-slate-500">Teléfono</dt>
+                          <dd className="text-right">
+                            {project.proposer.phone}
+                          </dd>
+                        </div>
+                        <div className="flex items-start justify-between gap-4">
+                          <dt className="text-slate-500">Contacto</dt>
+                          <dd className="text-right">
+                            {project.proposer.contactUrl ?? "Sin enlace"}
+                          </dd>
+                        </div>
+                      </>
+                    )}
+                  </dl>
+                ) : (
+                  <p className="mt-3 text-sm text-slate-600">
+                    Sin información del proponente.
+                  </p>
+                )}
+              </section>
             </div>
           </article>
 

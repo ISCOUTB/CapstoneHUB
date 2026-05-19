@@ -13,18 +13,21 @@ import {
   Project as ProjectModel,
   ProjectStatus,
 } from '../generated/prisma/client';
+import { ProjectDetailResponse, ProjectListResponse } from './projects.service';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private projectService: ProjectsService) {}
 
   @Get(':id')
-  async getProjectById(@Param('id') id: string): Promise<ProjectModel | null> {
+  async getProjectById(
+    @Param('id') id: string,
+  ): Promise<ProjectDetailResponse | null> {
     return this.projectService.project({ id: Number(id) });
   }
 
   @Get()
-  async getProjects(): Promise<ProjectModel[]> {
+  async getProjects(): Promise<ProjectListResponse[]> {
     return this.projectService.projects({});
   }
 
@@ -35,15 +38,25 @@ export class ProjectsController {
       name: string;
       description: string;
       context: string;
+      namep: string;
+      ncedua: string;
+      correo: string;
     },
-  ): Promise<ProjectModel> {
-    const { name, description, context } = projectData;
+  ): Promise<ProjectDetailResponse> {
+    const { name, description, context, namep, ncedua, correo } = projectData;
     const startDate = new Date();
     return this.projectService.createProject({
       name,
       description,
       context,
       startDate,
+      naturalProposer: {
+        create: {
+          fullName: namep,
+          idNumber: ncedua,
+          email: correo,
+        },
+      },
     });
   }
 
@@ -55,7 +68,7 @@ export class ProjectsController {
       newName?: string;
       status?: ProjectStatus;
     },
-  ): Promise<ProjectModel> {
+  ): Promise<ProjectDetailResponse> {
     const updateData: {
       name?: string;
       status?: ProjectStatus;

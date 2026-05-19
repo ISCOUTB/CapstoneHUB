@@ -60,7 +60,11 @@ export default async function ProjectsPage() {
                   <span className="font-medium text-slate-700">
                     Proponente:{" "}
                   </span>
-                  {project.proposer?.fullName ?? "Sin información"}
+                  {project.proposer?.type === "natural_person"
+                    ? project.proposer.fullName
+                    : project.proposer?.type === "legal_person"
+                      ? project.proposer.legalName
+                      : "Sin información"}
                 </p>
               </div>
             </Link>
