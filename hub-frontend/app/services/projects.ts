@@ -13,8 +13,16 @@ function getApiUrl(path: string) {
 
 export type CreateProjectPayload = {
   name: string;
+  namep: string;
+  ncedua: string;
+  age: number;
+  correo: string;
   description: string;
   context: string;
+  location: string;
+  executiontime: string;
+  estimatedCost: number;
+  startDate: string;
 };
 
 export async function getProjects(): Promise<{
