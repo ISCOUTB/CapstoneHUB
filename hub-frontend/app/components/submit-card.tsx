@@ -15,7 +15,7 @@ export default function SubmitCard({
 }: SubmitCardProps) {
   const card = (
     <div
-      className={`mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 transition ${
+      className={`mb-6 border border-blue-200 bg-blue-50 p-5 transition ${
         disabled ? "opacity-60" : "hover:shadow-sm"
       }`}
     >

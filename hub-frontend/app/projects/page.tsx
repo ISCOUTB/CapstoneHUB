@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { getProjects } from "../services/projects";
+import { formatStatus } from "../services/utils";
 
 export const dynamic = "force-dynamic";
-
-function formatStatus(status: string): string {
-  return status.replaceAll("_", " ");
-}
 
 export default async function ProjectsPage() {
   const { projects, error } = await getProjects();
@@ -42,10 +39,14 @@ export default async function ProjectsPage() {
 
         <div className="grid gap-4">
           {projects.map((project) => (
-            <article key={project.id} className="bg-gray-200 p-5">
+            <Link
+              key={project.id}
+              href={`/projects/${project.id}`}
+              className="group block bg-gray-200 p-5 transition hover:-translate-y-0.5 hover:bg-gray-300"
+            >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                  <h2 className="mt-1 text-xl font-semibold text-slate-900 transition group-hover:text-slate-700">
                     {project.name}
                   </h2>
                 </div>
@@ -59,10 +60,14 @@ export default async function ProjectsPage() {
                   <span className="font-medium text-slate-700">
                     Proponente:{" "}
                   </span>
-                  {project.name}
+                  {project.proposer?.type === "natural_person"
+                    ? project.proposer.fullName
+                    : project.proposer?.type === "legal_person"
+                      ? project.proposer.legalName
+                      : "Sin información"}
                 </p>
               </div>
-            </article>
+            </Link>
           ))}
         </div>
       </section>

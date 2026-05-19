@@ -6,21 +6,28 @@ import {
   Param,
   Delete,
   Put,
+  BadRequestException,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
-import { Project as ProjectModel } from '../generated/prisma/client';
+import {
+  Project as ProjectModel,
+  ProjectStatus,
+} from '../generated/prisma/client';
+import { ProjectDetailResponse, ProjectListResponse } from './projects.service';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private projectService: ProjectsService) {}
 
   @Get(':id')
-  async getProjectById(@Param('id') id: string): Promise<ProjectModel | null> {
+  async getProjectById(
+    @Param('id') id: string,
+  ): Promise<ProjectDetailResponse | null> {
     return this.projectService.project({ id: Number(id) });
   }
 
   @Get()
-  async getProjects(): Promise<ProjectModel[]> {
+  async getProjects(): Promise<ProjectListResponse[]> {
     return this.projectService.projects({});
   }
 
@@ -31,27 +38,57 @@ export class ProjectsController {
       name: string;
       description: string;
       context: string;
+      namep: string;
+      ncedua: string;
+      correo: string;
     },
-  ): Promise<ProjectModel> {
-    const { name, description, context } = projectData;
+  ): Promise<ProjectDetailResponse> {
+    const { name, description, context, namep, ncedua, correo } = projectData;
     const startDate = new Date();
     return this.projectService.createProject({
       name,
       description,
       context,
       startDate,
+      naturalProposer: {
+        create: {
+          fullName: namep,
+          idNumber: ncedua,
+          email: correo,
+        },
+      },
     });
   }
 
   @Put(':id')
-  async projectUpdateName(
+  async projectUpdate(
     @Param('id') id: string,
-    @Body() data: { newName: string },
-  ): Promise<ProjectModel> {
-    const { newName } = data;
+    @Body()
+    data: {
+      newName?: string;
+      status?: ProjectStatus;
+    },
+  ): Promise<ProjectDetailResponse> {
+    const updateData: {
+      name?: string;
+      status?: ProjectStatus;
+    } = {};
+
+    if (data.newName) {
+      updateData.name = data.newName;
+    }
+
+    if (data.status) {
+      updateData.status = data.status;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestException('No update fields provided');
+    }
+
     return this.projectService.updateProject({
       where: { id: Number(id) },
-      data: { name: newName },
+      data: updateData,
     });
   }
 

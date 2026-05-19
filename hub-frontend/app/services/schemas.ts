@@ -1,10 +1,20 @@
-type ProjectProposer = {
+type ProjectNaturalProposer = {
   type: "natural_person";
   fullName: string;
   idNumber: string;
-  age: number;
   email: string;
 };
+
+type ProjectLegalProposer = {
+  type: "legal_person";
+  legalName: string;
+  nit: string;
+  email: string;
+  phone: string;
+  contactUrl: string | null;
+};
+
+export type ProjectProposer = ProjectNaturalProposer | ProjectLegalProposer;
 
 type ProjectActor = {
   actorId: string;
@@ -13,10 +23,32 @@ type ProjectActor = {
   role: string;
 };
 
+export type ProjectObservationItem = {
+  id: number;
+  projectId: number;
+  content: string;
+  createdAt: string;
+};
+
 export type ProjectItem = {
   id: string;
   name: string;
   status: string;
-  proposer: ProjectProposer;
+  proposer?: ProjectProposer;
   actors: ProjectActor[];
+};
+
+export type ProjectDetails = {
+  id: number;
+  name: string;
+  description: string;
+  context: string;
+  status: string;
+  proposer?: ProjectProposer;
+  startDate: string;
+  endDate: string | null;
+  estimatedCost: string | null;
+  createdAt: string;
+  updatedAt: string;
+  observations: ProjectObservationItem[];
 };

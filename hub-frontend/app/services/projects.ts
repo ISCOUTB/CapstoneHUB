@@ -1,4 +1,4 @@
-import { ProjectItem } from "./schemas";
+import { ProjectDetails, ProjectItem } from "./schemas";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
 
@@ -51,6 +51,71 @@ export async function getProjects(): Promise<{
       error: "Unable to reach the backend projects endpoint: " + err,
     };
   }
+}
+
+export async function getProjectById(id: string): Promise<{
+  project?: ProjectDetails;
+  error?: string;
+}> {
+  try {
+    const response = await fetch(getApiUrl(`/api/projects/${id}`), {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        error: `Backend responded with status ${response.status}`,
+      };
+    }
+
+    const data = (await response.json()) as ProjectDetails;
+    return {
+      project: data,
+    };
+  } catch (err) {
+    return {
+      error: "Unable to reach the backend project endpoint: " + err,
+    };
+  }
+}
+
+export async function updateProjectStatus(
+  id: string,
+  status: string,
+): Promise<ProjectDetails> {
+  const response = await fetch(getApiUrl(`/api/projects/${id}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend responded with status ${response.status}`);
+  }
+
+  return (await response.json()) as ProjectDetails;
+}
+
+export async function createProjectObservation(
+  id: string,
+  content: string,
+): Promise<{ id: number; projectId: number; content: string; createdAt: string }> {
+  const response = await fetch(getApiUrl(`/api/projects/${id}/observations`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend responded with status ${response.status}`);
+  }
+
+  return (await response.json()) as {
+    id: number;
+    projectId: number;
+    content: string;
+    createdAt: string;
+  };
 }
 
 export async function createProject(payload: CreateProjectPayload) {
