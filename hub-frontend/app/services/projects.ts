@@ -79,6 +79,45 @@ export async function getProjectById(id: string): Promise<{
   }
 }
 
+export async function updateProjectStatus(
+  id: string,
+  status: string,
+): Promise<ProjectDetails> {
+  const response = await fetch(getApiUrl(`/api/projects/${id}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend responded with status ${response.status}`);
+  }
+
+  return (await response.json()) as ProjectDetails;
+}
+
+export async function createProjectObservation(
+  id: string,
+  content: string,
+): Promise<{ id: number; projectId: number; content: string; createdAt: string }> {
+  const response = await fetch(getApiUrl(`/api/projects/${id}/observations`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend responded with status ${response.status}`);
+  }
+
+  return (await response.json()) as {
+    id: number;
+    projectId: number;
+    content: string;
+    createdAt: string;
+  };
+}
+
 export async function createProject(payload: CreateProjectPayload) {
   const res = await fetch(getApiUrl("/api/projects"), {
     method: "POST",

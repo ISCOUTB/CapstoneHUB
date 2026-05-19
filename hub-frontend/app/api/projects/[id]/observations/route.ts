@@ -15,7 +15,7 @@ export async function GET(
     );
   }
 
-  const response = await fetch(`${backendUrl}/projects/${id}`, {
+  const response = await fetch(`${backendUrl}/projects/${id}/observations`, {
     cache: "no-store",
   });
   const contentType =
@@ -28,7 +28,7 @@ export async function GET(
   });
 }
 
-export async function PUT(
+export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -42,8 +42,8 @@ export async function PUT(
   }
 
   const payload = await request.json();
-  const response = await fetch(`${backendUrl}/projects/${id}`, {
-    method: "PUT",
+  const response = await fetch(`${backendUrl}/projects/${id}/observations`, {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });

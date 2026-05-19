@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProjectById } from "../../services/projects";
+import ProjectStatusEditForm from "../../components/project-status-edit-form";
+import ProjectObservationsPanel from "./project-observations-panel";
+import { formatStatus } from "@/app/services/utils";
 
 export const dynamic = "force-dynamic";
-
-function formatStatus(status: string): string {
-  return status.replaceAll("_", " ");
-}
 
 function formatDate(dateValue: string | null): string {
   if (!dateValue) {
@@ -72,7 +71,7 @@ export default async function ProjectDetailsPage({
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <article className="border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div className="flex flex-wrap items-center gap-3">
               <span className="inline-flex w-fit bg-blue-400 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-800">
                 {formatStatus(project.status)}
@@ -103,7 +102,7 @@ export default async function ProjectDetailsPage({
             </div>
           </article>
 
-          <aside className="space-y-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <aside className="space-y-4 border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
                 Fechas
@@ -142,6 +141,18 @@ export default async function ProjectDetailsPage({
               </dl>
             </div>
           </aside>
+        </div>
+
+        <ProjectObservationsPanel
+          projectId={project.id}
+          observations={project.observations ?? []}
+        />
+
+        <div className="mt-6 flex w-full justify-end">
+          <ProjectStatusEditForm
+            projectId={project.id}
+            currentStatus={project.status}
+          />
         </div>
       </section>
     </main>

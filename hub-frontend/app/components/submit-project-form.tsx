@@ -34,9 +34,9 @@ const initialForm: FormState = {
 export default function SubmitProjectForm() {
   const [form, setForm] = useState<FormState>(initialForm);
 
-  const [status, setStatus] = useState<
-    "idle" | "saving" | "success" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">(
+    "idle",
+  );
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -134,23 +134,6 @@ export default function SubmitProjectForm() {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="age" className="text-sm font-medium text-slate-700">
-          Age
-        </label>
-        <input
-          type="text"
-          inputMode="numeric"
-          maxLength={2}
-          id="age"
-          name="age"
-          value={form.age}
-          onChange={handleChange}
-          required
-          className="w-full rounded border border-slate-300 px-3 py-2"
-        />
-      </div>
-
-      <div className="space-y-2">
         <label htmlFor="correo" className="text-sm font-medium text-slate-700">
           Email
         </label>
@@ -185,7 +168,7 @@ export default function SubmitProjectForm() {
 
       <div className="space-y-2">
         <label htmlFor="context" className="text-sm font-medium text-slate-700">
-          Context
+          Justificación
         </label>
         <textarea
           id="context"
@@ -203,7 +186,7 @@ export default function SubmitProjectForm() {
           htmlFor="location"
           className="text-sm font-medium text-slate-700"
         >
-          Location
+          Locación
         </label>
         <input
           id="location"
@@ -255,7 +238,7 @@ export default function SubmitProjectForm() {
           htmlFor="estimatedCost"
           className="text-sm font-medium text-slate-700"
         >
-          Estimated cost
+          Costo estimado
         </label>
         <input
           type="number"

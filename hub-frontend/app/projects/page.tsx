@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { getProjects } from "../services/projects";
+import { formatStatus } from "../services/utils";
 
 export const dynamic = "force-dynamic";
-
-function formatStatus(status: string): string {
-  return status.replaceAll("_", " ");
-}
 
 export default async function ProjectsPage() {
   const { projects, error } = await getProjects();

@@ -13,6 +13,13 @@ type ProjectActor = {
   role: string;
 };
 
+export type ProjectObservationItem = {
+  id: number;
+  projectId: number;
+  content: string;
+  createdAt: string;
+};
+
 export type ProjectItem = {
   id: string;
   name: string;
@@ -32,4 +39,5 @@ export type ProjectDetails = {
   estimatedCost: string | null;
   createdAt: string;
   updatedAt: string;
+  observations: ProjectObservationItem[];
 };

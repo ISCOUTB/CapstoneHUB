@@ -2,15 +2,24 @@ import { Injectable } from '@nestjs/common';
 import { Project, Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 
+export type ProjectWithObservations = Prisma.ProjectGetPayload<{
+  include: {
+    observations: true;
+  };
+}>;
+
 @Injectable()
 export class ProjectsService {
   constructor(private prisma: PrismaService) {}
 
   async project(
     projectWhereUniqueInput: Prisma.ProjectWhereUniqueInput,
-  ): Promise<Project | null> {
+  ): Promise<ProjectWithObservations | null> {
     return this.prisma.project.findUnique({
       where: projectWhereUniqueInput,
+      include: {
+        observations: true,
+      },
     });
   }
 

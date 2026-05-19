@@ -6,9 +6,13 @@ import {
   Param,
   Delete,
   Put,
+  BadRequestException,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
-import { Project as ProjectModel } from '../generated/prisma/client';
+import {
+  Project as ProjectModel,
+  ProjectStatus,
+} from '../generated/prisma/client';
 
 @Controller('projects')
 export class ProjectsController {
@@ -44,14 +48,34 @@ export class ProjectsController {
   }
 
   @Put(':id')
-  async projectUpdateName(
+  async projectUpdate(
     @Param('id') id: string,
-    @Body() data: { newName: string },
+    @Body()
+    data: {
+      newName?: string;
+      status?: ProjectStatus;
+    },
   ): Promise<ProjectModel> {
-    const { newName } = data;
+    const updateData: {
+      name?: string;
+      status?: ProjectStatus;
+    } = {};
+
+    if (data.newName) {
+      updateData.name = data.newName;
+    }
+
+    if (data.status) {
+      updateData.status = data.status;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestException('No update fields provided');
+    }
+
     return this.projectService.updateProject({
       where: { id: Number(id) },
-      data: { name: newName },
+      data: updateData,
     });
   }
 
