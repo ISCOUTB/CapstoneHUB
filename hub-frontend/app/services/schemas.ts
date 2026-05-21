@@ -33,6 +33,8 @@ export type ProjectObservationItem = {
 export type ProjectItem = {
   id: string;
   name: string;
+  location?: string;
+  context?: string;
   status: string;
   proposer?: ProjectProposer;
   actors: ProjectActor[];

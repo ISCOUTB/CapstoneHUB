@@ -26,50 +26,72 @@ export default async function ProjectsPage() {
         </div>
 
         {error ? (
-          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+          <div className="mb-6 border border-amber-200 bg-amber-50 p-5 text-amber-900">
             {error}
           </div>
         ) : null}
 
         {!error && projects.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
+          <div className="border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
             No se encontraron proyectos aún.
           </div>
         ) : null}
 
-        <div className="grid gap-4">
-          {projects.map((project) => (
-            <Link
-              key={project.id}
-              href={`/projects/${project.id}`}
-              className="group block bg-gray-200 p-5 transition hover:-translate-y-0.5 hover:bg-gray-300"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="mt-1 text-xl font-semibold text-slate-900 transition group-hover:text-slate-700">
-                    {project.name}
-                  </h2>
-                </div>
-                <span className="inline-flex w-fit bg-blue-400 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-800">
-                  {formatStatus(project.status)}
-                </span>
-              </div>
+        {!error && projects.length > 0 ? (
+          <div className="overflow-x-auto border border-slate-200 bg-white shadow-sm">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    Nombre
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    Lugar
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    Proponente
+                  </th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    Estado
+                  </th>
+                </tr>
+              </thead>
 
-              <div className="mt-4 bg-gray-100 p-4 text-sm text-slate-600">
-                <p>
-                  <span className="font-medium text-slate-700">
-                    Proponente:{" "}
-                  </span>
-                  {project.proposer?.type === "natural_person"
-                    ? project.proposer.fullName
-                    : project.proposer?.type === "legal_person"
-                      ? project.proposer.legalName
-                      : "Sin información"}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {projects.map((project) => {
+                  const proposerName =
+                    project.proposer?.type === "natural_person"
+                      ? project.proposer.fullName
+                      : project.proposer?.type === "legal_person"
+                        ? project.proposer.legalName
+                        : "Sin información";
+
+                  const location = project.location || project.context || "Sin información";
+
+                  return (
+                    <tr key={project.id} className="hover:bg-slate-50">
+                      <td className="px-5 py-4 text-sm font-medium text-slate-900">
+                        <Link
+                          href={`/projects/${project.id}`}
+                          className="text-slate-900 underline-offset-2 hover:underline"
+                        >
+                          {project.name}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-slate-700">{location}</td>
+                      <td className="px-5 py-4 text-sm text-slate-700">{proposerName}</td>
+                      <td className="px-5 py-4 text-sm text-slate-700">
+                        <span className="inline-flex w-fit bg-blue-400 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-800">
+                          {formatStatus(project.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </section>
     </main>
   );
