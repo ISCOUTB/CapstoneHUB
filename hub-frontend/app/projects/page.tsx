@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getProjects } from "../services/projects";
-import { formatStatus } from "../services/utils";
+import ProjectsTable from "@/app/projects/projects-table";
 
 export const dynamic = "force-dynamic";
 
@@ -38,59 +38,7 @@ export default async function ProjectsPage() {
         ) : null}
 
         {!error && projects.length > 0 ? (
-          <div className="overflow-x-auto border border-slate-200 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Nombre
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Lugar
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Proponente
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Estado
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {projects.map((project) => {
-                  const proposerName =
-                    project.proposer?.type === "natural_person"
-                      ? project.proposer.fullName
-                      : project.proposer?.type === "legal_person"
-                        ? project.proposer.legalName
-                        : "Sin información";
-
-                  const location = project.location || project.context || "Sin información";
-
-                  return (
-                    <tr key={project.id} className="hover:bg-slate-50">
-                      <td className="px-5 py-4 text-sm font-medium text-slate-900">
-                        <Link
-                          href={`/projects/${project.id}`}
-                          className="text-slate-900 underline-offset-2 hover:underline"
-                        >
-                          {project.name}
-                        </Link>
-                      </td>
-                      <td className="px-5 py-4 text-sm text-slate-700">{location}</td>
-                      <td className="px-5 py-4 text-sm text-slate-700">{proposerName}</td>
-                      <td className="px-5 py-4 text-sm text-slate-700">
-                        <span className="inline-flex w-fit bg-blue-400 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-800">
-                          {formatStatus(project.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ProjectsTable projects={projects} />
         ) : null}
       </section>
     </main>
