@@ -23,7 +23,7 @@ export default function SubmitPage() {
         <div className="grid grid-cols-2 gap-4">
           <SubmitCard
             title="Persona Natural"
-            description="desc..."
+            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim aeque doleamus animo, cum corpore dolemus, fieri tamen permagna."
             href="/submit/natural"
           />
           <SubmitCard

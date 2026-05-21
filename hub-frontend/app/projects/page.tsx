@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getProjects } from "../services/projects";
-import { formatStatus } from "../services/utils";
+import ProjectsTable from "@/app/projects/projects-table";
 
 export const dynamic = "force-dynamic";
 
@@ -26,50 +26,20 @@ export default async function ProjectsPage() {
         </div>
 
         {error ? (
-          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+          <div className="mb-6 border border-amber-200 bg-amber-50 p-5 text-amber-900">
             {error}
           </div>
         ) : null}
 
         {!error && projects.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
+          <div className="border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
             No se encontraron proyectos aún.
           </div>
         ) : null}
 
-        <div className="grid gap-4">
-          {projects.map((project) => (
-            <Link
-              key={project.id}
-              href={`/projects/${project.id}`}
-              className="group block bg-gray-200 p-5 transition hover:-translate-y-0.5 hover:bg-gray-300"
-            >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="mt-1 text-xl font-semibold text-slate-900 transition group-hover:text-slate-700">
-                    {project.name}
-                  </h2>
-                </div>
-                <span className="inline-flex w-fit bg-blue-400 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-800">
-                  {formatStatus(project.status)}
-                </span>
-              </div>
-
-              <div className="mt-4 bg-gray-100 p-4 text-sm text-slate-600">
-                <p>
-                  <span className="font-medium text-slate-700">
-                    Proponente:{" "}
-                  </span>
-                  {project.proposer?.type === "natural_person"
-                    ? project.proposer.fullName
-                    : project.proposer?.type === "legal_person"
-                      ? project.proposer.legalName
-                      : "Sin información"}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {!error && projects.length > 0 ? (
+          <ProjectsTable projects={projects} />
+        ) : null}
       </section>
     </main>
   );
