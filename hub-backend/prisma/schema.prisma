@@ -28,19 +28,22 @@ enum ActorRole {
   administrator
 }
 
-model Actor {
-  id        Int      @id @default(autoincrement())
-  fullName  String   @map("full_name") @db.VarChar(255)
-  email     String?  @db.VarChar(255)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+model User {
+  id              Int      @id @default(autoincrement())
+  fullName        String   @map("full_name") @db.VarChar(255)
+  email           String   @unique(map: "uk_user_email") @db.VarChar(255)
+  passwordHash    String   @map("password_hash") @db.VarChar(255)
+  isActive        Boolean  @default(true) @map("is_active")
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  lastLoginAt     DateTime? @map("last_login_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
-  projectActorAssignments ProjectActorAssignment[]
-  projectStatusHistories  ProjectStatusHistory[]
+  projectAssignments  ProjectActorAssignment[]
+  projectStatusHistories ProjectStatusHistory[]
 
-  @@index([email], map: "idx_actor_email")
-  @@index([fullName], map: "idx_actor_full_name")
-  @@map("actor")
+  @@index([fullName], map: "idx_user_full_name")
+  @@map("user")
 }
 
 model Project {
@@ -113,16 +116,16 @@ model ProjectLegalProposer {
 model ProjectActorAssignment {
   id         Int       @id @default(autoincrement())
   projectId  Int       @map("project_id")
-  actorId    Int       @map("actor_id")
+  userId     Int       @map("user_id")
   role       ActorRole
   assignedAt DateTime  @default(now()) @map("assigned_at")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  actor   Actor   @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([projectId, actorId], map: "uk_project_actor")
-  @@index([projectId], map: "idx_project_actor_project_id")
-  @@index([actorId], map: "idx_project_actor_actor_id")
+  @@unique([projectId, userId], map: "uk_project_user")
+  @@index([projectId], map: "idx_project_user_project_id")
+  @@index([userId], map: "idx_project_user_user_id")
   @@index([role], map: "idx_project_actor_role")
   @@map("project_actor_assignment")
 }
@@ -146,11 +149,11 @@ model ProjectStatusHistory {
   previousStatus ProjectStatus? @map("previous_status")
   nextStatus     ProjectStatus  @map("next_status")
   description    String?        @db.Text
-  authorActorId  Int?           @map("author_actor_id")
+  authorUserId   Int?           @map("author_user_id")
   changedAt      DateTime       @default(now()) @map("changed_at")
 
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  authorActor Actor?  @relation(fields: [authorActorId], references: [id], onDelete: SetNull)
+  authorUser  User?   @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
 
   @@index([projectId], map: "idx_project_status_history_project_id")
   @@index([nextStatus], map: "idx_project_status_history_next_status")
