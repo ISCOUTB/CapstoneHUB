@@ -120,7 +120,7 @@ export default function SubmitProjectForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <label htmlFor="name" className="text-sm font-medium text-slate-700">
-          Project name
+          Nombre del proyecto
         </label>
         <input
           id="name"
@@ -134,7 +134,7 @@ export default function SubmitProjectForm() {
 
       <div className="space-y-2">
         <label htmlFor="namep" className="text-sm font-medium text-slate-700">
-          Responsable name
+          Nombre del responsable
         </label>
         <input
           id="namep"
@@ -148,7 +148,7 @@ export default function SubmitProjectForm() {
 
       <div className="space-y-2">
         <label htmlFor="ncedua" className="text-sm font-medium text-slate-700">
-          Cedula number
+          Número de cédula
         </label>
         <input
           id="ncedua"
@@ -165,7 +165,7 @@ export default function SubmitProjectForm() {
 
       <div className="space-y-2">
         <label htmlFor="correo" className="text-sm font-medium text-slate-700">
-          Email
+          Correo electrónico
         </label>
         <input
           type="email"
@@ -183,7 +183,7 @@ export default function SubmitProjectForm() {
           htmlFor="description"
           className="text-sm font-medium text-slate-700"
         >
-          Description
+          Descripción
         </label>
         <textarea
           id="description"
