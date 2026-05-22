@@ -1,4 +1,5 @@
 import { ProjectDetails, ProjectItem } from "./schemas";
+import { getAuthToken } from "./auth";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
 
@@ -9,6 +10,12 @@ function getApiUrl(path: string) {
   }
 
   return apiBaseUrl ? `${apiBaseUrl}${path}` : path;
+}
+
+function getAuthHeaders() {
+  const token = getAuthToken();
+
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export type CreateProjectPayload = {
@@ -85,7 +92,10 @@ export async function updateProjectStatus(
 ): Promise<ProjectDetails> {
   const response = await fetch(getApiUrl(`/api/projects/${id}`), {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
     body: JSON.stringify({ status }),
   });
 
@@ -102,7 +112,10 @@ export async function createProjectObservation(
 ): Promise<{ id: number; projectId: number; content: string; createdAt: string }> {
   const response = await fetch(getApiUrl(`/api/projects/${id}/observations`), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
     body: JSON.stringify({ content }),
   });
 
@@ -121,7 +134,10 @@ export async function createProjectObservation(
 export async function createProject(payload: CreateProjectPayload) {
   const res = await fetch(getApiUrl("/api/projects"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
     body: JSON.stringify(payload),
   });
 
