@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateProjectStatus } from "../services/projects";
+import Link from "next/link";
+import { useAuth } from "./auth-provider";
 
 const projectStatuses = [
   { value: "proposed", label: "Propuesto" },
@@ -24,9 +26,37 @@ export default function ProjectStatusEditForm({
   currentStatus,
 }: ProjectStatusEditFormProps) {
   const router = useRouter();
+  const { isAuthenticated, ready } = useAuth();
   const [status, setStatus] = useState(currentStatus);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  if (!ready) {
+    return (
+      <div className="w-full border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <p className="text-sm text-slate-600">Cargando acceso...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+          Actualizar estado del proyecto
+        </h2>
+        <p className="mt-3 text-sm text-slate-600">
+          Inicia sesión para cambiar el estado de este proyecto.
+        </p>
+        <Link
+          href="/login"
+          className="mt-4 inline-flex items-center justify-center border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+        >
+          Iniciar sesión
+        </Link>
+      </div>
+    );
+  }
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();

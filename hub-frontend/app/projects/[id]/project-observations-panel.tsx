@@ -4,6 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createProjectObservation } from "../../services/projects";
 import { ProjectObservationItem } from "../../services/schemas";
+import Link from "next/link";
+import { useAuth } from "../../components/auth-provider";
 
 type ProjectObservationsPanelProps = {
   projectId: number;
@@ -22,6 +24,7 @@ export default function ProjectObservationsPanel({
   observations,
 }: ProjectObservationsPanelProps) {
   const router = useRouter();
+  const { isAuthenticated, ready } = useAuth();
   const [content, setContent] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -31,7 +34,7 @@ export default function ProjectObservationsPanel({
     [observations],
   );
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
 
@@ -92,41 +95,59 @@ export default function ProjectObservationsPanel({
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <div>
-          <label
-            htmlFor="observation"
-            className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500"
-          >
-            Nueva observación
-          </label>
-          <textarea
-            id="observation"
-            name="observation"
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            rows={4}
-            className="mt-3 w-full border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900"
-            placeholder="Escribe una observación sobre este proyecto"
-          />
+      {!ready ? (
+        <div className="mt-6 border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          Cargando acceso...
         </div>
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="submit"
-            disabled={isPending}
-            className="inline-flex items-center justify-center bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isPending ? "Guardando..." : "Agregar observación"}
-          </button>
+      ) : !isAuthenticated ? (
+        <div className="mt-6 border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          Inicia sesión para agregar observaciones.
+          <div className="mt-3">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+            >
+              Iniciar sesión
+            </Link>
+          </div>
         </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div>
+            <label
+              htmlFor="observation"
+              className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500"
+            >
+              Nueva observación
+            </label>
+            <textarea
+              id="observation"
+              name="observation"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              rows={4}
+              className="mt-3 w-full border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900"
+              placeholder="Escribe una observación sobre este proyecto"
+            />
+          </div>
 
-        {errorMessage ? (
-          <p className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {errorMessage}
-          </p>
-        ) : null}
-      </form>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="inline-flex items-center justify-center bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isPending ? "Guardando..." : "Agregar observación"}
+            </button>
+          </div>
+
+          {errorMessage ? (
+            <p className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {errorMessage}
+            </p>
+          ) : null}
+        </form>
+      )}
     </section>
   );
 }

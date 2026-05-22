@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { createProject } from "../services/projects";
+import { useAuth } from "./auth-provider";
 
 type FormState = {
   name: string;
@@ -32,6 +34,7 @@ const initialForm: FormState = {
 };
 
 export default function SubmitProjectForm() {
+  const { isAuthenticated, ready } = useAuth();
   const [form, setForm] = useState<FormState>(initialForm);
 
   const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">(
@@ -84,6 +87,33 @@ export default function SubmitProjectForm() {
         error instanceof Error ? error.message : "Unable to create project",
       );
     }
+  }
+
+  if (!ready) {
+    return (
+      <div className="border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <p className="text-sm text-slate-600">Cargando acceso...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+          Proponer un proyecto
+        </h2>
+        <p className="mt-3 text-sm text-slate-600">
+          Inicia sesión para proponer nuevos proyectos.
+        </p>
+        <Link
+          href="/login"
+          className="mt-4 inline-flex items-center justify-center border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+        >
+          Iniciar sesión
+        </Link>
+      </div>
+    );
   }
 
   return (

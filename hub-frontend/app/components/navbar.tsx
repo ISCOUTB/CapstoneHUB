@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "./auth-provider";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { isAuthenticated, ready, logout } = useAuth();
 
   const isActive = (href: string) => pathname === href;
 
@@ -43,6 +45,32 @@ export default function Navbar() {
         >
           Proponer
         </Link>
+
+        <div className="ml-auto flex items-center gap-3">
+          {!ready ? (
+            <span className="text-sm text-slate-500">Cargando...</span>
+          ) : isAuthenticated ? (
+            <>
+              <span className="hidden text-sm text-slate-600 sm:inline">
+                Sesión iniciada
+              </span>
+              <button
+                type="button"
+                onClick={logout}
+                className="inline-flex items-center justify-center border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Cerrar sesión
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+            >
+              Iniciar sesión
+            </Link>
+          )}
+        </div>
       </div>
     </nav>
   );
