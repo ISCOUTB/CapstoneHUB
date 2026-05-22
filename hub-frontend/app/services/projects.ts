@@ -1,4 +1,4 @@
-import { ProjectDetails, ProjectItem } from "./schemas";
+import { ProjectDetails, ProjectItem, UserSummary } from "./schemas";
 import { getAuthToken } from "./auth";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
@@ -155,5 +155,66 @@ export async function createProject(payload: CreateProjectPayload) {
     endDate: string;
     createdAt: string;
     updatedAt: string;
+  };
+}
+
+export async function getUsers(): Promise<{ users: UserSummary[]; error?: string }> {
+  try {
+    const response = await fetch(getApiUrl("/api/auth/users"), {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        users: [],
+        error: `Backend responded with status ${response.status}`,
+      };
+    }
+
+    const data = (await response.json()) as UserSummary[];
+    return {
+      users: Array.isArray(data) ? data : [],
+    };
+  } catch (err) {
+    return {
+      users: [],
+      error: "Unable to reach the backend users endpoint: " + err,
+    };
+  }
+}
+
+export async function addProjectActorAssignment(
+  projectId: number,
+  payload: { userId: number; role: string },
+): Promise<{
+  id: number;
+  projectId: number;
+  userId: number;
+  role: string;
+  assignedAt: string;
+  project: { id: number; name: string };
+  user: { id: number; fullName: string; email: string };
+}> {
+  const response = await fetch(getApiUrl(`/api/projects/${projectId}/actors`), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend responded with status ${response.status}`);
+  }
+
+  return (await response.json()) as {
+    id: number;
+    projectId: number;
+    userId: number;
+    role: string;
+    assignedAt: string;
+    project: { id: number; name: string };
+    user: { id: number; fullName: string; email: string };
   };
 }

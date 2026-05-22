@@ -17,10 +17,22 @@ type ProjectLegalProposer = {
 export type ProjectProposer = ProjectNaturalProposer | ProjectLegalProposer;
 
 type ProjectActor = {
-  actorId: string;
-  fullName: string;
-  email?: string;
+  id: number;
+  projectId: number;
+  userId: number;
   role: string;
+  assignedAt: string;
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+  };
+};
+
+export type UserSummary = {
+  id: number;
+  fullName: string;
+  email: string;
 };
 
 export type ProjectObservationItem = {
@@ -53,4 +65,5 @@ export type ProjectDetails = {
   createdAt: string;
   updatedAt: string;
   observations: ProjectObservationItem[];
+  actorAssignments: ProjectActor[];
 };

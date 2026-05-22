@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getProjectById } from "../../services/projects";
 import ProjectStatusEditForm from "../../components/project-status-edit-form";
 import ProjectObservationsPanel from "./project-observations-panel";
+import ProjectActorAssignmentPanel from "./project-actor-assignment-panel";
 import { formatStatus } from "@/app/services/utils";
 
 export const dynamic = "force-dynamic";
@@ -207,6 +208,11 @@ export default async function ProjectDetailsPage({
                 </div>
               </dl>
             </div>
+
+            <ProjectActorAssignmentPanel
+              projectId={project.id}
+              assignments={project.actorAssignments ?? []}
+            />
           </aside>
         </div>
 

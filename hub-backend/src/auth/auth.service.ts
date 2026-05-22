@@ -36,6 +36,12 @@ type AuthResponse = {
   accessToken: string;
 };
 
+type UserSummary = {
+  id: number;
+  fullName: string;
+  email: string;
+};
+
 @Injectable()
 export class AuthService {
   private readonly tokenSecret =
@@ -103,6 +109,17 @@ export class AuthService {
       user,
       accessToken: this.createAccessToken(user),
     };
+  }
+
+  async users(): Promise<UserSummary[]> {
+    return this.prisma.user.findMany({
+      orderBy: { fullName: 'asc' },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+      },
+    });
   }
 
   private normalizeEmail(email: string): string {

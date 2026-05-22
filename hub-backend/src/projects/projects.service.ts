@@ -16,6 +16,11 @@ type ProjectWithRelations = Prisma.ProjectGetPayload<{
     naturalProposer: true;
     legalProposer: true;
     observations: true;
+    actorAssignments: {
+      include: {
+        user: true;
+      };
+    };
   };
 }>;
 
@@ -56,6 +61,18 @@ export type ProjectDetailResponse = ProjectListResponse & {
     projectId: number;
     content: string;
     createdAt: Date;
+  }[];
+  actorAssignments: {
+    id: number;
+    projectId: number;
+    userId: number;
+    role: ActorRole;
+    assignedAt: Date;
+    user: {
+      id: number;
+      fullName: string;
+      email: string;
+    };
   }[];
 };
 
@@ -132,6 +149,18 @@ function mapProjectDetailResponse(
       content: observation.content,
       createdAt: observation.createdAt,
     })),
+    actorAssignments: project.actorAssignments.map((assignment) => ({
+      id: assignment.id,
+      projectId: assignment.projectId,
+      userId: assignment.userId,
+      role: assignment.role,
+      assignedAt: assignment.assignedAt,
+      user: {
+        id: assignment.user.id,
+        fullName: assignment.user.fullName,
+        email: assignment.user.email,
+      },
+    })),
   };
 }
 
@@ -148,6 +177,11 @@ export class ProjectsService {
         naturalProposer: true,
         legalProposer: true,
         observations: true,
+        actorAssignments: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 
@@ -172,6 +206,11 @@ export class ProjectsService {
         naturalProposer: true,
         legalProposer: true,
         observations: true,
+        actorAssignments: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 
@@ -187,6 +226,11 @@ export class ProjectsService {
         naturalProposer: true,
         legalProposer: true,
         observations: true,
+        actorAssignments: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 
@@ -205,6 +249,11 @@ export class ProjectsService {
         naturalProposer: true,
         legalProposer: true,
         observations: true,
+        actorAssignments: {
+          include: {
+            user: true,
+          },
+        },
       },
     });
 
