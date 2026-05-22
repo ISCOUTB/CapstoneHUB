@@ -13,7 +13,12 @@ import {
   Project as ProjectModel,
   ProjectStatus,
 } from '../generated/prisma/client';
-import { ProjectDetailResponse, ProjectListResponse } from './projects.service';
+import {
+  ProjectActorAssignmentResponse,
+  ProjectDetailResponse,
+  ProjectListResponse,
+} from './projects.service';
+import { CreateProjectActorAssignmentDTO } from './dto/create-project-actor-assignment.dto';
 
 @Controller('projects')
 export class ProjectsController {
@@ -57,6 +62,18 @@ export class ProjectsController {
           email: correo,
         },
       },
+    });
+  }
+
+  @Post(':id/actors')
+  async addProjectActorAssignment(
+    @Param('id') id: string,
+    @Body() assignmentData: CreateProjectActorAssignmentDTO,
+  ): Promise<ProjectActorAssignmentResponse> {
+    return this.projectService.addProjectActorAssignment({
+      projectId: Number(id),
+      userId: assignmentData.userId,
+      role: assignmentData.role,
     });
   }
 

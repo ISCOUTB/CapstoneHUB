@@ -10,16 +10,16 @@ export class RegisterUserDto {
   @ApiProperty({ description: 'full name of the user' })
   @IsString()
   @IsNotEmpty()
-  fullName: string;
+  fullName!: string;
 
   @ApiProperty({ description: 'email address of the user' })
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @ApiProperty({ description: 'password for the new user' })
   @IsString()
   @MinLength(8)
   @IsNotEmpty()
-  password: string;
+  password!: string;
 }

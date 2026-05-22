@@ -1,5 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma, Project, ProjectStatus } from '../generated/prisma/client';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  ActorRole,
+  Prisma,
+  Project,
+  ProjectStatus,
+} from '../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 
 type ProjectWithRelations = Prisma.ProjectGetPayload<{
@@ -48,6 +57,23 @@ export type ProjectDetailResponse = ProjectListResponse & {
     content: string;
     createdAt: Date;
   }[];
+};
+
+export type ProjectActorAssignmentResponse = {
+  id: number;
+  projectId: number;
+  userId: number;
+  role: ActorRole;
+  assignedAt: Date;
+  project: {
+    id: number;
+    name: string;
+  };
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+  };
 };
 
 function mapProjectProposer(
@@ -187,5 +213,78 @@ export class ProjectsService {
 
   async deleteProject(where: Prisma.ProjectWhereUniqueInput): Promise<Project> {
     return this.prisma.project.delete({ where });
+  }
+
+  async addProjectActorAssignment(params: {
+    projectId: number;
+    userId: number;
+    role: ActorRole;
+  }): Promise<ProjectActorAssignmentResponse> {
+    const { projectId, userId, role } = params;
+
+    const [project, user, existingAssignment] = await Promise.all([
+      this.prisma.project.findUnique({
+        where: { id: projectId },
+        select: { id: true, name: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, fullName: true, email: true },
+      }),
+      this.prisma.projectActorAssignment.findUnique({
+        where: {
+          projectId_userId: {
+            projectId,
+            userId,
+          },
+        },
+      }),
+    ]);
+
+    if (!project) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found`);
+    }
+
+    if (existingAssignment) {
+      throw new ConflictException('User is already assigned to this project');
+    }
+
+    const assignment = await this.prisma.projectActorAssignment.create({
+      data: {
+        role,
+        project: {
+          connect: { id: projectId },
+        },
+        user: {
+          connect: { id: userId },
+        },
+      },
+      select: {
+        id: true,
+        projectId: true,
+        userId: true,
+        role: true,
+        assignedAt: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return assignment;
   }
 }
