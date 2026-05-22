@@ -52,7 +52,7 @@ export default async function ProjectDetailsPage({
 
   return (
     <main className="min-h-screen bg-gray-100 text-slate-900">
-      <section className="mx-auto w-full max-w-5xl px-6 py-12 sm:px-10 lg:px-12">
+      <section className="mx-auto w-full max-w-7xl px-6 py-12 sm:px-10 lg:px-12">
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">

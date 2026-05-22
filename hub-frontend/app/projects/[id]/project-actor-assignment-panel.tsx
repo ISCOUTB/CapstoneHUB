@@ -48,7 +48,9 @@ export default function ProjectActorAssignmentPanel({
   const { isAuthenticated, ready } = useAuth();
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
-  const [selectedRole, setSelectedRole] = useState<ProjectActorRole>(roles[0].value);
+  const [selectedRole, setSelectedRole] = useState<ProjectActorRole>(
+    roles[0].value,
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -90,7 +92,9 @@ export default function ProjectActorAssignmentPanel({
         router.refresh();
       } catch (error) {
         setErrorMessage(
-          error instanceof Error ? error.message : "No se pudo asignar el usuario",
+          error instanceof Error
+            ? error.message
+            : "No se pudo asignar el usuario",
         );
       }
     });
@@ -191,19 +195,21 @@ export default function ProjectActorAssignmentPanel({
         ) : null}
       </form>
 
-      <div className="border border-slate-200 bg-white p-4">
+      <div className="bg-white">
         <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
           Usuarios asignados
         </h3>
 
         <div className="mt-4 space-y-3">
           {assignedUsers.length === 0 ? (
-            <p className="text-sm text-slate-600">No hay usuarios asignados todavía.</p>
+            <p className="text-sm text-slate-600">
+              No hay usuarios asignados todavía.
+            </p>
           ) : (
             assignedUsers.map((assignment) => (
               <div
                 key={assignment.id}
-                className="border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
+                className="border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-medium text-slate-900">
