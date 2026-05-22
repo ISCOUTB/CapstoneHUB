@@ -23,12 +23,12 @@ export default function SubmitPage() {
         <div className="grid grid-cols-2 gap-4">
           <SubmitCard
             title="Persona Natural"
-            description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim aeque doleamus animo, cum corpore dolemus, fieri tamen permagna."
+            description="Dirigido a estudiantes, docentes o personas independientes que deseen postular proyectos Capstone de manera individual."
             href="/submit/natural"
           />
           <SubmitCard
             title="Persona Jurídica"
-            description="(no disponible)"
+            description="Dirigido a empresas, organizaciones o instituciones que deseen proponer proyectos Capstone para colaboración académica. (No disponible)"
             disabled
           />
         </div>
