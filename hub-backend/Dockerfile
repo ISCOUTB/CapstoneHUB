@@ -1,6 +1,6 @@
 # reference source: https://docs.nestjs.com/deployment
 
-FROM node:24-slim
+FROM node:26-slim
 
 # install libssl for prisma to work fine
 RUN apt-get update -y \

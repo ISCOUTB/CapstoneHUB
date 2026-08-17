@@ -1,7 +1,7 @@
 # reference source: https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile
 ### Stage 1: Dependencies Installation Stage
 
-ARG NODE_VERSION=24-slim
+ARG NODE_VERSION=26-slim
 
 FROM node:${NODE_VERSION} AS dependencies
 
@@ -41,15 +41,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build Next.js application
-RUN if [ -f package-lock.json ]; then \
-    npm run build; \
-  elif [ -f yarn.lock ]; then \
-    corepack enable yarn && yarn build; \
-  elif [ -f pnpm-lock.yaml ]; then \
-    corepack enable pnpm && pnpm build; \
-  else \
-    echo "No lockfile found." && exit 1; \
-  fi
+RUN npm run build
 
 ### Stage 3: Run Next.js application
 
