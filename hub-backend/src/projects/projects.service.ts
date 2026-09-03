@@ -220,21 +220,32 @@ export class ProjectsService {
   async createProject(
     data: Prisma.ProjectCreateInput,
   ): Promise<ProjectDetailResponse> {
-    const project = await this.prisma.project.create({
-      data,
-      include: {
-        naturalProposer: true,
-        legalProposer: true,
-        observations: true,
-        actorAssignments: {
-          include: {
-            user: true,
+    try {
+      const project = await this.prisma.project.create({
+        data,
+        include: {
+          naturalProposer: true,
+          legalProposer: true,
+          observations: true,
+          actorAssignments: {
+            include: {
+              user: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return mapProjectDetailResponse(project);
+      return mapProjectDetailResponse(project);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('Duplicate value for a unique field');
+      }
+
+      throw error;
+    }
   }
 
   async updateProject(params: {

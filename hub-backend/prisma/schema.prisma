@@ -86,7 +86,7 @@ model ProjectSchool {
 model ProjectNaturalProposer {
   projectId Int      @id @map("project_id")
   fullName  String   @map("full_name") @db.VarChar(255)
-  idNumber  String   @unique(map: "uk_project_natural_id_number") @map("id_number") @db.VarChar(50)
+  idNumber  String   @map("id_number") @db.VarChar(50)
   email     String   @db.VarChar(255)
   createdAt DateTime @default(now()) @map("created_at")
 

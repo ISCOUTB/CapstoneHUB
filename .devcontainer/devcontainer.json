@@ -1,0 +1,30 @@
+{
+  "name": "CapstoneHUB",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+
+  "forwardPorts": [3000, 3001, 5432],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "js/ts.tsdk.path": "/workspace/hub-frontend/node_modules/typescript/lib"
+      }
+    }
+  },
+
+  "postCreateCommand": "cd hub-backend && npm ci && npx prisma generate && cd ../hub-frontend && npm ci",
+
+  "remoteEnv": {
+    "DATABASE_URL": "postgresql://postgres:supersecure@db:5432/db"
+  }
+}
