@@ -6,12 +6,17 @@ FROM node:26-slim
 RUN apt-get update -y \
 && apt-get install -y openssl
 
+
 WORKDIR /usr/src/app
 
 COPY ./package.json ./
 COPY ./package-lock.json ./
 
-RUN npm install
+RUN if [ -f package-lock.json ]; then \
+    npm ci --no-audit --no-fund; \
+  else \
+    echo "No lockfile found." && exit 1; \
+  fi
 
 COPY . .
 

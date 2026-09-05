@@ -166,7 +166,7 @@ function mapProjectDetailResponse(
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(readonly prisma: PrismaService) {}
 
   async project(
     projectWhereUniqueInput: Prisma.ProjectWhereUniqueInput,
