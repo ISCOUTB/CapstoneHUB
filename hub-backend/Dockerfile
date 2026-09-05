@@ -4,7 +4,8 @@ FROM node:26-slim
 
 # install libssl for prisma to work fine
 RUN apt-get update -y \
-&& apt-get install -y openssl
+&& apt-get install -y --no-install-recommends openssl \
+&& rm -rf /var/lib/apt/lists/*
 
 
 WORKDIR /usr/src/app
