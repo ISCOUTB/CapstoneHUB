@@ -41,7 +41,15 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build Next.js application
-RUN npm run build
+RUN if [ -f package-lock.json ]; then \
+    npm run build; \
+  elif [ -f yarn.lock ]; then \
+    yarn build; \
+  elif [ -f pnpm-lock.yaml ]; then \
+    pnpm build; \
+  else \
+    echo "No lockfile found." && exit 1; \
+  fi
 
 ### Stage 3: Run Next.js application
 

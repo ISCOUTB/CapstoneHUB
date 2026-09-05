@@ -241,7 +241,10 @@ export class ProjectsService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException('Duplicate value for a unique field');
+        const target = Array.isArray(error.meta?.target) 
+          ? error.meta?.target.join(', ')
+          : String(error.meta?.target ?? 'unique field');
+        throw new ConflictException(`Duplicate value for a unique field: ${target}`);
       }
 
       throw error;

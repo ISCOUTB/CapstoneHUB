@@ -30,7 +30,7 @@ npx prisma migrate dev --name [name]
 npm start dev
 ```
 
-ir a [https://localhost:3001/api](https://localhost:3001/api)
+ir a [http://localhost:3001/api](http://localhost:3001/api)
 
 # ejecutar el frontend
 
