@@ -166,7 +166,7 @@ function mapProjectDetailResponse(
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(readonly prisma: PrismaService) {}
 
   async project(
     projectWhereUniqueInput: Prisma.ProjectWhereUniqueInput,
@@ -220,21 +220,35 @@ export class ProjectsService {
   async createProject(
     data: Prisma.ProjectCreateInput,
   ): Promise<ProjectDetailResponse> {
-    const project = await this.prisma.project.create({
-      data,
-      include: {
-        naturalProposer: true,
-        legalProposer: true,
-        observations: true,
-        actorAssignments: {
-          include: {
-            user: true,
+    try {
+      const project = await this.prisma.project.create({
+        data,
+        include: {
+          naturalProposer: true,
+          legalProposer: true,
+          observations: true,
+          actorAssignments: {
+            include: {
+              user: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return mapProjectDetailResponse(project);
+      return mapProjectDetailResponse(project);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const target = Array.isArray(error.meta?.target) 
+          ? error.meta?.target.join(', ')
+          : String(error.meta?.target ?? 'unique field');
+        throw new ConflictException(`Duplicate value for a unique field: ${target}`);
+      }
+
+      throw error;
+    }
   }
 
   async updateProject(params: {

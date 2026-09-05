@@ -12,10 +12,16 @@ function getApiUrl(path: string) {
   return apiBaseUrl ? `${apiBaseUrl}${path}` : path;
 }
 
-function getAuthHeaders() {
+function getAuthHeaders(): Record<string, string> {
   const token = getAuthToken();
 
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
 }
 
 export type CreateProjectPayload = {

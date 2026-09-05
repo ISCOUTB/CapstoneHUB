@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    working_dir: /workspace
+    command: sleep infinity
+    volumes:
+      - ..:/workspace:cached
+      - backend_node_modules:/workspace/hub-backend/node_modules
+      - frontend_node_modules:/workspace/hub-frontend/node_modules
+    env_file:
+      - ../.env
+      - ../hub-backend/.env
+      - ../hub-frontend/.env
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - capstone
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: supersecure
+      POSTGRES_DB: db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - capstone
+
+volumes:
+  backend_node_modules:
+  frontend_node_modules:
+  postgres_data:
+
+networks:
+  capstone:
