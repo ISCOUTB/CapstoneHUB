@@ -8,11 +8,10 @@ import { useAuth } from "../../components/auth-provider";
 import Link from "next/link";
 
 const roles = [
-  { value: "director", label: "Director" },
+  { value: "advisor", label: "Asesor" },
   { value: "coordinator", label: "Coordinator" },
   { value: "student", label: "Student" },
   { value: "evaluator", label: "Evaluator" },
-  { value: "administrator", label: "Administrator" },
 ] as const;
 
 type ProjectActorRole = (typeof roles)[number]["value"];

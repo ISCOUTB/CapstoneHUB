@@ -4,10 +4,15 @@ import {
   Post,
   Body,
   Param,
+  Patch,
   Delete,
   Put,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '../auth/auth.guard';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { AuthenticatedUser } from '../auth/auth.types';
 import { ProjectsService } from './projects.service';
 import {
   Project as ProjectModel,
@@ -37,7 +42,9 @@ export class ProjectsController {
   }
 
   @Post()
+  @UseGuards(AuthGuard)
   async createProject(
+    @CurrentUser() user: AuthenticatedUser,
     @Body()
     projectData: {
       name: string;
@@ -50,7 +57,7 @@ export class ProjectsController {
   ): Promise<ProjectDetailResponse> {
     const { name, description, context, namep, ncedua, correo } = projectData;
     const startDate = new Date();
-    return this.projectService.createProject({
+    return this.projectService.createProject(user, {
       name,
       description,
       context,
@@ -66,11 +73,14 @@ export class ProjectsController {
   }
 
   @Post(':id/actors')
+  @UseGuards(AuthGuard)
   async addProjectActorAssignment(
     @Param('id') id: string,
     @Body() assignmentData: CreateProjectActorAssignmentDTO,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectActorAssignmentResponse> {
     return this.projectService.addProjectActorAssignment({
+      user,
       projectId: Number(id),
       userId: assignmentData.userId,
       role: assignmentData.role,
@@ -78,25 +88,19 @@ export class ProjectsController {
   }
 
   @Put(':id')
+  @UseGuards(AuthGuard)
   async projectUpdate(
     @Param('id') id: string,
     @Body()
     data: {
       newName?: string;
-      status?: ProjectStatus;
     },
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectDetailResponse> {
-    const updateData: {
-      name?: string;
-      status?: ProjectStatus;
-    } = {};
+    const updateData: { name?: string } = {};
 
     if (data.newName) {
       updateData.name = data.newName;
-    }
-
-    if (data.status) {
-      updateData.status = data.status;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -104,13 +108,37 @@ export class ProjectsController {
     }
 
     return this.projectService.updateProject({
+      user,
       where: { id: Number(id) },
       data: updateData,
     });
   }
 
+  @Patch(':id/status')
+  @UseGuards(AuthGuard)
+  async transitionProjectStatus(
+    @Param('id') id: string,
+    @Body() data: { status: ProjectStatus; description?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectDetailResponse> {
+    if (!data.status) {
+      throw new BadRequestException('A target status is required');
+    }
+
+    return this.projectService.transitionProjectStatus({
+      user,
+      projectId: Number(id),
+      nextStatus: data.status,
+      description: data.description,
+    });
+  }
+
   @Delete(':id')
-  async deleteProject(@Param('id') id: string): Promise<ProjectModel> {
-    return this.projectService.deleteProject({ id: Number(id) });
+  @UseGuards(AuthGuard)
+  async deleteProject(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ProjectModel> {
+    return this.projectService.deleteProject(user, { id: Number(id) });
   }
 }

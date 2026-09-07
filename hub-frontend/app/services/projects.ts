@@ -96,8 +96,8 @@ export async function updateProjectStatus(
   id: string,
   status: string,
 ): Promise<ProjectDetails> {
-  const response = await fetch(getApiUrl(`/api/projects/${id}`), {
-    method: "PUT",
+  const response = await fetch(getApiUrl(`/api/projects/${id}/status`), {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
@@ -167,6 +167,7 @@ export async function createProject(payload: CreateProjectPayload) {
 export async function getUsers(): Promise<{ users: UserSummary[]; error?: string }> {
   try {
     const response = await fetch(getApiUrl("/api/auth/users"), {
+      headers: getAuthHeaders(),
       cache: "no-store",
     });
 

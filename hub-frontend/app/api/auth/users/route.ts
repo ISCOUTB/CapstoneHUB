@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 const backendUrl = process.env.BACKEND_URL?.replace(/\/$/, "");
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!backendUrl) {
     return NextResponse.json(
       { error: "BACKEND_URL is not set" },
@@ -11,6 +11,11 @@ export async function GET() {
   }
 
   const response = await fetch(`${backendUrl}/auth/users`, {
+    headers: {
+      ...(request.headers.get("authorization")
+        ? { Authorization: request.headers.get("authorization")! }
+        : {}),
+    },
     cache: "no-store",
   });
   const contentType = response.headers.get("content-type") ?? "application/json";

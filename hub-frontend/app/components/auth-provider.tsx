@@ -24,13 +24,12 @@ export default function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [session, setSession] = useState<AuthSession | null>(null);
-  const [ready, setReady] = useState(false);
+  const [session, setSession] = useState<AuthSession | null>(() =>
+    loadAuthSession(),
+  );
+  const [ready] = useState(true);
 
   useEffect(() => {
-    setSession(loadAuthSession());
-    setReady(true);
-
     function handleStorage(event: StorageEvent) {
       if (event.key === "capstonehub.auth.session") {
         setSession(loadAuthSession());

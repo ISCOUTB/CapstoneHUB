@@ -2,11 +2,7 @@ export type AuthUser = {
   id: number;
   fullName: string;
   email: string;
-  isActive: boolean;
-  emailVerifiedAt: string | null;
-  lastLoginAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+  roles: string[];
 };
 
 export type AuthSession = {

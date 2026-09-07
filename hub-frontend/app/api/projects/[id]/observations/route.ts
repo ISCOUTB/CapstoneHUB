@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const backendUrl = process.env.BACKEND_URL?.replace(/\/$/, "");
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -16,6 +16,11 @@ export async function GET(
   }
 
   const response = await fetch(`${backendUrl}/projects/${id}/observations`, {
+    headers: {
+      ...(request.headers.get("authorization")
+        ? { Authorization: request.headers.get("authorization")! }
+        : {}),
+    },
     cache: "no-store",
   });
   const contentType =
@@ -42,9 +47,13 @@ export async function POST(
   }
 
   const payload = await request.json();
+  const authorization = request.headers.get("authorization");
   const response = await fetch(`${backendUrl}/projects/${id}/observations`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(authorization ? { Authorization: authorization } : {}),
+    },
     body: JSON.stringify(payload),
   });
   const contentType =

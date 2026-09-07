@@ -6,7 +6,19 @@ import { useAuth } from "./auth-provider";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { isAuthenticated, ready, logout } = useAuth();
+  const { session, isAuthenticated, ready, logout } = useAuth();
+
+  const roleLabels: Record<string, string> = {
+    admin: "Administrador",
+    evaluator: "Evaluador",
+    coordinator: "Coordinador",
+    advisor: "Asesor",
+    student: "Estudiante",
+  };
+
+  const userRoles = (session?.user.roles ?? [])
+    .map((role) => roleLabels[role] ?? role)
+    .join(", ");
 
   const isActive = (href: string) => pathname === href;
 
@@ -49,8 +61,11 @@ export default function Navbar() {
             <span className="text-sm text-white">Cargando...</span>
           ) : isAuthenticated ? (
             <>
-              <span className="hidden text-sm text-white sm:inline">
-                Sesión iniciada
+              <span className="hidden text-right text-sm text-white sm:inline">
+                <span className="block font-medium">{session?.user.fullName}</span>
+                <span className="block text-blue-100">
+                  {userRoles || "Sin rol asignado"}
+                </span>
               </span>
               <button
                 type="button"

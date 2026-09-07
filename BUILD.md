@@ -39,3 +39,13 @@ npm run dev
 ```
 
 ir a [http://localhost:3000](http://localhost:3000)
+
+# Admin bootstrap
+
+Estas variables de entorno son necesarias para el primer setup:
+
+```
+INITIAL_ADMIN_EMAIL
+INITIAL_ADMIN_PASSWORD
+INITIAL_ADMIN_NAME
+```
