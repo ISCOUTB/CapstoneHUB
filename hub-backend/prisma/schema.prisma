@@ -20,12 +20,19 @@ enum ProjectStatus {
   rejected
 }
 
+enum UserRole {
+  admin
+  evaluator
+  coordinator
+  advisor
+  student
+}
+
 enum ActorRole {
-  director
+  advisor
   coordinator
   student
   evaluator
-  administrator
 }
 
 model User {
@@ -39,11 +46,27 @@ model User {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  projectAssignments  ProjectActorAssignment[]
+  roleAssignments         UserRoleAssignment[]
+  projectAssignments      ProjectActorAssignment[]
   projectStatusHistories ProjectStatusHistory[]
+  authoredObservations    ProjectObservation[]
 
   @@index([fullName], map: "idx_user_full_name")
   @@map("user")
+}
+
+model UserRoleAssignment {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  role       UserRole
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role], map: "uk_user_role_assignment")
+  @@index([userId], map: "idx_user_role_assignment_user_id")
+  @@index([role], map: "idx_user_role_assignment_role")
+  @@map("user_role_assignment")
 }
 
 model Project {
@@ -131,14 +154,17 @@ model ProjectActorAssignment {
 }
 
 model ProjectObservation {
-  id        Int      @id @default(autoincrement())
-  projectId Int      @map("project_id")
-  content   String   @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
+  id           Int      @id @default(autoincrement())
+  projectId    Int      @map("project_id")
+  authorUserId Int?     @map("author_user_id")
+  content      String   @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorUser User?   @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
 
   @@index([projectId], map: "idx_project_observation_project_id")
+  @@index([authorUserId], map: "idx_project_observation_author_user_id")
   @@index([createdAt], map: "idx_project_observation_created_at")
   @@map("project_observation")
 }

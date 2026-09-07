@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -10,12 +11,28 @@ import {
   ProjectStatus,
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
+import { AuthorizationService } from '../auth/authorization.service';
+import { AuthenticatedUser } from '../auth/auth.types';
 
 type ProjectWithRelations = Prisma.ProjectGetPayload<{
   include: {
     naturalProposer: true;
     legalProposer: true;
-    observations: true;
+    observations: {
+      select: {
+        id: true;
+        projectId: true;
+        content: true;
+        createdAt: true;
+        authorUser: {
+          select: {
+            id: true;
+            fullName: true;
+            email: true;
+          };
+        };
+      };
+    };
     actorAssignments: {
       include: {
         user: true;
@@ -45,7 +62,19 @@ export type ProjectListResponse = {
   name: string;
   status: ProjectStatus;
   proposer: ProjectProposerResponse | null;
-  actors: unknown[];
+  actors: ProjectActorResponse[];
+};
+
+export type ProjectActorResponse = {
+  id: number;
+  userId: number;
+  role: ActorRole;
+  assignedAt: Date;
+  user: {
+    id: number;
+    fullName: string;
+    email: string;
+  };
 };
 
 export type ProjectDetailResponse = ProjectListResponse & {
@@ -61,6 +90,11 @@ export type ProjectDetailResponse = ProjectListResponse & {
     projectId: number;
     content: string;
     createdAt: Date;
+    author: {
+      id: number;
+      fullName: string;
+      email: string;
+    } | null;
   }[];
   actorAssignments: {
     id: number;
@@ -119,6 +153,38 @@ function mapProjectProposer(
   return null;
 }
 
+export function isValidProjectStatusTransition(
+  previousStatus: ProjectStatus,
+  nextStatus: ProjectStatus,
+): boolean {
+  const transitions: Record<ProjectStatus, ProjectStatus[]> = {
+    [ProjectStatus.proposed]: [
+      ProjectStatus.under_review,
+      ProjectStatus.rejected,
+    ],
+    [ProjectStatus.under_review]: [
+      ProjectStatus.approved,
+      ProjectStatus.rejected,
+    ],
+    [ProjectStatus.approved]: [
+      ProjectStatus.assigned,
+      ProjectStatus.rejected,
+    ],
+    [ProjectStatus.assigned]: [
+      ProjectStatus.in_progress,
+      ProjectStatus.rejected,
+    ],
+    [ProjectStatus.in_progress]: [
+      ProjectStatus.closed,
+      ProjectStatus.rejected,
+    ],
+    [ProjectStatus.closed]: [],
+    [ProjectStatus.rejected]: [],
+  };
+
+  return transitions[previousStatus].includes(nextStatus);
+}
+
 function mapProjectListResponse(
   project: ProjectWithRelations,
 ): ProjectListResponse {
@@ -127,7 +193,17 @@ function mapProjectListResponse(
     name: project.name,
     status: project.status,
     proposer: mapProjectProposer(project),
-    actors: [],
+    actors: project.actorAssignments.map((assignment) => ({
+      id: assignment.id,
+      userId: assignment.userId,
+      role: assignment.role,
+      assignedAt: assignment.assignedAt,
+      user: {
+        id: assignment.user.id,
+        fullName: assignment.user.fullName,
+        email: assignment.user.email,
+      },
+    })),
   };
 }
 
@@ -148,6 +224,13 @@ function mapProjectDetailResponse(
       projectId: observation.projectId,
       content: observation.content,
       createdAt: observation.createdAt,
+      author: observation.authorUser
+        ? {
+            id: observation.authorUser.id,
+            fullName: observation.authorUser.fullName,
+            email: observation.authorUser.email,
+          }
+        : null,
     })),
     actorAssignments: project.actorAssignments.map((assignment) => ({
       id: assignment.id,
@@ -166,7 +249,10 @@ function mapProjectDetailResponse(
 
 @Injectable()
 export class ProjectsService {
-  constructor(readonly prisma: PrismaService) {}
+  constructor(
+    readonly prisma: PrismaService,
+    private readonly authorization: AuthorizationService,
+  ) {}
 
   async project(
     projectWhereUniqueInput: Prisma.ProjectWhereUniqueInput,
@@ -176,7 +262,21 @@ export class ProjectsService {
       include: {
         naturalProposer: true,
         legalProposer: true,
-        observations: true,
+        observations: {
+          select: {
+            id: true,
+            projectId: true,
+            content: true,
+            createdAt: true,
+            authorUser: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        },
         actorAssignments: {
           include: {
             user: true,
@@ -205,7 +305,21 @@ export class ProjectsService {
       include: {
         naturalProposer: true,
         legalProposer: true,
-        observations: true,
+        observations: {
+          select: {
+            id: true,
+            projectId: true,
+            content: true,
+            createdAt: true,
+            authorUser: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        },
         actorAssignments: {
           include: {
             user: true,
@@ -218,15 +332,31 @@ export class ProjectsService {
   }
 
   async createProject(
+    user: AuthenticatedUser,
     data: Prisma.ProjectCreateInput,
   ): Promise<ProjectDetailResponse> {
+    await this.authorization.assertCanCreateProject(user);
     try {
       const project = await this.prisma.project.create({
         data,
         include: {
           naturalProposer: true,
           legalProposer: true,
-          observations: true,
+          observations: {
+            select: {
+              id: true,
+              projectId: true,
+              content: true,
+              createdAt: true,
+              authorUser: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                },
+              },
+            },
+          },
           actorAssignments: {
             include: {
               user: true,
@@ -252,17 +382,34 @@ export class ProjectsService {
   }
 
   async updateProject(params: {
+    user: AuthenticatedUser;
     where: Prisma.ProjectWhereUniqueInput;
-    data: Prisma.ProjectUpdateInput;
+    data: { name?: string };
   }): Promise<ProjectDetailResponse> {
-    const { where, data } = params;
+    const { user, where, data } = params;
+    const projectId = this.projectIdFromWhere(where);
+    await this.authorization.assertCanManageProject(user, projectId);
     const project = await this.prisma.project.update({
       data,
       where,
       include: {
         naturalProposer: true,
         legalProposer: true,
-        observations: true,
+          observations: {
+            select: {
+              id: true,
+              projectId: true,
+              content: true,
+              createdAt: true,
+              authorUser: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                },
+              },
+            },
+          },
         actorAssignments: {
           include: {
             user: true,
@@ -274,16 +421,79 @@ export class ProjectsService {
     return mapProjectDetailResponse(project);
   }
 
-  async deleteProject(where: Prisma.ProjectWhereUniqueInput): Promise<Project> {
+  async transitionProjectStatus(params: {
+    user: AuthenticatedUser;
+    projectId: number;
+    nextStatus: ProjectStatus;
+    description?: string;
+  }): Promise<ProjectDetailResponse> {
+    const { user, projectId, nextStatus, description } = params;
+    const currentProject = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, status: true },
+    });
+
+    if (!currentProject) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
+    if (!isValidProjectStatusTransition(currentProject.status, nextStatus)) {
+      throw new BadRequestException(
+        `Invalid project status transition: ${currentProject.status} -> ${nextStatus}`,
+      );
+    }
+
+    await this.authorization.assertCanTransitionProject(
+      user,
+      projectId,
+      currentProject.status,
+      nextStatus,
+    );
+
+    await this.prisma.$transaction(async (transaction) => {
+      await transaction.project.update({
+        where: { id: projectId },
+        data: { status: nextStatus },
+      });
+
+      await transaction.projectStatusHistory.create({
+        data: {
+          projectId,
+          previousStatus: currentProject.status,
+          nextStatus,
+          description: description?.trim() || null,
+          authorUserId: user.id,
+        },
+      });
+    });
+
+    const project = await this.project({ id: projectId });
+    if (!project) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
+    return project;
+  }
+
+  async deleteProject(
+    user: AuthenticatedUser,
+    where: Prisma.ProjectWhereUniqueInput,
+  ): Promise<Project> {
+    const projectId = this.projectIdFromWhere(where);
+    await this.authorization.assertCanManageProject(user, projectId);
     return this.prisma.project.delete({ where });
   }
 
   async addProjectActorAssignment(params: {
+    user: AuthenticatedUser;
     projectId: number;
     userId: number;
     role: ActorRole;
   }): Promise<ProjectActorAssignmentResponse> {
-    const { projectId, userId, role } = params;
+    const { user: actingUser, projectId, userId, role } = params;
+
+    await this.authorization.assertCanAssignActors(actingUser, projectId);
+    await this.authorization.assertAssignableUser(userId, role);
 
     const [project, user, existingAssignment] = await Promise.all([
       this.prisma.project.findUnique({
@@ -292,7 +502,7 @@ export class ProjectsService {
       }),
       this.prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, fullName: true, email: true },
+        select: { id: true, fullName: true, email: true, isActive: true },
       }),
       this.prisma.projectActorAssignment.findUnique({
         where: {
@@ -350,4 +560,13 @@ export class ProjectsService {
 
     return assignment;
   }
+
+  private projectIdFromWhere(where: Prisma.ProjectWhereUniqueInput): number {
+    if (typeof where.id !== 'number') {
+      throw new BadRequestException('A numeric project id is required');
+    }
+
+    return where.id;
+  }
+
 }

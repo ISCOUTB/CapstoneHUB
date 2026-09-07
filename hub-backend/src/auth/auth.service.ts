@@ -3,10 +3,12 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Prisma } from '../generated/prisma/client';
+import { OnModuleInit } from '@nestjs/common';
+import { Prisma, UserRole } from '../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { LoginUserDto } from './dto/login-user.dto';
-import { RegisterUserDto } from './dto/register-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { AuthenticatedUser } from './auth.types';
 import {
   createHmac,
   randomBytes,
@@ -27,12 +29,15 @@ const authUserSelect = {
   lastLoginAt: true,
   createdAt: true,
   updatedAt: true,
+  roleAssignments: {
+    select: { role: true },
+  },
 } as const satisfies Prisma.UserSelect;
 
 type AuthUser = Prisma.UserGetPayload<{ select: typeof authUserSelect }>;
 
 type AuthResponse = {
-  user: AuthUser;
+  user: AuthenticatedUser;
   accessToken: string;
 };
 
@@ -40,43 +45,48 @@ type UserSummary = {
   id: number;
   fullName: string;
   email: string;
+  roles: UserRole[];
 };
 
 @Injectable()
-export class AuthService {
-  private readonly tokenSecret =
-    process.env.AUTH_SECRET ?? 'capstonehub-dev-secret';
+export class AuthService implements OnModuleInit {
+  private readonly tokenSecret = this.getTokenSecret();
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async register(payload: RegisterUserDto): Promise<AuthResponse> {
-    const fullName = payload.fullName.trim();
-    const email = this.normalizeEmail(payload.email);
+  async onModuleInit(): Promise<void> {
+    const userCount = await this.prisma.user.count();
+    const initialEmail = process.env.INITIAL_ADMIN_EMAIL?.trim();
+    const initialPassword = process.env.INITIAL_ADMIN_PASSWORD;
+    const initialName = process.env.INITIAL_ADMIN_NAME?.trim();
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw new BadRequestException('Email is already registered');
+    if (userCount > 0) {
+      return;
     }
 
-    const passwordHash = await this.hashPassword(payload.password);
+    if (!initialEmail && !initialPassword && !initialName) {
+      return;
+    }
 
-    const user = await this.prisma.user.create({
+    if (!initialEmail || !initialPassword || !initialName) {
+      throw new Error(
+        'INITIAL_ADMIN_EMAIL, INITIAL_ADMIN_PASSWORD, and INITIAL_ADMIN_NAME must be set together',
+      );
+    }
+
+    if (initialPassword.length < 8) {
+      throw new Error('INITIAL_ADMIN_PASSWORD must be at least 8 characters');
+    }
+
+    await this.prisma.user.create({
       data: {
-        fullName,
-        email,
-        passwordHash,
+        fullName: initialName,
+        email: this.normalizeEmail(initialEmail),
+        passwordHash: await this.hashPassword(initialPassword),
         isActive: true,
+        roleAssignments: { create: [{ role: UserRole.admin }] },
       },
-      select: authUserSelect,
     });
-
-    return {
-      user,
-      accessToken: this.createAccessToken(user),
-    };
   }
 
   async login(payload: LoginUserDto): Promise<AuthResponse> {
@@ -99,11 +109,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const user = await this.prisma.user.update({
+    const userRecordWithRoles = await this.prisma.user.update({
       where: { id: userRecord.id },
       data: { lastLoginAt: new Date() },
       select: authUserSelect,
     });
+    const user = this.toAuthenticatedUser(userRecordWithRoles);
 
     return {
       user,
@@ -112,14 +123,149 @@ export class AuthService {
   }
 
   async users(): Promise<UserSummary[]> {
-    return this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       orderBy: { fullName: 'asc' },
       select: {
         id: true,
         fullName: true,
         email: true,
+        roleAssignments: { select: { role: true } },
       },
     });
+
+    return users.map((user) => ({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      roles: user.roleAssignments.map(({ role }) => role),
+    }));
+  }
+
+  async createUser(payload: CreateUserDto): Promise<UserSummary> {
+    const email = this.normalizeEmail(payload.email);
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Email is already registered');
+    }
+
+    const user = await this.prisma.user.create({
+      data: {
+        fullName: payload.fullName.trim(),
+        email,
+        passwordHash: await this.hashPassword(payload.password),
+        isActive: true,
+        roleAssignments: {
+          create: [...new Set(payload.roles)].map((role) => ({ role })),
+        },
+      },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        roleAssignments: { select: { role: true } },
+      },
+    });
+
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      roles: user.roleAssignments.map(({ role }) => role),
+    };
+  }
+
+  async replaceUserRoles(userId: number, roles: UserRole[]): Promise<UserSummary> {
+    const uniqueRoles = [...new Set(roles)];
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new BadRequestException(`User ${userId} not found`);
+    }
+
+    if (!uniqueRoles.includes(UserRole.admin)) {
+      const adminCount = await this.prisma.userRoleAssignment.count({
+        where: { role: UserRole.admin },
+      });
+      const userIsAdmin = await this.prisma.userRoleAssignment.count({
+        where: { userId, role: UserRole.admin },
+      });
+
+      if (userIsAdmin > 0 && adminCount <= 1) {
+        throw new BadRequestException('The system must retain at least one admin');
+      }
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.userRoleAssignment.deleteMany({ where: { userId } }),
+      this.prisma.userRoleAssignment.createMany({
+        data: uniqueRoles.map((role) => ({ userId, role })),
+      }),
+    ]);
+
+    return (await this.users()).find((summary) => summary.id === userId)!;
+  }
+
+  async verifyAccessToken(token: string): Promise<AuthenticatedUser> {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new UnauthorizedException('Invalid access token');
+    }
+
+    const [encodedHeader, encodedPayload, encodedSignature] = parts;
+    const expectedSignature = createHmac('sha256', this.tokenSecret)
+      .update(`${encodedHeader}.${encodedPayload}`)
+      .digest('base64url');
+    const actual = Buffer.from(encodedSignature);
+    const expected = Buffer.from(expectedSignature);
+
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+      throw new UnauthorizedException('Invalid access token');
+    }
+
+    let payload: { sub?: number; exp?: number };
+    try {
+      payload = JSON.parse(
+        Buffer.from(encodedPayload, 'base64url').toString('utf8'),
+      ) as { sub?: number; exp?: number };
+    } catch {
+      throw new UnauthorizedException('Invalid access token');
+    }
+
+    if (!payload.sub || !payload.exp || payload.exp <= Math.floor(Date.now() / 1000)) {
+      throw new UnauthorizedException('Access token expired');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: authUserSelect,
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User is inactive or does not exist');
+    }
+
+    return this.toAuthenticatedUser(user);
+  }
+
+  private toAuthenticatedUser(user: AuthUser): AuthenticatedUser {
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      roles: user.roleAssignments.map(({ role }) => role),
+    };
+  }
+
+  private getTokenSecret(): string {
+    const secret = process.env.AUTH_SECRET?.trim();
+    if (!secret || secret.length < 32) {
+      throw new Error('AUTH_SECRET must be configured with at least 32 characters');
+    }
+
+    return secret;
   }
 
   private normalizeEmail(email: string): string {
@@ -153,7 +299,9 @@ export class AuthService {
     return timingSafeEqual(storedKeyBuffer, derivedKey);
   }
 
-  private createAccessToken(user: AuthUser): string {
+  private createAccessToken(
+    user: Pick<AuthenticatedUser, 'id' | 'email' | 'fullName'>,
+  ): string {
     const header = this.base64UrlEncode(
       JSON.stringify({ alg: 'HS256', typ: 'JWT' }),
     );
