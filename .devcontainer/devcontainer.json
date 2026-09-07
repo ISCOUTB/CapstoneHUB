@@ -22,9 +22,5 @@
     }
   },
 
-  "postCreateCommand": "cd hub-backend && npm ci && npx prisma generate && cd ../hub-frontend && npm ci",
-
-  "remoteEnv": {
-    "DATABASE_URL": "postgresql://postgres:supersecure@db:5432/db"
-  }
+  "postCreateCommand": "cd hub-backend && npm ci && npx prisma generate && cd ../hub-frontend && npm ci"
 }
