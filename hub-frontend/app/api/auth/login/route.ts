@@ -10,12 +10,23 @@ export async function POST(request: Request) {
     );
   }
 
+  console.log("Received login request, forwarding to backend:", backendUrl);
+
   const payload = await request.json();
-  const response = await fetch(`${backendUrl}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${backendUrl}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    return NextResponse.json(
+      { message: "Unable to reach the backend at BACKEND_URL" },
+      { status: 502 },
+    );
+  }
 
   const contentType = response.headers.get("content-type") ?? "application/json";
   const body = await response.text();

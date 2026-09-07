@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 const backendUrl = process.env.BACKEND_URL?.replace(/\/$/, "");
 
-export async function POST(
+export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -17,8 +17,8 @@ export async function POST(
 
   const payload = await request.json();
   const authorization = request.headers.get("authorization");
-  const response = await fetch(`${backendUrl}/projects/${id}/actors`, {
-    method: "POST",
+  const response = await fetch(`${backendUrl}/projects/${id}/status`, {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       ...(authorization ? { Authorization: authorization } : {}),
