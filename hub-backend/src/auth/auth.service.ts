@@ -2,8 +2,8 @@ import {
   BadRequestException,
   Injectable,
   UnauthorizedException,
+  OnModuleInit,
 } from '@nestjs/common';
-import { OnModuleInit } from '@nestjs/common';
 import { Prisma, UserRole } from '../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -243,7 +243,7 @@ export class AuthService implements OnModuleInit {
       select: authUserSelect,
     });
 
-    if (!user || !user.isActive) {
+    if (!user?.isActive) {
       throw new UnauthorizedException('User is inactive or does not exist');
     }
 
