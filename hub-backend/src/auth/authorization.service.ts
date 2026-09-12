@@ -43,51 +43,82 @@ export class AuthorizationService {
 
   async assertCanManageProject(
     user: AuthenticatedUser,
-    projectId: number,
+    _projectId: number,
   ): Promise<void> {
-    if (user.roles.includes(UserRole.admin)) {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.evaluator)
+    ) {
       return;
     }
 
-    this.assertRole(user, UserRole.coordinator);
-    await this.assertProjectAssignment(user, projectId, ActorRole.coordinator);
+    throw new ForbiddenException('The admin or evaluator role is required');
   }
 
   async assertCanAssignActors(
     user: AuthenticatedUser,
-    projectId: number,
+    _projectId: number,
   ): Promise<void> {
-    if (user.roles.includes(UserRole.admin)) {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.evaluator)
+    ) {
       return;
     }
 
-    this.assertRole(user, UserRole.coordinator);
-    await this.assertProjectAssignment(user, projectId, ActorRole.coordinator);
+    throw new ForbiddenException('The admin or evaluator role is required');
+  }
+
+  async assertCanAssignStudents(
+    user: AuthenticatedUser,
+    _projectId: number,
+  ): Promise<void> {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.evaluator) ||
+      user.roles.includes(UserRole.coordinator)
+    ) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'The admin, evaluator, or coordinator role is required',
+    );
   }
 
   async assertCanTransitionProject(
     user: AuthenticatedUser,
-    projectId: number,
-    previousStatus: ProjectStatus,
-    nextStatus: ProjectStatus,
+    _projectId: number,
+    _previousStatus: ProjectStatus,
+    _nextStatus: ProjectStatus,
   ): Promise<void> {
-    if (user.roles.includes(UserRole.admin)) {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.evaluator)
+    ) {
       return;
     }
 
-    const evaluatorTransitions =
-      nextStatus === ProjectStatus.rejected ||
-      previousStatus === ProjectStatus.proposed ||
-      previousStatus === ProjectStatus.under_review;
+    throw new ForbiddenException('The admin or evaluator role is required');
+  }
 
-    if (evaluatorTransitions) {
-      this.assertRole(user, UserRole.evaluator);
-      await this.assertProjectAssignment(user, projectId, ActorRole.evaluator);
-      return;
+  async assertCanProvideFeedback(
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<void> {
+    const canProvideFeedback =
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.evaluator) ||
+      user.roles.includes(UserRole.coordinator) ||
+      user.roles.includes(UserRole.advisor);
+
+    if (!canProvideFeedback) {
+      throw new ForbiddenException(
+        'The admin, evaluator, coordinator, or advisor role is required',
+      );
     }
 
-    this.assertRole(user, UserRole.coordinator);
-    await this.assertProjectAssignment(user, projectId, ActorRole.coordinator);
+    await this.assertProjectMember(user, projectId);
   }
 
   async assertAssignableUser(userId: number, role: ActorRole): Promise<void> {

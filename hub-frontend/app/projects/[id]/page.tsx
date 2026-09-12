@@ -4,6 +4,7 @@ import { getProjectById } from "../../services/projects";
 import ProjectStatusEditForm from "../../components/project-status-edit-form";
 import ProjectObservationsPanel from "./project-observations-panel";
 import ProjectActorAssignmentPanel from "./project-actor-assignment-panel";
+import ProjectEditForm from "../../components/project-edit-form";
 import { formatStatus } from "@/app/services/utils";
 
 export const dynamic = "force-dynamic";
@@ -220,6 +221,15 @@ export default async function ProjectDetailsPage({
           projectId={project.id}
           observations={project.observations ?? []}
         />
+
+        <div className="mt-6">
+          <ProjectEditForm
+            projectId={project.id}
+            name={project.name}
+            description={project.description}
+            context={project.context}
+          />
+        </div>
 
         <div className="mt-6 flex w-full justify-end">
           <ProjectStatusEditForm

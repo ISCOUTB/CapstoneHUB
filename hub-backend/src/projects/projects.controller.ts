@@ -93,14 +93,24 @@ export class ProjectsController {
     @Param('id') id: string,
     @Body()
     data: {
-      newName?: string;
+      name?: string;
+      description?: string;
+      context?: string;
     },
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectDetailResponse> {
-    const updateData: { name?: string } = {};
+    const updateData: { name?: string; description?: string; context?: string } = {};
 
-    if (data.newName) {
-      updateData.name = data.newName;
+    if (data.name?.trim()) {
+      updateData.name = data.name.trim();
+    }
+
+    if (data.description?.trim()) {
+      updateData.description = data.description.trim();
+    }
+
+    if (data.context?.trim()) {
+      updateData.context = data.context.trim();
     }
 
     if (Object.keys(updateData).length === 0) {

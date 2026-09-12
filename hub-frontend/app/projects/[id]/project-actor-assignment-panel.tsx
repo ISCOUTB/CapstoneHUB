@@ -1,20 +1,26 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addProjectActorAssignment, getUsers } from "../../services/projects";
 import { UserSummary } from "../../services/schemas";
 import { useAuth } from "../../components/auth-provider";
 import Link from "next/link";
+import {
+  canAssignStudents,
+  isAdmin,
+  isCoordinator,
+  isEvaluator,
+} from "../../services/permissions";
 
-const roles = [
+const allRoles = [
   { value: "advisor", label: "Asesor" },
-  { value: "coordinator", label: "Coordinator" },
-  { value: "student", label: "Student" },
-  { value: "evaluator", label: "Evaluator" },
+  { value: "coordinator", label: "Coordinador" },
+  { value: "student", label: "Estudiante" },
+  { value: "evaluator", label: "Evaluador" },
 ] as const;
 
-type ProjectActorRole = (typeof roles)[number]["value"];
+type ProjectActorRole = (typeof allRoles)[number]["value"];
 
 type ProjectActorAssignmentPanelProps = {
   projectId: number;
@@ -44,11 +50,21 @@ export default function ProjectActorAssignmentPanel({
   assignments,
 }: ProjectActorAssignmentPanelProps) {
   const router = useRouter();
-  const { isAuthenticated, ready } = useAuth();
+  const { session, isAuthenticated, ready } = useAuth();
+  const userRoles = session?.user.roles ?? [];
+  const roles = useMemo(
+    () =>
+      isAdmin(userRoles) || isEvaluator(userRoles)
+        ? allRoles
+        : isCoordinator(userRoles)
+          ? allRoles.filter((role) => role.value === "student")
+          : [],
+    [userRoles],
+  );
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRole, setSelectedRole] = useState<ProjectActorRole>(
-    roles[0].value,
+    allRoles[0].value,
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -70,6 +86,12 @@ export default function ProjectActorAssignmentPanel({
       }
     });
   }, [isAuthenticated, ready, users.length]);
+
+  useEffect(() => {
+    if (!roles.some((role) => role.value === selectedRole)) {
+      setSelectedRole(roles[0]?.value ?? allRoles[0].value);
+    }
+  }, [roles, selectedRole]);
 
   const assignedUsers = assignments;
 
@@ -121,6 +143,10 @@ export default function ProjectActorAssignmentPanel({
         </div>
       </div>
     );
+  }
+
+  if (!canAssignStudents(userRoles) || roles.length === 0) {
+    return null;
   }
 
   return (

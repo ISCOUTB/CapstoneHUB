@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { updateProjectStatus } from "../services/projects";
 import Link from "next/link";
 import { useAuth } from "./auth-provider";
+import { canManageProject } from "../services/permissions";
 
 const projectStatuses = [
   { value: "proposed", label: "Propuesto" },
@@ -26,7 +27,7 @@ export default function ProjectStatusEditForm({
   currentStatus,
 }: ProjectStatusEditFormProps) {
   const router = useRouter();
-  const { isAuthenticated, ready } = useAuth();
+  const { session, isAuthenticated, ready } = useAuth();
   const [status, setStatus] = useState(currentStatus);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -56,6 +57,10 @@ export default function ProjectStatusEditForm({
         </Link>
       </div>
     );
+  }
+
+  if (!canManageProject(session?.user.roles)) {
+    return null;
   }
 
   async function handleSubmit(event: React.SubmitEvent<HTMLFormElement>) {

@@ -112,6 +112,26 @@ export async function updateProjectStatus(
   return (await response.json()) as ProjectDetails;
 }
 
+export async function updateProject(
+  id: number,
+  payload: { name: string; description: string; context: string },
+): Promise<ProjectDetails> {
+  const response = await fetch(getApiUrl(`/api/projects/${id}`), {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Backend responded with status ${response.status}`);
+  }
+
+  return (await response.json()) as ProjectDetails;
+}
+
 export async function createProjectObservation(
   id: string,
   content: string,

@@ -384,7 +384,7 @@ export class ProjectsService {
   async updateProject(params: {
     user: AuthenticatedUser;
     where: Prisma.ProjectWhereUniqueInput;
-    data: { name?: string };
+    data: { name?: string; description?: string; context?: string };
   }): Promise<ProjectDetailResponse> {
     const { user, where, data } = params;
     const projectId = this.projectIdFromWhere(where);
@@ -492,7 +492,11 @@ export class ProjectsService {
   }): Promise<ProjectActorAssignmentResponse> {
     const { user: actingUser, projectId, userId, role } = params;
 
-    await this.authorization.assertCanAssignActors(actingUser, projectId);
+    if (role === ActorRole.student) {
+      await this.authorization.assertCanAssignStudents(actingUser, projectId);
+    } else {
+      await this.authorization.assertCanAssignActors(actingUser, projectId);
+    }
     await this.authorization.assertAssignableUser(userId, role);
 
     const [project, user, existingAssignment] = await Promise.all([

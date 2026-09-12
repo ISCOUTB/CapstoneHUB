@@ -6,6 +6,7 @@ import { createProjectObservation } from "../../services/projects";
 import { ProjectObservationItem } from "../../services/schemas";
 import Link from "next/link";
 import { useAuth } from "../../components/auth-provider";
+import { canProvideFeedback } from "../../services/permissions";
 
 type ProjectObservationsPanelProps = {
   projectId: number;
@@ -24,7 +25,7 @@ export default function ProjectObservationsPanel({
   observations,
 }: ProjectObservationsPanelProps) {
   const router = useRouter();
-  const { isAuthenticated, ready } = useAuth();
+  const { session, isAuthenticated, ready } = useAuth();
   const [content, setContent] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -111,7 +112,7 @@ export default function ProjectObservationsPanel({
             </Link>
           </div>
         </div>
-      ) : (
+      ) : canProvideFeedback(session?.user.roles) ? (
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label
@@ -147,7 +148,7 @@ export default function ProjectObservationsPanel({
             </p>
           ) : null}
         </form>
-      )}
+      ) : null}
     </section>
   );
 }

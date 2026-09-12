@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { formatStatus } from "../services/utils";
 import { ProjectItem } from "../services/schemas";
+import { useAuth } from "../components/auth-provider";
+import { canManageProject } from "../services/permissions";
 
 type ProjectsTableProps = {
   projects: ProjectItem[];
@@ -26,24 +28,40 @@ function getLocation(project: ProjectItem): string {
 }
 
 export default function ProjectsTable({ projects }: ProjectsTableProps) {
+  const { session, ready } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
+
+  const visibleProjects = useMemo(() => {
+    if (!ready || !session || canManageProject(session.user.roles)) {
+      return projects;
+    }
+
+    return projects.filter((project) =>
+      project.actors.some((actor) => actor.userId === session.user.id),
+    );
+  }, [projects, ready, session]);
 
   const filteredProjects = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
     if (!normalizedSearch) {
-      return projects;
+      return visibleProjects;
     }
 
-    return projects.filter((project) =>
+    return visibleProjects.filter((project) =>
       project.name.toLowerCase().includes(normalizedSearch),
     );
-  }, [projects, searchTerm]);
+  }, [searchTerm, visibleProjects]);
 
   const isSearching = searchTerm.trim().length > 0;
 
   return (
     <div className="space-y-4">
+      {ready && session && !canManageProject(session.user.roles) ? (
+        <p className="border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+          Se muestran únicamente los proyectos a los que estás asignado.
+        </p>
+      ) : null}
       <div className="border border-slate-200 bg-white shadow-sm">
         <label
           htmlFor="project-search"
@@ -63,6 +81,12 @@ export default function ProjectsTable({ projects }: ProjectsTableProps) {
       {isSearching && filteredProjects.length === 0 ? (
         <div className="border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
           No se encontraron proyectos que coincidan con la búsqueda.
+        </div>
+      ) : null}
+
+      {!isSearching && filteredProjects.length === 0 ? (
+        <div className="border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
+          No tienes proyectos asignados todavía.
         </div>
       ) : null}
 

@@ -168,6 +168,7 @@ describe('ProjectsService', () => {
     } as never;
     const authorization = {
       assertCanAssignActors: jest.fn().mockResolvedValue(undefined),
+      assertCanAssignStudents: jest.fn().mockResolvedValue(undefined),
       assertAssignableUser: jest.fn().mockResolvedValue(undefined),
     } as never;
     const service = new ProjectsService(prisma, authorization);
