@@ -160,7 +160,7 @@ export default function SubmitProjectForm() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Proponer un proyecto</CardTitle>
+          <CardTitle>Acceso requerido</CardTitle>
           <CardDescription>
             Inicia sesión para proponer nuevos proyectos.
           </CardDescription>

@@ -113,7 +113,7 @@ export default function AssignedProjects() {
         ) : (
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
                 <TableHead>Proyecto</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Estado</TableHead>
@@ -122,7 +122,7 @@ export default function AssignedProjects() {
             </TableHeader>
             <TableBody>
               {projects.map((project) => (
-                <TableRow key={project.id}>
+                <TableRow key={project.id} className="transition-colors hover:bg-utb-blue/[0.04]">
                   <TableCell className="font-medium">
                     <Button
                       variant="link"

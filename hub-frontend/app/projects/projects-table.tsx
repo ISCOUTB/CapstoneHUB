@@ -123,7 +123,7 @@ export default function ProjectsTable({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 py-4">
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl bg-card p-3 shadow-sm ring-1 ring-utb-blue/10">
         <Input
           type="search"
           placeholder="Buscar por nombre, lugar o proponente..."
@@ -182,11 +182,11 @@ export default function ProjectsTable({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-md border">
+      <div className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-utb-blue/10">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="bg-muted/50 hover:bg-muted/50">
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder ? null : (
@@ -206,6 +206,7 @@ export default function ProjectsTable({
                   data-state={
                     row.getIsSelected() && "selected"
                   }
+                  className="transition-colors hover:bg-utb-blue/[0.04]"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -216,7 +217,10 @@ export default function ProjectsTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length}>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   No se encontraron proyectos.
                 </TableCell>
               </TableRow>

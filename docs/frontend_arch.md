@@ -5,6 +5,9 @@ Aplicación web construida con **Next.js 16 (App Router)**, **React 19** y
 de **shadcn/ui** (Base UI + lucide-react). Las tablas se construyen con
 **TanStack Table**.
 
+La identidad visual (paleta UTB, tokens, utilidades y convenciones de pantalla)
+está en el [Sistema de diseño](./frontend_design_system.md).
+
 Ver también: [Arquitectura del backend](./backend_arch.md),
 [Esquema de base de datos](./database_arch.md) y el
 [plan de SSO](./sso-plan.md).
@@ -17,6 +20,7 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 - `app/components/` — componentes propios (navbar, auth, formularios).
 - `components/ui/` — componentes base de shadcn/ui.
 - `lib/utils.ts` — utilidades (por ejemplo `cn`).
+- `app/globals.css` — tokens de diseño y utilidades propias.
 
 ## Rutas
 

@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Code", monospace;
+  --font-heading: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -47,77 +47,94 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Paleta institucional UTB. Registrarla aquí hace que bg-/text-/ring-/border-utb-*
+     (con modificador de opacidad) resuelvan como utilidades de Tailwind, en vez de
+     repartir hex sueltos ([#0a41f5]) por toda la app. */
+  --color-utb-deep-blue: #05174a;
+  --color-utb-navy: #071f5a;
+  --color-utb-blue: #0a41f5;
+  --color-utb-blue-dark: #0835c8;
+  --color-utb-blue-light: #547af8;
+  --color-utb-blue-pale: #93b4ff;
+  --color-utb-accent-1: #f59e0b;
+  --color-utb-accent-2: #10b981;
+  --color-utb-accent-3: #ef4444;
 }
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.147 0.004 49.25);
+  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.147 0.004 49.25);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.147 0.004 49.25);
-  --primary: oklch(0.488 0.243 264.376);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.97 0.001 106.424);
-  --muted-foreground: oklch(0.553 0.013 58.071);
-  --success: oklch(0.627 0.194 149.214);
-  --accent: oklch(0.97 0.001 106.424);
-  --accent-foreground: oklch(0.216 0.006 56.043);
+  --popover-foreground: oklch(0.145 0 0);
+  /* Azul UTB — primario #0a41f5 */
+  --primary: oklch(0.5 0.24 264);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.92 0.04 264);
+  --secondary-foreground: oklch(0.35 0.18 264);
+  --muted: oklch(0.95 0.02 264);
+  /* Croma bajo a propósito: con el 0.10 del referente el texto secundario se
+     lee como un enlace azul sobre contenido real. */
+  --muted-foreground: oklch(0.5 0.035 264);
+  --success: oklch(0.696 0.149 162.48);
+  --accent: oklch(0.88 0.06 264);
+  --accent-foreground: oklch(0.35 0.18 264);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.923 0.003 48.717);
-  --input: oklch(0.923 0.003 48.717);
-  --ring: oklch(0.709 0.01 56.259);
-  --chart-1: oklch(0.897 0.196 126.665);
-  --chart-2: oklch(0.768 0.233 130.85);
-  --chart-3: oklch(0.648 0.2 131.684);
-  --chart-4: oklch(0.532 0.157 131.589);
-  --chart-5: oklch(0.453 0.124 130.933);
-  --radius: 0.45rem;
-  --sidebar: oklch(0.985 0.001 106.423);
-  --sidebar-foreground: oklch(0.147 0.004 49.25);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.97 0.001 106.424);
-  --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
-  --sidebar-border: oklch(0.923 0.003 48.717);
-  --sidebar-ring: oklch(0.709 0.01 56.259);
+  --border: oklch(0.92 0.04 264);
+  --input: oklch(0.95 0.02 264);
+  --ring: oklch(0.5 0.24 264);
+  --chart-1: oklch(0.5 0.24 264);
+  --chart-2: oklch(0.65 0.17 264);
+  --chart-3: oklch(0.77 0.16 70);
+  --chart-4: oklch(0.696 0.149 162.48);
+  --chart-5: oklch(0.637 0.208 25.3);
+  --radius: 0.625rem;
+  /* Superficies de plataforma (navbar, paneles oscuros) — azul UTB profundo */
+  --sidebar: oklch(0.13 0.06 264);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.5 0.24 264);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.2 0.05 264);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.25 0.04 264);
+  --sidebar-ring: oklch(0.5 0.24 264);
 }
 
 .dark {
-  --background: oklch(0.147 0.004 49.25);
-  --foreground: oklch(0.985 0.001 106.423);
-  --card: oklch(0.216 0.006 56.043);
-  --card-foreground: oklch(0.985 0.001 106.423);
-  --popover: oklch(0.216 0.006 56.043);
-  --popover-foreground: oklch(0.985 0.001 106.423);
-  --primary: oklch(0.424 0.199 265.638);
-  --primary-foreground: oklch(0.97 0.014 254.604);
-  --secondary: oklch(0.274 0.006 286.033);
+  --background: oklch(0.16 0.03 264);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.2 0.035 264);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.2 0.035 264);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.62 0.21 264);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.27 0.04 264);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.268 0.007 34.298);
-  --muted-foreground: oklch(0.709 0.01 56.259);
+  --muted: oklch(0.27 0.04 264);
+  --muted-foreground: oklch(0.72 0.04 264);
   --success: oklch(0.723 0.192 149.579);
-  --accent: oklch(0.268 0.007 34.298);
-  --accent-foreground: oklch(0.985 0.001 106.423);
+  --accent: oklch(0.3 0.05 264);
+  --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.553 0.013 58.071);
-  --chart-1: oklch(0.897 0.196 126.665);
-  --chart-2: oklch(0.768 0.233 130.85);
-  --chart-3: oklch(0.648 0.2 131.684);
-  --chart-4: oklch(0.532 0.157 131.589);
-  --chart-5: oklch(0.453 0.124 130.933);
-  --sidebar: oklch(0.216 0.006 56.043);
-  --sidebar-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
-  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.268 0.007 34.298);
-  --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.553 0.013 58.071);
+  --ring: oklch(0.62 0.21 264);
+  --chart-1: oklch(0.62 0.21 264);
+  --chart-2: oklch(0.72 0.14 264);
+  --chart-3: oklch(0.8 0.15 70);
+  --chart-4: oklch(0.723 0.192 149.579);
+  --chart-5: oklch(0.7 0.19 25.3);
+  --sidebar: oklch(0.13 0.06 264);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.62 0.21 264);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.2 0.05 264);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.62 0.21 264);
 }
 
 @layer base {
@@ -126,8 +143,248 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
+  }
+  /* Cursor pointer en todo lo interactivo */
+  button,
+  [role="button"],
+  a,
+  label[for],
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="submit"],
+  input[type="reset"] {
+    cursor: pointer;
+  }
+  /* Cursor de texto en los campos de texto */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  textarea {
+    cursor: text;
+  }
+  /* Deshabilitado siempre not-allowed */
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+/* ─── Utilidades de plataforma UTB ──────────────────────────────────────────
+   Animaciones y texturas implementadas con CSS puro (keyframes + transiciones)
+   para no arrastrar una librería de animación al bundle. */
+@layer utilities {
+  /* Scroll funcional pero sin barra visible (modales, paneles, tabs) */
+  .scrollbar-hidden {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge legacy */
+  }
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Edge */
+    width: 0;
+    height: 0;
+  }
+
+  /* Textura de ruido sobre superficies oscuras (hero, navbar) */
+  .noise-overlay {
+    position: relative;
+  }
+  .noise-overlay::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Elevación suave de cards al hacer hover */
+  .hover-lift {
+    transition:
+      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.35s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px -12px rgb(10 65 245 / 0.15);
+  }
+
+  /* Rejilla sutil de fondo (headers de módulo) */
+  .grid-lines {
+    background-image:
+      linear-gradient(rgb(10 65 245 / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(10 65 245 / 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* Rejilla sobre fondo oscuro */
+  .grid-lines-dark {
+    background-image:
+      linear-gradient(rgb(147 180 255 / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(147 180 255 / 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Texto con degradado UTB */
+  .text-gradient-utb {
+    background: linear-gradient(135deg, #0a41f5 0%, #547af8 50%, #2354f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Borde con brillo azul */
+  .glow-border {
+    box-shadow:
+      0 0 0 1px rgb(10 65 245 / 0.2),
+      0 0 20px rgb(10 65 245 / 0.08),
+      inset 0 1px 0 rgb(255 255 255 / 0.8);
+  }
+
+  /* Shimmer de carga */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgb(10 65 245 / 0.04) 25%,
+      rgb(10 65 245 / 0.1) 50%,
+      rgb(10 65 245 / 0.04) 75%
+    );
+    background-size: 200% 100%;
+    animation: utb-shimmer 1.8s infinite;
+  }
+
+  /* Skeleton con barrido continuo */
+  .utb-skeleton {
+    background: linear-gradient(
+      90deg,
+      rgb(241 245 249 / 0.7) 0%,
+      rgb(226 232 240 / 1) 40%,
+      rgb(226 232 240 / 1) 60%,
+      rgb(241 245 249 / 0.7) 100%
+    );
+    background-size: 200% 100%;
+    animation: utb-shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes utb-shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Punto indicador con pulso */
+  .pulse-dot::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    margin-right: 6px;
+    animation: utb-pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes utb-pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(0.75);
+    }
+  }
+
+  /* Spinner UTB — solo transform, se resuelve fuera del hilo principal */
+  .utb-spinner {
+    animation: utb-spin 700ms linear infinite;
+    transform-origin: center;
+  }
+  @keyframes utb-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Entrada de secciones: sustituye a framer-motion en el hero y las cards.
+     `--utb-delay` escalona los elementos sin necesidad de JS. */
+  .utb-rise {
+    animation: utb-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--utb-delay, 0ms);
+  }
+  @keyframes utb-rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Orbe flotante del hero */
+  .utb-orb {
+    animation: utb-float 10s ease-in-out infinite;
+  }
+  @keyframes utb-float {
+    0%,
+    100% {
+      transform: translateY(0) scale(1);
+    }
+    50% {
+      transform: translateY(-16px) scale(1.08);
+    }
+  }
+
+  /* Revelado horizontal de una línea/regla */
+  .line-reveal {
+    clip-path: inset(0 100% 0 0);
+    animation: utb-line-reveal 0.9s cubic-bezier(0.77, 0, 0.175, 1) forwards;
+  }
+  @keyframes utb-line-reveal {
+    to {
+      clip-path: inset(0 0% 0 0);
+    }
+  }
+
+  /* Accesibilidad: con reduced motion nada se mueve de forma continua. */
+  @media (prefers-reduced-motion: reduce) {
+    .utb-spinner {
+      animation: utb-spin 2500ms linear infinite;
+      opacity: 0.6;
+    }
+    .utb-skeleton,
+    .shimmer {
+      animation: none;
+      background: rgb(226 232 240 / 0.6);
+    }
+    .utb-rise,
+    .line-reveal {
+      animation: none;
+      opacity: 1;
+      transform: none;
+      clip-path: none;
+    }
+    .utb-orb,
+    .pulse-dot::before {
+      animation: none;
+    }
+    .hover-lift:hover {
+      transform: none;
+    }
   }
 }
