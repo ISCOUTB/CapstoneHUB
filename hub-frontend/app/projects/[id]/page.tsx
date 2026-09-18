@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getProjectById } from "../../services/projects";
+import ModuleHeader from "../../components/module-header";
 import ProjectStatusEditForm from "../../components/project-status-edit-form";
 import ProjectObservationsPanel from "./project-observations-panel";
 import ProjectActorAssignmentPanel from "./project-actor-assignment-panel";
@@ -88,18 +89,13 @@ export default async function ProjectDetailsPage({
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <section className="mx-auto w-full max-w-7xl px-6 py-12 sm:px-10 lg:px-12">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Proyecto #{project.id}
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              {project.name}
-            </h1>
-          </div>
-        </div>
+    <main className="flex-1 text-foreground">
+      <section className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <ModuleHeader
+          eyebrow={`Proyecto #${project.id}`}
+          title={project.name}
+          subtitle={`Creado el ${formatDate(project.createdAt)}`}
+        />
 
         <Card>
           <CardContent>
@@ -112,9 +108,6 @@ export default async function ProjectDetailsPage({
               requiresLegalization={project.requiresLegalization}
             />
             <ProjectSourceBadge source={project.source} />
-            <span className="text-sm text-muted-foreground">
-              Creado el {formatDate(project.createdAt)}
-            </span>
           </div>
 
           <Tabs defaultValue="general" className="mt-6 w-full">

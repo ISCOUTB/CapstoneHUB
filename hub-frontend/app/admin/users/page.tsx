@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../components/auth-provider";
 import { getUsers, AuthUser } from "../../services/auth";
+import ModuleHeader from "../../components/module-header";
 import CreateUserDialog from "./create-user-dialog";
 import EditUserRolesDialog from "./edit-user-roles-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -16,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -75,8 +75,8 @@ export default function AdminUsersPage() {
 
   if (!ready || loading) {
     return (
-      <main className="mx-auto w-full max-w-5xl px-6 py-8">
-        <Skeleton className="h-8 w-56" />
+      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="utb-skeleton h-44 w-full rounded-3xl" />
       </main>
     );
   }
@@ -86,98 +86,97 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Panel del administrador
-        </h1>
+    <main className="flex-1 text-foreground">
+      <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <ModuleHeader
+          eyebrow="Administración"
+          title="Panel del administrador"
+          subtitle="Gestión de usuarios y roles del sistema."
+          accentColor="rgba(129,140,248,0.38)"
+        />
 
-        <p className="mt-1 text-sm text-muted-foreground">
-          Gestión de usuarios y roles del sistema.
-        </p>
-      </div>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Usuarios</CardTitle>
+            <CardDescription>
+              Usuarios registrados en CapstoneHUB.
+            </CardDescription>
+            <CardAction>
+              <CreateUserDialog
+                onUserCreated={(user) => {
+                  setUsers((currentUsers) => [...currentUsers, user]);
+                }}
+              />
+            </CardAction>
+          </CardHeader>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Usuarios</CardTitle>
-          <CardDescription>
-            Usuarios registrados en CapstoneHUB.
-          </CardDescription>
-          <CardAction>
-            <CreateUserDialog
-              onUserCreated={(user) => {
-                setUsers((currentUsers) => [...currentUsers, user]);
-              }}
-            />
-          </CardAction>
-        </CardHeader>
-
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Correo</TableHead>
-                <TableHead>Roles</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {users.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No hay usuarios registrados.
-                  </TableCell>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Correo</TableHead>
+                  <TableHead>Roles</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </TableRow>
-              ) : (
-                users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.fullName}
-                    </TableCell>
+              </TableHeader>
 
-                    <TableCell>{user.email}</TableCell>
-
-                    <TableCell>
-                      <div className="flex flex-wrap gap-2">
-                        {user.roles.map((role) => (
-                          <Badge key={role} variant="outline">
-                            {formatRole(role)}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <EditUserRolesDialog
-                        user={user}
-                        onUserUpdated={(updatedUser) => {
-                          setUsers((currentUsers) =>
-                            currentUsers.map((currentUser) =>
-                              currentUser.id === updatedUser.id
-                                ? updatedUser
-                                : currentUser,
-                            ),
-                          );
-                        }}
-                      />
+              <TableBody>
+                {users.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No hay usuarios registrados.
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                ) : (
+                  users.map((user) => (
+                    <TableRow key={user.id} className="transition-colors hover:bg-utb-blue/[0.04]">
+                      <TableCell className="font-medium">
+                        {user.fullName}
+                      </TableCell>
+
+                      <TableCell>{user.email}</TableCell>
+
+                      <TableCell>
+                        <div className="flex flex-wrap gap-2">
+                          {user.roles.map((role) => (
+                            <Badge key={role} variant="outline">
+                              {formatRole(role)}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <EditUserRolesDialog
+                          user={user}
+                          onUserUpdated={(updatedUser) => {
+                            setUsers((currentUsers) =>
+                              currentUsers.map((currentUser) =>
+                                currentUser.id === updatedUser.id
+                                  ? updatedUser
+                                  : currentUser,
+                              ),
+                            );
+                          }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </section>
     </main>
   );
 }

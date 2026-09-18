@@ -62,7 +62,7 @@ export default function LoginForm() {
           />
         </Field>
 
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon="inline-start" />}
           {isSubmitting ? "Ingresando..." : "Iniciar sesión"}
         </Button>

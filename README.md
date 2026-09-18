@@ -16,3 +16,4 @@ Servicio diseñado para apoyar la gestión integral de proyectos que permiten a 
 - [Estructura Proyectos](./docs/Estructura_Proyectos.md)
 - [MVP](./docs/MVP.md)
 - [Arc42](./docs/arc42.md)
+- [Sistema de diseño del frontend](./docs/frontend_design_system.md)

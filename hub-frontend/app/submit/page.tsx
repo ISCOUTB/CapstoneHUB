@@ -1,16 +1,16 @@
 import SubmitProjectForm from "../components/submit-project-form";
+import ModuleHeader from "../components/module-header";
 
 export default function SubmitPage() {
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <section className="mx-auto w-full max-w-3xl px-6 py-12 sm:px-10 lg:px-12">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Proponer un proyecto
-            </h1>
-          </div>
-        </div>
+    <main className="flex-1 text-foreground">
+      <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <ModuleHeader
+          eyebrow="Nueva propuesta"
+          title="Proponer un proyecto"
+          subtitle="Describe la iniciativa y el contexto en el que se desarrollará. La propuesta quedará registrada para revisión del comité."
+          accentColor="rgba(56,189,248,0.34)"
+        />
 
         <SubmitProjectForm />
       </section>
