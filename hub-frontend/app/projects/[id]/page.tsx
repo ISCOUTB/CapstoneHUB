@@ -12,9 +12,9 @@ import ProjectAttachmentsPanel from "./project-attachments-panel";
 import ProjectAssignmentBadge from "./project-assignment-badge";
 import ProjectLegalizationBadge from "./project-legalization-badge";
 import ProjectSourceBadge from "./project-source-badge";
+import ProjectTabs from "./project-tabs";
 import { formatStatus, formatProjectSource } from "@/app/services/utils";
 import {
-  Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
@@ -110,7 +110,20 @@ export default async function ProjectDetailsPage({
             <ProjectSourceBadge source={project.source} />
           </div>
 
-          <Tabs defaultValue="general" className="mt-6 w-full">
+          <ProjectTabs
+            defaultTab="general"
+            validTabs={[
+              "general",
+              "categorias",
+              "equipo",
+              "observaciones",
+              "hitos",
+              "entregas",
+              "anexos",
+              "historial",
+            ]}
+            className="mt-6 w-full"
+          >
             <TabsList className="w-full sm:w-fit">
               <TabsTrigger value="general">
                 <RiInformationLine data-icon="inline-start" />
@@ -394,7 +407,7 @@ export default async function ProjectDetailsPage({
                 history={project.statusHistory ?? []}
               />
             </TabsContent>
-          </Tabs>
+          </ProjectTabs>
           </CardContent>
         </Card>
 
