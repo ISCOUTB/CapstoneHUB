@@ -15,7 +15,7 @@ import { useProjectDetails } from "./use-project-details";
 import { Card, CardContent } from "@/components/ui/card";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-function ProjectTabsList({ isMember }: { isMember: boolean }) {
+function ProjectTabsList({ isMember }: { readonly isMember: boolean }) {
   return (
     <TabsList className="w-full sm:w-fit">
       {visibleProjectTabs(isMember).map(({ value, label, Icon }) => (
@@ -28,7 +28,7 @@ function ProjectTabsList({ isMember }: { isMember: boolean }) {
   );
 }
 
-export default function ProjectDetailsView({ id }: { id: string }) {
+export default function ProjectDetailsView({ id }: { readonly id: string }) {
   const { project, loading, status } = useProjectDetails(id);
   const isMember = useIsProjectMember(project);
 

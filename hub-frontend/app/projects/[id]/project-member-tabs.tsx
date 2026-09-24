@@ -8,9 +8,9 @@ import ProjectStatusHistoryPanel from "./project-status-history-panel";
 import { TabsContent } from "@/components/ui/tabs";
 
 type ProjectMemberTabsProps = {
-  project: ProjectDetails;
+  readonly project: ProjectDetails;
   /** Asignaciones del proyecto, ya normalizadas por la vista. */
-  assignments: NonNullable<ProjectDetails["actorAssignments"]>;
+  readonly assignments: NonNullable<ProjectDetails["actorAssignments"]>;
 };
 
 /** Pestañas internas: solo se renderizan para miembros del proyecto. */

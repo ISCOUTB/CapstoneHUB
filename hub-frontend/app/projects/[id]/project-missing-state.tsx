@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/empty";
 
 type ProjectMissingStateProps = {
-  status: number | undefined;
+  readonly status: number | undefined;
 };
 
 export default function ProjectMissingState({

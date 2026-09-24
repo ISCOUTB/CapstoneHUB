@@ -6,7 +6,7 @@ import { formatStatus } from "@/app/services/utils";
 import { Badge } from "@/components/ui/badge";
 
 type ProjectDetailsBadgesProps = {
-  project: ProjectDetails;
+  readonly project: ProjectDetails;
 };
 
 /** Fila de insignias de estado, asignación, legalización y fuente. */

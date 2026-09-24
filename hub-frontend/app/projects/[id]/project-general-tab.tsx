@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 
 type ProjectGeneralTabProps = {
-  project: ProjectDetails;
+  readonly project: ProjectDetails;
 };
 
 /** Tarjeta de texto simple, para las secciones descriptivas del proyecto. */
@@ -19,9 +19,9 @@ function TextCard({
   children,
   preserveLineBreaks = false,
 }: {
-  title: string;
-  children: string;
-  preserveLineBreaks?: boolean;
+  readonly title: string;
+  readonly children: string;
+  readonly preserveLineBreaks?: boolean;
 }) {
   return (
     <Card>
@@ -88,7 +88,7 @@ function ProposerCard({ project }: ProjectGeneralTabProps) {
 function DeliverablesCard({
   deliverables,
 }: {
-  deliverables: ProjectDetails["deliverables"];
+  readonly deliverables: ProjectDetails["deliverables"];
 }) {
   return (
     <Card>

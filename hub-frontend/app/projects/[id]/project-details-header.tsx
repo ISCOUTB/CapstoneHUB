@@ -4,8 +4,8 @@ import { ProjectDetails } from "../../services/schemas";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type ProjectDetailsHeaderProps = {
-  project: ProjectDetails;
-  isMember: boolean;
+  readonly project: ProjectDetails;
+  readonly isMember: boolean;
 };
 
 /** Encabezado del detalle: título del módulo y aviso de vista pública. */
