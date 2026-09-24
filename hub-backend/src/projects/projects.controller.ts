@@ -8,10 +8,13 @@ import {
   Delete,
   Put,
   BadRequestException,
+  NotFoundException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { OptionalCurrentUser } from '../auth/optional-current-user.decorator';
+import { Public } from '../auth/public.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { ProjectsService } from './projects.service';
 import {
@@ -37,19 +40,32 @@ export class ProjectsController {
   async getMyProjects(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<MyProjectResponse[]> {
-    return this.projectService.projectsForUser(user.id);
+    return this.projectService.projectsForUser(user);
   }
 
+  @Public()
   @Get(':id')
   async getProjectById(
     @Param('id') id: string,
-  ): Promise<ProjectDetailResponse | null> {
-    return this.projectService.project({ id: Number(id) });
+    @OptionalCurrentUser() user?: AuthenticatedUser,
+  ): Promise<ProjectDetailResponse> {
+    const project = await this.projectService.project({ id: Number(id) }, user);
+
+    if (!project) {
+      // El proyecto no existe o el espectador no puede verlo. Respondemos 404
+      // en ambos casos para no revelar la existencia de proyectos privados.
+      throw new NotFoundException(`Project ${id} not found`);
+    }
+
+    return project;
   }
 
+  @Public()
   @Get()
-  async getProjects(): Promise<ProjectListResponse[]> {
-    return this.projectService.projects({});
+  async getProjects(
+    @OptionalCurrentUser() user?: AuthenticatedUser,
+  ): Promise<ProjectListResponse[]> {
+    return this.projectService.projects({}, user);
   }
 
   @Post()
@@ -68,6 +84,7 @@ export class ProjectsController {
       location?: string;
       startDate?: string;
       requiresLegalization?: boolean;
+      isPrivate?: boolean;
       source?: ProjectSource;
       facultyAdvisor?: string;
       teamRequirements?: string;
@@ -86,6 +103,7 @@ export class ProjectsController {
       location,
       startDate,
       requiresLegalization,
+      isPrivate,
       source,
       facultyAdvisor,
       teamRequirements,
@@ -113,6 +131,7 @@ export class ProjectsController {
       estimatedCost,
       location,
       requiresLegalization: requiresLegalization ?? false,
+      isPrivate: isPrivate ?? true,
       source: source ?? ProjectSource.external_entity,
       facultyAdvisor: facultyAdvisor?.trim() || null,
       teamRequirements: teamRequirements?.trim() || null,

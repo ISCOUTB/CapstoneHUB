@@ -3,7 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ActorRole, UserRole, ProjectStatus } from '../generated/prisma/client';
+import {
+  ActorRole,
+  Prisma,
+  UserRole,
+  ProjectStatus,
+} from '../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { AuthenticatedUser } from './auth.types';
 
@@ -21,11 +26,113 @@ export class AuthorizationService {
     user: AuthenticatedUser,
     projectId: number,
   ): Promise<void> {
-    if (user.roles.includes(UserRole.admin)) {
+    if (await this.canViewProject(user, projectId)) {
       return;
     }
 
-    await this.assertAssignedProjectMember(user, projectId);
+    if (await this.projectIsPublic(projectId)) {
+      return;
+    }
+
+    throw new ForbiddenException('You do not have access to this project');
+  }
+
+  /**
+   * Roles que pueden revisar o supervisar cualquier proyecto sin importar si
+   * están asignados a él.
+   */
+  private canReviewAnyProject(user: AuthenticatedUser): boolean {
+    return (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.evaluator) ||
+      user.roles.includes(UserRole.coordinator)
+    );
+  }
+
+  /**
+   * Un proyecto es visible públicamente cuando ya finalizó (`closed`) y el
+   * proponente no pidió privacidad. Los proyectos rechazados nunca son
+   * públicos.
+   */
+  private async projectIsPublic(projectId: number): Promise<boolean> {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { status: true, isPrivate: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
+    return !project.isPrivate && project.status === ProjectStatus.closed;
+  }
+
+  /**
+   * Los miembros son usuarios con una relación sensible con el proyecto: su
+   * proponente, sus actores asignados o un admin/evaluator/coordinator.
+   */
+  async canViewProject(
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<boolean> {
+    if (user.roles.includes(UserRole.admin)) {
+      return true;
+    }
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        proposerUserId: true,
+        actorAssignments: { select: { userId: true } },
+      },
+    });
+
+    if (!project) {
+      return false;
+    }
+
+    if (project.proposerUserId === user.id) {
+      return true;
+    }
+
+    if (
+      project.actorAssignments.some(
+        (assignment) => assignment.userId === user.id,
+      )
+    ) {
+      return true;
+    }
+
+    return this.canReviewAnyProject(user);
+  }
+
+  /**
+   * Construye la cláusula `where` que limita los listados de proyectos a los
+   * que el espectador puede ver: los públicos más los propios.
+   */
+  projectVisibilityWhere(
+    user: AuthenticatedUser | undefined,
+  ): Prisma.ProjectWhereInput {
+    const publicWhere: Prisma.ProjectWhereInput = {
+      isPrivate: false,
+      status: ProjectStatus.closed,
+    };
+
+    if (!user) {
+      return publicWhere;
+    }
+
+    if (this.canReviewAnyProject(user)) {
+      return {};
+    }
+
+    return {
+      OR: [
+        publicWhere,
+        { proposerUserId: user.id },
+        { actorAssignments: { some: { userId: user.id } } },
+      ],
+    };
   }
 
   async assertAssignedProjectMember(

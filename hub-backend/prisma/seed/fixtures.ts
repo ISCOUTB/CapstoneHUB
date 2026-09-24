@@ -39,6 +39,7 @@ export interface ProjectFixture {
   location?: string | null;
   estimatedCost?: number | null;
   requiresLegalization?: boolean;
+  isPrivate?: boolean;
   source?: ProjectSource;
   facultyAdvisor?: string | null;
   teamRequirements?: string | null;
@@ -47,6 +48,12 @@ export interface ProjectFixture {
   startDate: string;
   endDate?: string | null;
   schools?: string[];
+  /**
+   * Email del `User` sembrado que registra el proyecto. Cuando está presente, el
+   * proyecto se enlaza mediante `proposerUserId` para que el proponente pueda
+   * verlo.
+   */
+  proposerUserEmail?: string;
   proposer: ProposerFixture;
   targetStatus: ProjectStatus;
   statusDescription?: string | null;

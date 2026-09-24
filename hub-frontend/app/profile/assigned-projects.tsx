@@ -80,13 +80,13 @@ export default function AssignedProjects() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Proyectos asignados</CardTitle>
+        <CardTitle>Mis proyectos</CardTitle>
         <CardDescription>
           {loading
             ? "Cargando proyectos..."
             : projects.length === 0
-              ? "Aún no participas en ningún proyecto."
-              : `${projects.length} proyecto(s) asignado(s).`}
+              ? "Aún no propones ni participas en ningún proyecto."
+              : `${projects.length} proyecto(s) propuesto(s) o asignado(s).`}
         </CardDescription>
       </CardHeader>
 
@@ -106,7 +106,7 @@ export default function AssignedProjects() {
             <EmptyHeader>
               <EmptyTitle>Sin proyectos</EmptyTitle>
               <EmptyDescription>
-                Cuando te asignen a un proyecto aparecerá aquí.
+                Cuando propongas un proyecto o te asignen a uno aparecerá aquí.
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
@@ -115,7 +115,7 @@ export default function AssignedProjects() {
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
                 <TableHead>Proyecto</TableHead>
-                <TableHead>Rol</TableHead>
+                <TableHead>Mi vínculo</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Inicio</TableHead>
               </TableRow>
@@ -136,9 +136,13 @@ export default function AssignedProjects() {
                     />
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      {formatRole(project.myRole)}
-                    </Badge>
+                    {project.myRole ? (
+                      <Badge variant="outline">
+                        {formatRole(project.myRole)}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Proponente</Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">

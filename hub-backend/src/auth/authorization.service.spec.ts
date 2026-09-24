@@ -1,5 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
-import { ActorRole, UserRole } from '../generated/prisma/client';
+import { ActorRole, ProjectStatus, UserRole } from '../generated/prisma/client';
 import { AuthorizationService } from './authorization.service';
 
 describe('AuthorizationService', () => {
@@ -121,6 +121,121 @@ describe('AuthorizationService', () => {
     expect(findAssignment).toHaveBeenCalledWith({
       where: { projectId: 10, userId: 7 },
       select: { id: true },
+    });
+  });
+
+  describe('project visibility', () => {
+    function visibilityPrisma(project: unknown) {
+      return {
+        project: { findUnique: jest.fn().mockResolvedValue(project) },
+      };
+    }
+
+    it('grants reviewers access without a project assignment', async () => {
+      const prisma = visibilityPrisma({
+        proposerUserId: 999,
+        actorAssignments: [],
+      });
+      const service = new AuthorizationService(prisma as never);
+
+      await expect(
+        service.assertProjectMember(user([UserRole.evaluator]), 10),
+      ).resolves.toBeUndefined();
+    });
+
+    it('grants the proposer access to their own project', async () => {
+      const prisma = visibilityPrisma({
+        proposerUserId: 7,
+        actorAssignments: [],
+      });
+      const service = new AuthorizationService(prisma as never);
+
+      await expect(
+        service.assertProjectMember(user([UserRole.student]), 10),
+      ).resolves.toBeUndefined();
+    });
+
+    it('denies access to an unassigned user when the project is private', async () => {
+      const prisma = {
+        project: {
+          findUnique: jest.fn().mockResolvedValue({
+            proposerUserId: 999,
+            actorAssignments: [],
+            status: ProjectStatus.in_progress,
+            isPrivate: true,
+          }),
+        },
+      };
+      const service = new AuthorizationService(prisma as never);
+
+      await expect(
+        service.assertProjectMember(user([UserRole.student]), 10),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('allows anonymous viewers when the project is closed and not private', async () => {
+      const prisma = {
+        project: {
+          findUnique: jest.fn().mockResolvedValue({
+            proposerUserId: 999,
+            actorAssignments: [],
+            status: ProjectStatus.closed,
+            isPrivate: false,
+          }),
+        },
+      };
+      const service = new AuthorizationService(prisma as never);
+
+      await expect(
+        service.assertProjectMember(user([UserRole.student]), 10),
+      ).resolves.toBeUndefined();
+    });
+
+    it('keeps a private closed project hidden from strangers', async () => {
+      const prisma = {
+        project: {
+          findUnique: jest.fn().mockResolvedValue({
+            proposerUserId: 999,
+            actorAssignments: [],
+            status: ProjectStatus.closed,
+            isPrivate: true,
+          }),
+        },
+      };
+      const service = new AuthorizationService(prisma as never);
+
+      await expect(
+        service.assertProjectMember(user([UserRole.student]), 10),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('limits anonymous listings to closed, non-private projects', () => {
+      const service = new AuthorizationService({} as never);
+
+      expect(service.projectVisibilityWhere(undefined)).toEqual({
+        isPrivate: false,
+        status: ProjectStatus.closed,
+      });
+    });
+
+    it('lets reviewers list every project', () => {
+      const service = new AuthorizationService({} as never);
+
+      expect(service.projectVisibilityWhere(user([UserRole.admin]))).toEqual(
+        {},
+      );
+    });
+
+    it('scopes listings to public, proposed and assigned projects', () => {
+      const service = new AuthorizationService({} as never);
+
+      expect(service.projectVisibilityWhere(user([UserRole.student]))).toEqual({
+        OR: [
+          { isPrivate: false, status: ProjectStatus.closed },
+          { proposerUserId: 7 },
+          { actorAssignments: { some: { userId: 7 } } },
+        ],
+      });
     });
   });
 });

@@ -33,6 +33,8 @@ function createProjectDetail() {
     context: 'Context',
     location: null,
     requiresLegalization: false,
+    isPrivate: true,
+    canViewSensitiveData: true,
     source: ProjectSource.external_entity,
     facultyAdvisor: null,
     teamRequirements: null,
@@ -47,13 +49,19 @@ function createProjectDetail() {
     actorAssignments: [],
     milestones: [],
     statusHistory: [],
+    attachments: [],
+    reports: [],
   };
 }
 
 function createPrismaMock() {
   const projectUpdate = jest.fn().mockResolvedValue(undefined);
   const historyCreate = jest.fn().mockResolvedValue(undefined);
-  const transaction = {
+  type Transaction = {
+    project: { update: typeof projectUpdate };
+    projectStatusHistory: { create: typeof historyCreate };
+  };
+  const transaction: Transaction = {
     project: { update: projectUpdate },
     projectStatusHistory: { create: historyCreate },
   };
@@ -64,9 +72,8 @@ function createPrismaMock() {
 
   const prisma = {
     project: { findUnique },
-    $transaction: jest.fn(
-      (callback: (transaction: typeof transaction) => unknown) =>
-        callback(transaction),
+    $transaction: jest.fn((callback: (transaction: Transaction) => unknown) =>
+      callback(transaction),
     ),
   };
 
@@ -78,6 +85,7 @@ function createAuthorizationMock() {
     assertCanTransitionProject: jest.fn().mockResolvedValue(undefined),
     assertCanAssignActors: jest.fn().mockResolvedValue(undefined),
     assertAssignableUser: jest.fn().mockResolvedValue(undefined),
+    projectVisibilityWhere: jest.fn().mockReturnValue({}),
   };
 }
 
@@ -251,7 +259,7 @@ describe('ProjectsService', () => {
 
   it('returns the current user projects with their role', async () => {
     const startDate = new Date('2026-01-05T00:00:00.000Z');
-    const findMany = jest.fn().mockResolvedValue([
+    const assignmentFindMany = jest.fn().mockResolvedValue([
       {
         id: 1,
         projectId: 10,
@@ -264,19 +272,28 @@ describe('ProjectsService', () => {
           status: ProjectStatus.under_review,
           startDate,
           location: 'Bogotá',
+          isPrivate: true,
         },
       },
     ]);
-    const prisma = { projectActorAssignment: { findMany } };
+    const projectFindMany = jest.fn().mockResolvedValue([]);
+    const prisma = {
+      projectActorAssignment: { findMany: assignmentFindMany },
+      project: { findMany: projectFindMany },
+    };
     const authorization = createAuthorizationMock();
     const service = createService(prisma, authorization);
 
-    const result = await service.projectsForUser(4);
+    const result = await service.projectsForUser(EVALUATOR_USER);
 
-    expect(findMany).toHaveBeenCalledWith({
+    expect(assignmentFindMany).toHaveBeenCalledWith({
       where: { userId: 4 },
       include: { project: true },
       orderBy: { assignedAt: 'desc' },
+    });
+    expect(projectFindMany).toHaveBeenCalledWith({
+      where: { proposerUserId: 4 },
+      orderBy: { createdAt: 'desc' },
     });
     expect(result).toEqual([
       {
@@ -285,9 +302,56 @@ describe('ProjectsService', () => {
         status: ProjectStatus.under_review,
         startDate,
         location: 'Bogotá',
+        isPrivate: true,
         myRole: ActorRole.evaluator,
+        isProposer: false,
       },
     ]);
+  });
+
+  it('merges proposed and assigned projects without duplicates', async () => {
+    const startDate = new Date('2026-01-05T00:00:00.000Z');
+    const makeproject = (id: number, name: string, isPrivate: boolean) => ({
+      id,
+      name,
+      status: ProjectStatus.proposed,
+      startDate,
+      location: null,
+      isPrivate,
+    });
+    const prisma = {
+      projectActorAssignment: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            projectId: 1,
+            role: ActorRole.student,
+            assignedAt: new Date(),
+            project: makeproject(1, 'Proposed and assigned', true),
+          },
+        ]),
+      },
+      project: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            makeproject(1, 'Proposed and assigned', true),
+            makeproject(2, 'Only proposed', false),
+          ]),
+      },
+    };
+    const service = createService(prisma, createAuthorizationMock());
+
+    const result = await service.projectsForUser(EVALUATOR_USER);
+
+    expect(result).toHaveLength(2);
+    expect(result.find((project) => project.id === 1)).toMatchObject({
+      isProposer: true,
+      myRole: ActorRole.student,
+    });
+    expect(result.find((project) => project.id === 2)).toMatchObject({
+      isProposer: true,
+      myRole: null,
+    });
   });
 
   it('lists assignable users after authorizing the acting user', async () => {
@@ -320,5 +384,154 @@ describe('ProjectsService', () => {
         roles: [UserRole.coordinator],
       },
     ]);
+  });
+
+  it('connects the acting user as the project proposer', async () => {
+    const createdProject = {
+      id: 11,
+      name: 'New project',
+      status: ProjectStatus.proposed,
+      startDate: null,
+      location: null,
+      requiresLegalization: false,
+      isPrivate: true,
+      source: ProjectSource.external_entity,
+      naturalProposer: null,
+      actorAssignments: [],
+      deliverables: [],
+      observations: [],
+      milestones: [],
+      statusHistory: [],
+      attachments: [],
+      reports: [],
+      description: 'Description',
+      context: 'Context',
+      endDate: null,
+      estimatedCost: null,
+      facultyAdvisor: null,
+      teamRequirements: null,
+      expectedOutcomes: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const create = jest
+      .fn<Promise<typeof createdProject>, [{ data: unknown }]>()
+      .mockResolvedValue(createdProject);
+    const prisma = { project: { create } };
+    const authorization = {
+      ...createAuthorizationMock(),
+      assertCanCreateProject: jest.fn(),
+    };
+    const service = createService(prisma, authorization);
+
+    await service.createProject(EVALUATOR_USER, {
+      name: 'New project',
+      description: 'Description',
+      context: 'Context',
+    });
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0][0].data).toEqual(
+      expect.objectContaining({
+        proposer: { connect: { id: EVALUATOR_USER.id } },
+      }),
+    );
+  });
+
+  it('applies the viewer visibility filter to project listings', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const prisma = { project: { findMany } };
+    const visibilityWhere = { isPrivate: false };
+    const authorization = {
+      ...createAuthorizationMock(),
+      projectVisibilityWhere: jest.fn().mockReturnValue(visibilityWhere),
+    };
+    const service = createService(prisma, authorization);
+
+    await service.projects(
+      { where: { status: ProjectStatus.closed } },
+      undefined,
+    );
+
+    expect(authorization.projectVisibilityWhere).toHaveBeenCalledWith(
+      undefined,
+    );
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { status: ProjectStatus.closed, isPrivate: false },
+      }),
+    );
+  });
+
+  it('redacts sensitive relations for anonymous viewers of a public project', async () => {
+    const project = {
+      ...createProjectDetail(),
+      id: 33,
+      status: ProjectStatus.closed,
+      isPrivate: false,
+      proposerUserId: 999,
+      actorAssignments: [
+        {
+          id: 1,
+          projectId: 33,
+          userId: 555,
+          role: ActorRole.student,
+          assignedAt: new Date(),
+          user: { id: 555, fullName: 'Secret', email: 'secret@example.com' },
+        },
+      ],
+      observations: [
+        {
+          id: 1,
+          projectId: 33,
+          content: 'internal note',
+          createdAt: new Date(),
+          authorUser: {
+            id: 555,
+            fullName: 'Secret',
+            email: 'secret@example.com',
+          },
+        },
+      ],
+    };
+    const prisma = {
+      project: { findFirst: jest.fn().mockResolvedValue(project) },
+    };
+    const authorization = {
+      ...createAuthorizationMock(),
+      projectVisibilityWhere: jest.fn().mockReturnValue({}),
+    };
+    const service = createService(prisma, authorization);
+
+    const result = await service.project({ id: 33 }, undefined);
+
+    expect(result).not.toBeNull();
+    expect(result?.canViewSensitiveData).toBe(false);
+    expect(result?.actors).toEqual([]);
+    expect(result?.observations).toEqual([]);
+  });
+
+  it('keeps sensitive relations for the project proposer', async () => {
+    const project = {
+      ...createProjectDetail(),
+      id: 33,
+      status: ProjectStatus.in_progress,
+      isPrivate: true,
+      proposerUserId: EVALUATOR_USER.id,
+      actorAssignments: [],
+      observations: [],
+    };
+    const prisma = {
+      project: { findFirst: jest.fn().mockResolvedValue(project) },
+    };
+    const authorization = {
+      ...createAuthorizationMock(),
+      projectVisibilityWhere: jest.fn().mockReturnValue({}),
+    };
+    const service = createService(prisma, authorization);
+
+    const result = await service.project({ id: 33 }, EVALUATOR_USER);
+
+    expect(result?.canViewSensitiveData).toBe(true);
   });
 });

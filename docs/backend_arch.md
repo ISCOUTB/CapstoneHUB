@@ -223,17 +223,38 @@ Comandos: `npx prisma migrate dev`, `npm run seed` (y variantes como
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
-| `POST` | `/auth/login` | Iniciar sesión y recibir un token de acceso. |
+| `POST` | `/auth/login` | Iniciar sesión y recibir un token de acceso (público). |
 | `GET/POST` | `/auth/users` | Listar / crear usuarios (admin). |
 | `PATCH` | `/auth/users/:id/roles` | Reemplazar los roles de un usuario (admin). |
-| `GET/POST` | `/projects` | Listar / crear proyectos. |
-| `GET/PUT/DELETE` | `/projects/:id` | Detalle / editar / borrar. |
+| `GET` | `/projects` | Listar los proyectos visibles para el solicitante (público: solo finalizados y no privados). |
+| `GET` | `/projects/mine` | Proyectos propuestos y asignados al usuario. |
+| `GET` | `/projects/:id` | Detalle (404 si el proyecto es privado y el solicitante no es miembro). |
+| `POST` | `/projects` | Crear un proyecto; `isPrivate` lo define el proponente. |
+| `PUT/DELETE` | `/projects/:id` | Editar / borrar (admin o coordinador asignado). |
 | `PATCH` | `/projects/:id/status` | Cambiar estado (registra historial). |
 | `POST` | `/projects/:id/actors` | Asignar un usuario a un proyecto. |
 | `GET/POST` | `/projects/:id/observations` | Listar / agregar observaciones. |
 | `GET/POST/PATCH/DELETE` | `/projects/:id/milestones` | Gestionar hitos. |
 | `GET/POST/DELETE` | `/projects/:id/attachments` | Gestionar anexos. |
 | `GET` | `/projects/:id/attachments/:aid/download` | Descargar un anexo. |
+
+La autenticación es **global** (`AuthGuard` como `APP_GUARD`): todas las rutas
+requieren token salvo las marcadas con `@Public()` (`/auth/login`, `GET /projects`
+y `GET /projects/:id`). En las rutas públicas el token es opcional: si llega, se
+resuelve el usuario y se adaptan los datos mostrados, y si es inválido se
+responde `401` en lugar de degradar a anónimo.
+
+### Visibilidad de proyectos
+
+`AuthorizationService` concentra las reglas:
+
+- `projectVisibilityWhere(viewer)` construye el `where` de Prisma usado por el
+  listado: público (`isPrivate = false` y estado `closed`) más `proposerUserId`
+  y asignaciones del solicitante; los roles `admin`, `evaluator` y `coordinator`
+  ven todo.
+- `assertProjectMember` (usado por observaciones, hitos, anexos y entregas)
+  permite el acceso al proponente, a los actores asignados y a los roles
+  revisores, o cuando el proyecto es público.
 
 ## Diagrama
 

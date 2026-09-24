@@ -38,6 +38,24 @@ interna o impacto social). Incluye además el asesor de facultad recomendado
 finales (`expectedOutcomes`) y una lista de entregables. `startDate` es opcional.
 Es dueña de todos los registros relacionados mediante borrado en cascada.
 
+#### Privacidad y visibilidad
+
+- `isPrivate` (por defecto `true`) lo decide el proponente en el formulario de
+  propuesta. Un proyecto privado nunca se publica.
+- `proposerUserId` apunta al `User` que registró la propuesta (relación
+  `ProjectProposedBy`, `SetNull` al eliminar el usuario). Permite que el
+  proponente consulte sus proyectos aunque no tenga una asignación de actor.
+- Reglas de visibilidad:
+  - `closed` y `isPrivate = false` → **público**: cualquier visitante (incluso
+    sin sesión) puede verlo en el listado y el detalle.
+  - `rejected` → **siempre privado**, nunca se publica.
+  - Cualquier otro estado → privado: visible solo para `admin`, `evaluator` y
+    `coordinator`, el proponente y los usuarios con `ProjectActorAssignment`.
+- A los visitantes que solo pueden ver la información pública se les ocultan las
+  secciones sensibles (equipo, observaciones, hitos, entregas, anexos e
+  historial) tanto en la API como en la interfaz.
+
+
 ### ProjectSchool
 
 Escuelas asociadas a un proyecto. Clave primaria compuesta
@@ -117,10 +135,12 @@ classDiagram
         +DateTime endDate
         +Decimal estimatedCost
         +Boolean requiresLegalization
+        +Boolean isPrivate
         +ProjectSource source
         +String facultyAdvisor
         +String teamRequirements
         +String expectedOutcomes
+        +Int proposerUserId
         +DateTime createdAt
         +DateTime updatedAt
     }
@@ -226,6 +246,7 @@ classDiagram
     User "0..1" --> "0..*" ProjectObservation : authoredObservations
     User "0..1" --> "0..*" ProjectStatusHistory : projectStatusHistories
     User "0..1" --> "0..*" ProjectAttachment : uploadedAttachments
+    User "0..1" --> "0..*" Project : proposedProjects
 
     Project "1" *-- "0..*" ProjectSchool : schools
     Project "1" *-- "0..*" ProjectDeliverable : deliverables

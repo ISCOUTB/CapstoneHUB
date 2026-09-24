@@ -11,6 +11,7 @@ import {
 import { AuthService } from './auth.service';
 import { AdminGuard } from './admin.guard';
 import { AuthGuard } from './auth.guard';
+import { Public } from './public.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { UpdateUserRolesDto } from './dto/update-user-roles.dto';
@@ -19,6 +20,7 @@ import { UpdateUserRolesDto } from './dto/update-user-roles.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('login')
   login(@Body() payload: LoginUserDto) {
     return this.authService.login(payload);

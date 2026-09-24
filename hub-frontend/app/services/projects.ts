@@ -41,6 +41,7 @@ export type CreateProjectPayload = {
   description: string;
   context: string;
   requiresLegalization?: boolean;
+  isPrivate?: boolean;
   source?: ProjectSource;
   ncedua?: string;
   facultyAdvisor?: string;
@@ -51,16 +52,19 @@ export type CreateProjectPayload = {
 
 export async function getProjects(): Promise<{
   projects: ProjectItem[];
+  status?: number;
   error?: string;
 }> {
   try {
     const response = await fetch(getApiUrl("/api/projects"), {
+      headers: getAuthHeaders(),
       cache: "no-store",
     });
 
     if (!response.ok) {
       return {
         projects: [],
+        status: response.status,
         error: `Backend responded with status ${response.status}`,
       };
     }
@@ -109,14 +113,18 @@ export async function getMyProjects(): Promise<{
 
 export async function getProjectById(id: string): Promise<{
   project?: ProjectDetails;
+  status?: number;
   error?: string;
-}> {  try {
+}> {
+  try {
     const response = await fetch(getApiUrl(`/api/projects/${id}`), {
+      headers: getAuthHeaders(),
       cache: "no-store",
     });
 
     if (!response.ok) {
       return {
+        status: response.status,
         error: `Backend responded with status ${response.status}`,
       };
     }

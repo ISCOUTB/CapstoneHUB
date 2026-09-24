@@ -55,6 +55,26 @@
       "fullName": "Lucía Naranjo",
       "email": "student.lucia@capstonehub.test",
       "roles": ["student"]
+    },
+    {
+      "fullName": "Roberto Jiménez",
+      "email": "proposer.roberto@capstonehub.test",
+      "roles": ["student"]
+    },
+    {
+      "fullName": "Gabriela Suárez",
+      "email": "proposer.gabriela@capstonehub.test",
+      "roles": ["student"]
+    },
+    {
+      "fullName": "Marco Villacís",
+      "email": "proposer.marco@capstonehub.test",
+      "roles": ["student"]
+    },
+    {
+      "fullName": "Verónica Chicaiza",
+      "email": "proposer.veronica@capstonehub.test",
+      "roles": ["student"]
     }
   ]
 }
