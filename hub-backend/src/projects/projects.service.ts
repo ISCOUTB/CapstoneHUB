@@ -85,9 +85,12 @@ export type ProjectListResponse = {
   startDate: Date | null;
   location: string | null;
   requiresLegalization: boolean;
+  isPrivate: boolean;
   source: ProjectSource;
   proposer: ProjectProposerResponse | null;
   actors: ProjectActorResponse[];
+  /** `false` cuando el espectador solo puede ver la vista pública, sin datos sensibles. */
+  canViewSensitiveData: boolean;
 };
 
 export type ProjectActorResponse = {
@@ -108,7 +111,9 @@ export type MyProjectResponse = {
   status: ProjectStatus;
   startDate: Date | null;
   location: string | null;
-  myRole: ActorRole;
+  isPrivate: boolean;
+  myRole: ActorRole | null;
+  isProposer: boolean;
 };
 
 export type ProjectDeliverableResponse = {
@@ -291,6 +296,7 @@ function byDateThenId<T extends { id: number }>(
 
 function mapProjectListResponse(
   project: ProjectWithRelations,
+  canViewSensitiveData: boolean,
 ): ProjectListResponse {
   return {
     id: project.id,
@@ -299,17 +305,24 @@ function mapProjectListResponse(
     startDate: project.startDate,
     location: project.location,
     requiresLegalization: project.requiresLegalization,
+    isPrivate: project.isPrivate,
     source: project.source,
     proposer: mapProjectProposer(project),
-    actors: project.actorAssignments.map(mapActorBase),
+    // El equipo (nombres y correos) es sensible, así que solo se expone a los
+    // miembros mientras el proyecto no sea todavía público.
+    actors: canViewSensitiveData
+      ? project.actorAssignments.map(mapActorBase)
+      : [],
+    canViewSensitiveData,
   };
 }
 
 function mapProjectDetailResponse(
   project: ProjectWithRelations,
+  canViewSensitiveData: boolean,
 ): ProjectDetailResponse {
   return {
-    ...mapProjectListResponse(project),
+    ...mapProjectListResponse(project, canViewSensitiveData),
     description: project.description,
     context: project.context,
     startDate: project.startDate,
@@ -329,36 +342,53 @@ function mapProjectDetailResponse(
       })),
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
-    observations: project.observations.map(mapObservation),
-    actorAssignments: project.actorAssignments.map((assignment) => ({
-      ...mapActorBase(assignment),
-      projectId: assignment.projectId,
-    })),
-    milestones: project.milestones
-      .slice()
-      .sort(byDateThenId((milestone) => milestone.dueDate.getTime())),
-    statusHistory: project.statusHistory
-      .slice()
-      .sort(byDateThenId((entry) => entry.changedAt.getTime(), 'desc'))
-      .map((entry) => ({
-        id: entry.id,
-        projectId: entry.projectId,
-        previousStatus: entry.previousStatus,
-        nextStatus: entry.nextStatus,
-        description: entry.description,
-        changedAt: entry.changedAt,
-        author: mapAuthor(entry.authorUser),
-      })),
-    attachments: project.attachments
-      .slice()
-      .sort(
-        byDateThenId((attachment) => attachment.createdAt.getTime(), 'desc'),
-      )
-      .map(mapAttachment),
-    reports: project.reports
-      .slice()
-      .sort(byDateThenId((report) => report.dueDate.getTime()))
-      .map(mapReport),
+    // Todo lo que sigue es información interna de colaboración: solo la ven
+    // los miembros.
+    observations: canViewSensitiveData
+      ? project.observations.map(mapObservation)
+      : [],
+    actorAssignments: canViewSensitiveData
+      ? project.actorAssignments.map((assignment) => ({
+          ...mapActorBase(assignment),
+          projectId: assignment.projectId,
+        }))
+      : [],
+    milestones: canViewSensitiveData
+      ? project.milestones
+          .slice()
+          .sort(byDateThenId((milestone) => milestone.dueDate.getTime()))
+      : [],
+    statusHistory: canViewSensitiveData
+      ? project.statusHistory
+          .slice()
+          .sort(byDateThenId((entry) => entry.changedAt.getTime(), 'desc'))
+          .map((entry) => ({
+            id: entry.id,
+            projectId: entry.projectId,
+            previousStatus: entry.previousStatus,
+            nextStatus: entry.nextStatus,
+            description: entry.description,
+            changedAt: entry.changedAt,
+            author: mapAuthor(entry.authorUser),
+          }))
+      : [],
+    attachments: canViewSensitiveData
+      ? project.attachments
+          .slice()
+          .sort(
+            byDateThenId(
+              (attachment) => attachment.createdAt.getTime(),
+              'desc',
+            ),
+          )
+          .map(mapAttachment)
+      : [],
+    reports: canViewSensitiveData
+      ? project.reports
+          .slice()
+          .sort(byDateThenId((report) => report.dueDate.getTime()))
+          .map(mapReport)
+      : [],
   };
 }
 
@@ -391,50 +421,133 @@ export class ProjectsService {
 
   async project(
     projectWhereUniqueInput: Prisma.ProjectWhereUniqueInput,
+    viewer?: AuthenticatedUser,
   ): Promise<ProjectDetailResponse | null> {
-    const project = await this.prisma.project.findUnique({
-      where: projectWhereUniqueInput,
+    const project = await this.prisma.project.findFirst({
+      where: {
+        ...projectWhereUniqueInput,
+        ...this.authorization.projectVisibilityWhere(viewer),
+      },
       include: projectInclude,
     });
 
-    return project ? mapProjectDetailResponse(project) : null;
+    return project
+      ? mapProjectDetailResponse(
+          project,
+          this.canViewSensitiveData(project, viewer),
+        )
+      : null;
   }
 
-  async projects(params: {
-    skip?: number;
-    take?: number;
-    cursor?: Prisma.ProjectWhereUniqueInput;
-    where?: Prisma.ProjectWhereInput;
-    orderBy?: Prisma.ProjectOrderByWithRelationInput;
-  }): Promise<ProjectListResponse[]> {
+  async projects(
+    params: {
+      skip?: number;
+      take?: number;
+      cursor?: Prisma.ProjectWhereUniqueInput;
+      where?: Prisma.ProjectWhereInput;
+      orderBy?: Prisma.ProjectOrderByWithRelationInput;
+    },
+    viewer?: AuthenticatedUser,
+  ): Promise<ProjectListResponse[]> {
     const { skip, take, cursor, where, orderBy } = params;
     const projects = await this.prisma.project.findMany({
       skip,
       take,
       cursor,
-      where,
+      where: {
+        ...where,
+        ...this.authorization.projectVisibilityWhere(viewer),
+      },
       orderBy,
       include: projectInclude,
     });
 
-    return projects.map((project) => mapProjectListResponse(project));
+    return projects.map((project) =>
+      mapProjectListResponse(
+        project,
+        this.canViewSensitiveData(project, viewer),
+      ),
+    );
   }
 
-  async projectsForUser(userId: number): Promise<MyProjectResponse[]> {
-    const assignments = await this.prisma.projectActorAssignment.findMany({
-      where: { userId },
-      include: { project: true },
-      orderBy: { assignedAt: 'desc' },
-    });
+  /**
+   * Los miembros pueden leer los datos sensibles del proyecto: admins,
+   * evaluators, coordinators, el proponente y los actores asignados.
+   */
+  private canViewSensitiveData(
+    project: ProjectWithRelations,
+    viewer?: AuthenticatedUser,
+  ): boolean {
+    if (!viewer) {
+      return false;
+    }
 
-    return assignments.map(({ project, role }) => ({
-      id: project.id,
-      name: project.name,
-      status: project.status,
-      startDate: project.startDate,
-      location: project.location,
-      myRole: role,
-    }));
+    if (
+      viewer.roles.includes(UserRole.admin) ||
+      viewer.roles.includes(UserRole.evaluator) ||
+      viewer.roles.includes(UserRole.coordinator)
+    ) {
+      return true;
+    }
+
+    if (project.proposerUserId === viewer.id) {
+      return true;
+    }
+
+    return project.actorAssignments.some(
+      (assignment) => assignment.userId === viewer.id,
+    );
+  }
+
+  /**
+   * Proyectos que el usuario puede seguir desde su perfil: los que propuso y
+   * los que tiene asignados. Los duplicados se fusionan, dando prioridad al rol
+   * de asignación cuando aplican ambos.
+   */
+  async projectsForUser(user: AuthenticatedUser): Promise<MyProjectResponse[]> {
+    const [assignments, proposed] = await Promise.all([
+      this.prisma.projectActorAssignment.findMany({
+        where: { userId: user.id },
+        include: { project: true },
+        orderBy: { assignedAt: 'desc' },
+      }),
+      this.prisma.project.findMany({
+        where: { proposerUserId: user.id },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const visible = new Map<number, MyProjectResponse>();
+
+    for (const project of proposed) {
+      visible.set(project.id, {
+        id: project.id,
+        name: project.name,
+        status: project.status,
+        startDate: project.startDate,
+        location: project.location,
+        isPrivate: project.isPrivate,
+        myRole: null,
+        isProposer: true,
+      });
+    }
+
+    for (const { project, role } of assignments) {
+      const existing = visible.get(project.id);
+
+      visible.set(project.id, {
+        id: project.id,
+        name: project.name,
+        status: project.status,
+        startDate: project.startDate,
+        location: project.location,
+        isPrivate: project.isPrivate,
+        myRole: role,
+        isProposer: existing?.isProposer ?? false,
+      });
+    }
+
+    return [...visible.values()];
   }
 
   async createProject(
@@ -443,8 +556,11 @@ export class ProjectsService {
   ): Promise<ProjectDetailResponse> {
     this.authorization.assertCanCreateProject(user);
     try {
-      const project = await this.createProjectRecord(data);
-      return mapProjectDetailResponse(project);
+      const project = await this.createProjectRecord({
+        ...data,
+        proposer: { connect: { id: user.id } },
+      });
+      return mapProjectDetailResponse(project, true);
     } catch (error) {
       rethrowProjectCreateError(error);
     }
@@ -473,7 +589,7 @@ export class ProjectsService {
       include: projectInclude,
     });
 
-    return mapProjectDetailResponse(project);
+    return mapProjectDetailResponse(project, true);
   }
 
   async transitionProjectStatus(params: {
@@ -530,7 +646,7 @@ export class ProjectsService {
       });
     });
 
-    const project = await this.project({ id: projectId });
+    const project = await this.project({ id: projectId }, user);
     if (!project) {
       throw new NotFoundException(`Project ${projectId} not found`);
     }

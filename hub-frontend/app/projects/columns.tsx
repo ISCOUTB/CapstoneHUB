@@ -50,8 +50,7 @@ export const columns = columnHelper.columns([
   }),
 
   columnHelper.accessor(
-    (project: ProjectItem) =>
-      project.proposer?.fullName ?? "Sin información",
+    (project: ProjectItem) => project.proposer?.fullName ?? "Sin información",
     {
       id: "proposer",
       header: ({ column }) => (

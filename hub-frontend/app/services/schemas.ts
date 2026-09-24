@@ -129,10 +129,12 @@ export type ProjectItem = {
   status: string;
   startDate: string | null;
   requiresLegalization?: boolean;
+  isPrivate?: boolean;
   source?: ProjectSource;
   proposer?: ProjectProposer;
   actors: ProjectActor[];
   estimatedCost?: string | null;
+  canViewSensitiveData?: boolean;
 };
 
 export type MyProject = {
@@ -141,7 +143,9 @@ export type MyProject = {
   status: string;
   startDate: string | null;
   location: string | null;
-  myRole: string;
+  isPrivate?: boolean;
+  myRole: string | null;
+  isProposer: boolean;
 };
 
 export type ProjectDeliverableItem = {
@@ -159,6 +163,8 @@ export type ProjectDetails = {
   location?: string | null;
   status: string;
   requiresLegalization?: boolean;
+  isPrivate?: boolean;
+  canViewSensitiveData?: boolean;
   source?: ProjectSource;
   proposer?: ProjectProposer;
   startDate: string | null;

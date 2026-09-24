@@ -9,6 +9,23 @@ export async function seedProjects({
   const { projects } = loadProjects();
 
   for (const project of projects) {
+    let proposerUserId: number | null = null;
+
+    if (project.proposerUserEmail) {
+      const proposerUser = await prisma.user.findUnique({
+        where: { email: project.proposerUserEmail.trim().toLowerCase() },
+        select: { id: true },
+      });
+
+      if (!proposerUser) {
+        throw new Error(
+          `Proposer user "${project.proposerUserEmail}" was not found. Run the users section first or check the fixtures.`,
+        );
+      }
+
+      proposerUserId = proposerUser.id;
+    }
+
     const existing = await prisma.project.findFirst({
       where: { name: project.name },
       select: { id: true },
@@ -16,6 +33,18 @@ export async function seedProjects({
 
     if (existing) {
       log.info(`Project already exists: ${project.name} (#${existing.id})`);
+
+      if (options.dryRun) {
+        continue;
+      }
+
+      await prisma.project.update({
+        where: { id: existing.id },
+        data: {
+          isPrivate: project.isPrivate ?? true,
+          proposerUserId,
+        },
+      });
       continue;
     }
 
@@ -32,12 +61,14 @@ export async function seedProjects({
         location: project.location ?? null,
         estimatedCost: project.estimatedCost ?? null,
         requiresLegalization: project.requiresLegalization ?? false,
+        isPrivate: project.isPrivate ?? true,
         source: project.source ?? ProjectSource.external_entity,
         facultyAdvisor: project.facultyAdvisor ?? null,
         teamRequirements: project.teamRequirements ?? null,
         expectedOutcomes: project.expectedOutcomes ?? null,
         startDate: new Date(project.startDate),
         endDate: project.endDate ? new Date(project.endDate) : null,
+        proposerUserId,
         schools: project.schools?.length
           ? { create: project.schools.map((schoolName) => ({ schoolName })) }
           : undefined,

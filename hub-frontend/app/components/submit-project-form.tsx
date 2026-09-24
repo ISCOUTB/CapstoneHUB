@@ -58,6 +58,7 @@ type FormState = {
   expectedOutcomes: string;
   deliverables: string[];
   requiresLegalization: boolean;
+  isPrivate: boolean;
 };
 
 const initialForm: FormState = {
@@ -72,6 +73,7 @@ const initialForm: FormState = {
   expectedOutcomes: "",
   deliverables: [""],
   requiresLegalization: false,
+  isPrivate: true,
 };
 
 export default function SubmitProjectForm() {
@@ -128,6 +130,7 @@ export default function SubmitProjectForm() {
         context: form.context,
         source: form.source,
         requiresLegalization: form.requiresLegalization,
+        isPrivate: form.isPrivate,
         facultyAdvisor: form.facultyAdvisor.trim() || undefined,
         teamRequirements: form.teamRequirements.trim() || undefined,
         expectedOutcomes: form.expectedOutcomes.trim() || undefined,
@@ -385,6 +388,30 @@ export default function SubmitProjectForm() {
                 Marca esta opción si el proyecto necesita contratos de
                 confidencialidad, convenios u otros trámites legales con el
                 proponente.
+              </FieldDescription>
+            </FieldContent>
+          </Field>
+
+          <Field orientation="horizontal">
+            <Checkbox
+              id="isPrivate"
+              checked={form.isPrivate}
+              onCheckedChange={(checked) =>
+                setForm((prev) => ({
+                  ...prev,
+                  isPrivate: checked === true,
+                }))
+              }
+            />
+            <FieldContent>
+              <FieldLabel htmlFor="isPrivate" className="font-normal">
+                Proyecto privado
+              </FieldLabel>
+              <FieldDescription>
+                Si está marcado, solo el proponente, el equipo asignado y los
+                evaluadores podrán verlo, incluso después de finalizar. Si lo
+                desmarcas, el proyecto se hará público cuando su estado sea
+                &quot;Cerrado&quot;.
               </FieldDescription>
             </FieldContent>
           </Field>

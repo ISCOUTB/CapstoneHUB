@@ -67,6 +67,7 @@ model User {
   uploadedAttachments    ProjectAttachment[]
   createdReports         ProjectReport[]          @relation("ReportCreatedBy")
   reviewedReports        ProjectReport[]          @relation("ReportReviewedBy")
+  proposedProjects       Project[]                @relation("ProjectProposedBy")
 
   @@index([fullName], map: "idx_user_full_name")
   @@map("user")
@@ -97,13 +98,16 @@ model Project {
   endDate              DateTime?     @map("end_date")
   estimatedCost        Decimal?      @map("estimated_cost") @db.Decimal(12, 2)
   requiresLegalization Boolean       @default(false) @map("requires_legalization")
+  isPrivate            Boolean       @default(true) @map("is_private")
   source               ProjectSource @default(external_entity)
   facultyAdvisor       String?       @map("faculty_advisor") @db.VarChar(255)
   teamRequirements     String?       @map("team_requirements") @db.Text
   expectedOutcomes     String?       @map("expected_outcomes") @db.Text
+  proposerUserId       Int?          @map("proposer_user_id")
   createdAt            DateTime      @default(now()) @map("created_at")
   updatedAt            DateTime      @updatedAt @map("updated_at")
 
+  proposer         User?                     @relation("ProjectProposedBy", fields: [proposerUserId], references: [id], onDelete: SetNull)
   schools          ProjectSchool[]
   naturalProposer  ProjectNaturalProposer?
   actorAssignments ProjectActorAssignment[]
@@ -117,6 +121,8 @@ model Project {
   @@index([status], map: "idx_project_status")
   @@index([startDate], map: "idx_project_start_date")
   @@index([createdAt], map: "idx_project_created_at")
+  @@index([isPrivate], map: "idx_project_is_private")
+  @@index([proposerUserId], map: "idx_project_proposer_user_id")
   @@map("project")
 }
 
