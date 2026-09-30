@@ -7,6 +7,7 @@ import {
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProjectsModule } from './projects/projects.module';
+import { PrismaModule } from './prisma.module';
 import { ObservationsModule } from './observations/observations.module';
 import { MilestonesModule } from './milestones/milestones.module';
 import { AttachmentsModule } from './attachments/attachments.module';
@@ -20,6 +21,8 @@ import { APP_FILTER } from '@nestjs/core';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
+    PrismaModule,
     ProjectsModule,
     ObservationsModule,
     MilestonesModule,
