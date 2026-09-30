@@ -9,6 +9,7 @@ import {
   Put,
   BadRequestException,
   NotFoundException,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { OptionalCurrentUser } from '../auth/optional-current-user.decorator';
@@ -68,10 +69,10 @@ export class ProjectsController {
   @Public()
   @Get(':id')
   async getProjectById(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @OptionalCurrentUser() user?: AuthenticatedUser,
   ): Promise<ProjectDetailResponse> {
-    const project = await this.projectService.project({ id: Number(id) }, user);
+    const project = await this.projectService.project({ id }, user);
 
     if (!project) {
       // El proyecto no existe o el espectador no puede verlo. Respondemos 404
@@ -176,21 +177,21 @@ export class ProjectsController {
 
   @Get(':id/assignable-users')
   async getAssignableUsers(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<AssignableUserResponse[]> {
-    return this.projectService.assignableUsers(user, Number(id));
+    return this.projectService.assignableUsers(user, id);
   }
 
   @Post(':id/actors')
   async addProjectActorAssignment(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() assignmentData: CreateProjectActorAssignmentDTO,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectActorAssignmentResponse> {
     return this.projectService.addProjectActorAssignment({
       user,
-      projectId: Number(id),
+      projectId: id,
       userId: assignmentData.userId,
       role: assignmentData.role,
     });
@@ -198,7 +199,7 @@ export class ProjectsController {
 
   @Put(':id')
   async projectUpdate(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateProjectDTO,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectDetailResponse> {
@@ -268,14 +269,14 @@ export class ProjectsController {
 
     return this.projectService.updateProject({
       user,
-      projectId: Number(id),
+      projectId: id,
       fields,
     });
   }
 
   @Patch(':id/status')
   async transitionProjectStatus(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() data: { status: ProjectStatus; description?: string },
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectDetailResponse> {
@@ -285,7 +286,7 @@ export class ProjectsController {
 
     return this.projectService.transitionProjectStatus({
       user,
-      projectId: Number(id),
+      projectId: id,
       nextStatus: data.status,
       description: data.description,
     });
@@ -293,9 +294,9 @@ export class ProjectsController {
 
   @Delete(':id')
   async deleteProject(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectModel> {
-    return this.projectService.deleteProject(user, { id: Number(id) });
+    return this.projectService.deleteProject(user, { id });
   }
 }

@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Res,
   StreamableFile,
@@ -30,13 +31,10 @@ export class AttachmentsController {
 
   @Get()
   listAttachments(
-    @Param('projectId') projectId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectAttachmentResponse[]> {
-    return this.attachmentsService.attachmentsByProject(
-      Number(projectId),
-      user,
-    );
+    return this.attachmentsService.attachmentsByProject(projectId, user);
   }
 
   @Post()
@@ -57,7 +55,7 @@ export class AttachmentsController {
     }),
   )
   uploadAttachment(
-    @Param('projectId') projectId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body('reportId') reportId: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
@@ -74,7 +72,7 @@ export class AttachmentsController {
     }
 
     return this.attachmentsService.createAttachment({
-      projectId: Number(projectId),
+      projectId,
       file,
       reportId: parsedReportId,
       user,
@@ -83,15 +81,15 @@ export class AttachmentsController {
 
   @Get(':attachmentId/download')
   async downloadAttachment(
-    @Param('projectId') projectId: string,
-    @Param('attachmentId') attachmentId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('attachmentId', ParseIntPipe) attachmentId: number,
     @CurrentUser() user: AuthenticatedUser,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     const { attachment, stream } =
       await this.attachmentsService.downloadAttachment({
-        projectId: Number(projectId),
-        attachmentId: Number(attachmentId),
+        projectId,
+        attachmentId,
         user,
       });
 
@@ -106,13 +104,13 @@ export class AttachmentsController {
 
   @Delete(':attachmentId')
   deleteAttachment(
-    @Param('projectId') projectId: string,
-    @Param('attachmentId') attachmentId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('attachmentId', ParseIntPipe) attachmentId: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectAttachmentResponse> {
     return this.attachmentsService.deleteAttachment({
-      projectId: Number(projectId),
-      attachmentId: Number(attachmentId),
+      projectId,
+      attachmentId,
       user,
     });
   }
