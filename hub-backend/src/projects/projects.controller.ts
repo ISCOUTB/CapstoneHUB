@@ -9,9 +9,7 @@ import {
   Put,
   BadRequestException,
   NotFoundException,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { OptionalCurrentUser } from '../auth/optional-current-user.decorator';
 import { Public } from '../auth/public.decorator';
@@ -61,7 +59,6 @@ export class ProjectsController {
   constructor(private projectService: ProjectsService) {}
 
   @Get('mine')
-  @UseGuards(AuthGuard)
   async getMyProjects(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<MyProjectResponse[]> {
@@ -94,7 +91,6 @@ export class ProjectsController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
   async createProject(
     @CurrentUser() user: AuthenticatedUser,
     @Body()
@@ -179,7 +175,6 @@ export class ProjectsController {
   }
 
   @Get(':id/assignable-users')
-  @UseGuards(AuthGuard)
   async getAssignableUsers(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -188,7 +183,6 @@ export class ProjectsController {
   }
 
   @Post(':id/actors')
-  @UseGuards(AuthGuard)
   async addProjectActorAssignment(
     @Param('id') id: string,
     @Body() assignmentData: CreateProjectActorAssignmentDTO,
@@ -203,7 +197,6 @@ export class ProjectsController {
   }
 
   @Put(':id')
-  @UseGuards(AuthGuard)
   async projectUpdate(
     @Param('id') id: string,
     @Body() data: UpdateProjectDTO,
@@ -281,7 +274,6 @@ export class ProjectsController {
   }
 
   @Patch(':id/status')
-  @UseGuards(AuthGuard)
   async transitionProjectStatus(
     @Param('id') id: string,
     @Body() data: { status: ProjectStatus; description?: string },
@@ -300,7 +292,6 @@ export class ProjectsController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard)
   async deleteProject(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,

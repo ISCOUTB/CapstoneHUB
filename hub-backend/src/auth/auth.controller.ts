@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AdminGuard } from './admin.guard';
-import { AuthGuard } from './auth.guard';
 import { Public } from './public.decorator';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -34,19 +33,19 @@ export class AuthController {
   }
 
   @Get('users')
-  @UseGuards(AuthGuard, AdminGuard)
+  @UseGuards(AdminGuard)
   users() {
     return this.authService.users();
   }
 
   @Post('users')
-  @UseGuards(AuthGuard, AdminGuard)
+  @UseGuards(AdminGuard)
   createUser(@Body() payload: CreateUserDto) {
     return this.authService.createUser(payload);
   }
 
   @Patch('users/:id/roles')
-  @UseGuards(AuthGuard, AdminGuard)
+  @UseGuards(AdminGuard)
   replaceUserRoles(
     @Param('id', ParseIntPipe) id: number,
     @Body() payload: UpdateUserRolesDto,

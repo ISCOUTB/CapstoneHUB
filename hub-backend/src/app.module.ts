@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProjectsModule } from './projects/projects.module';
@@ -10,12 +15,6 @@ import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
-import { ProjectsController } from './projects/projects.controller';
-import { ObservationsController } from './observations/observations.controller';
-import { MilestonesController } from './milestones/milestones.controller';
-import { AttachmentsController } from './attachments/attachments.controller';
-import { ReportsController } from './reports/reports.controller';
-import { AuthController } from './auth/auth.controller';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 
@@ -41,13 +40,6 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(LoggerMiddleware)
-      .forRoutes(
-        ProjectsController,
-        ObservationsController,
-        MilestonesController,
-        AttachmentsController,
-        ReportsController,
-        AuthController,
-      );
+      .forRoutes({ path: '*splat', method: RequestMethod.ALL });
   }
 }

@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -10,12 +9,11 @@ import {
   Post,
   Res,
   StreamableFile,
-  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
+import { contentDisposition, normalizeRangeHeader } from '../common/http';
 import {
   ConfirmReportFileContentDto,
   CreateReportContentDto,
@@ -32,34 +30,7 @@ import {
   ReportsService,
 } from './reports.service';
 
-function inlineContentDisposition(filename: string): string {
-  const ascii = filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
-  return `inline; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(
-    filename,
-  )}`;
-}
-
-/**
- * Acepta un único rango (`bytes=0-`, `bytes=500-1000`) y lo reenvía tal cual al
- * almacenamiento. Los rangos múltiples se rechazan porque S3 no los soporta.
- */
-function normalizeRangeHeader(value: string | undefined): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const trimmed = value.trim();
-  const match = /^bytes=(\d*)-(\d*)$/.exec(trimmed);
-
-  if (!match || (match[1] === '' && match[2] === '')) {
-    throw new BadRequestException('Invalid Range header');
-  }
-
-  return trimmed;
-}
-
 @Controller('projects/:projectId/reports')
-@UseGuards(AuthGuard)
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
@@ -236,7 +207,7 @@ export class ReportsController {
 
     response.set({
       'Content-Type': result.mimeType,
-      'Content-Disposition': inlineContentDisposition(result.fileName),
+      'Content-Disposition': contentDisposition(result.fileName, 'inline'),
       'Accept-Ranges': 'bytes',
     });
 

@@ -6,16 +6,13 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { MilestonesService, SelectedMilestone } from './milestones.service';
 import { CreateMilestoneDto, UpdateMilestoneDto } from './milestones.dto';
 
 @Controller('projects/:projectId/milestones')
-@UseGuards(AuthGuard)
 export class MilestonesController {
   constructor(private readonly milestonesService: MilestonesService) {}
 

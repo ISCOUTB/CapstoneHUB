@@ -1,5 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import {
@@ -8,7 +7,6 @@ import {
 } from './observations.service';
 
 @Controller('projects/:projectId/observations')
-@UseGuards(AuthGuard)
 export class ObservationsController {
   constructor(private observationsService: ObservationsService) {}
 
