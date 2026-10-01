@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { PrismaService } from '../prisma.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
@@ -11,7 +10,6 @@ import { AuthorizationService } from './authorization.service';
   controllers: [AuthController],
   providers: [
     AuthService,
-    PrismaService,
     AuthGuard,
     AdminGuard,
     AuthorizationService,

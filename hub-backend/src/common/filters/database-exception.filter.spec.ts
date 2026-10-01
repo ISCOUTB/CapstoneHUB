@@ -24,7 +24,7 @@ describe('isDatabaseUnavailable', () => {
     },
   );
 
-  it('does not treat other Prisma errors as database outages', () => {
+  it('ignores Prisma errors with unrelated codes', () => {
     expect(
       isDatabaseUnavailable(
         new Prisma.PrismaClientKnownRequestError('duplicate', {
@@ -46,12 +46,13 @@ describe('isDatabaseUnavailable', () => {
     ).toBe(true);
   });
 
-  it('detects driver connection errors', () => {
-    const error = Object.assign(new Error('connect ECONNREFUSED'), {
-      code: 'ECONNREFUSED',
-    });
+  it('ignores connection errors from other services (e.g. S3/MinIO)', () => {
+    const error = Object.assign(
+      new AggregateError([], 'connect ECONNREFUSED'),
+      { code: 'ECONNREFUSED' },
+    );
 
-    expect(isDatabaseUnavailable(error)).toBe(true);
+    expect(isDatabaseUnavailable(error)).toBe(false);
   });
 
   it('ignores unrelated errors and values', () => {

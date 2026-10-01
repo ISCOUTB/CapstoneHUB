@@ -9,9 +9,8 @@ import {
   Put,
   BadRequestException,
   NotFoundException,
-  UseGuards,
+  ParseIntPipe,
 } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { OptionalCurrentUser } from '../auth/optional-current-user.decorator';
 import { Public } from '../auth/public.decorator';
@@ -31,6 +30,7 @@ import {
   ProjectUpdateFields,
 } from './projects.service';
 import { CreateProjectActorAssignmentDTO } from './dto/create-project-actor-assignment.dto';
+import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDTO } from './dto/update-project.dto';
 
 function parseProjectDate(value: string | null): Date | null {
@@ -61,7 +61,6 @@ export class ProjectsController {
   constructor(private projectService: ProjectsService) {}
 
   @Get('mine')
-  @UseGuards(AuthGuard)
   async getMyProjects(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<MyProjectResponse[]> {
@@ -71,10 +70,10 @@ export class ProjectsController {
   @Public()
   @Get(':id')
   async getProjectById(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @OptionalCurrentUser() user?: AuthenticatedUser,
   ): Promise<ProjectDetailResponse> {
-    const project = await this.projectService.project({ id: Number(id) }, user);
+    const project = await this.projectService.project({ id }, user);
 
     if (!project) {
       // El proyecto no existe o el espectador no puede verlo. Respondemos 404
@@ -94,28 +93,9 @@ export class ProjectsController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
   async createProject(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    projectData: {
-      name: string;
-      description: string;
-      context: string;
-      namep: string;
-      ncedua?: string;
-      correo: string;
-      estimatedCost?: number;
-      location?: string;
-      startDate?: string;
-      requiresLegalization?: boolean;
-      isPrivate?: boolean;
-      source?: ProjectSource;
-      facultyAdvisor?: string;
-      teamRequirements?: string;
-      expectedOutcomes?: string;
-      deliverables?: string[];
-    },
+    @Body() projectData: CreateProjectDto,
   ): Promise<ProjectDetailResponse> {
     const {
       name,
@@ -179,33 +159,30 @@ export class ProjectsController {
   }
 
   @Get(':id/assignable-users')
-  @UseGuards(AuthGuard)
   async getAssignableUsers(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<AssignableUserResponse[]> {
-    return this.projectService.assignableUsers(user, Number(id));
+    return this.projectService.assignableUsers(user, id);
   }
 
   @Post(':id/actors')
-  @UseGuards(AuthGuard)
   async addProjectActorAssignment(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() assignmentData: CreateProjectActorAssignmentDTO,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectActorAssignmentResponse> {
     return this.projectService.addProjectActorAssignment({
       user,
-      projectId: Number(id),
+      projectId: id,
       userId: assignmentData.userId,
       role: assignmentData.role,
     });
   }
 
   @Put(':id')
-  @UseGuards(AuthGuard)
   async projectUpdate(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() data: UpdateProjectDTO,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectDetailResponse> {
@@ -275,15 +252,14 @@ export class ProjectsController {
 
     return this.projectService.updateProject({
       user,
-      projectId: Number(id),
+      projectId: id,
       fields,
     });
   }
 
   @Patch(':id/status')
-  @UseGuards(AuthGuard)
   async transitionProjectStatus(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() data: { status: ProjectStatus; description?: string },
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectDetailResponse> {
@@ -293,18 +269,17 @@ export class ProjectsController {
 
     return this.projectService.transitionProjectStatus({
       user,
-      projectId: Number(id),
+      projectId: id,
       nextStatus: data.status,
       description: data.description,
     });
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard)
   async deleteProject(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectModel> {
-    return this.projectService.deleteProject(user, { id: Number(id) });
+    return this.projectService.deleteProject(user, { id });
   }
 }

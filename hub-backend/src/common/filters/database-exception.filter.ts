@@ -26,7 +26,9 @@ const DATABASE_UNAVAILABLE_SYSTEM_CODES = new Set([
 
 /**
  * Determina si un error corresponde a una base de datos inalcanzable y no a un
- * error de negocio o de programación.
+ * error de negocio ni al fallo de otro servicio. La detección se limita a los
+ * errores de Prisma: otros clientes (por ejemplo el SDK de S3/MinIO) también
+ * lanzan `ECONNREFUSED`, y no deben reportarse como caída de la base de datos.
  */
 export function isDatabaseUnavailable(error: unknown): boolean {
   if (error instanceof Prisma.PrismaClientInitializationError) {
@@ -37,13 +39,6 @@ export function isDatabaseUnavailable(error: unknown): boolean {
     return (
       DATABASE_UNAVAILABLE_PRISMA_CODES.has(error.code) ||
       DATABASE_UNAVAILABLE_SYSTEM_CODES.has(error.code)
-    );
-  }
-
-  if (error && typeof error === 'object') {
-    const { code } = error as { code?: unknown };
-    return (
-      typeof code === 'string' && DATABASE_UNAVAILABLE_SYSTEM_CODES.has(code)
     );
   }
 

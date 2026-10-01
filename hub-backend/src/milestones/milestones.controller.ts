@@ -4,37 +4,35 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { MilestonesService, SelectedMilestone } from './milestones.service';
 import { CreateMilestoneDto, UpdateMilestoneDto } from './milestones.dto';
 
 @Controller('projects/:projectId/milestones')
-@UseGuards(AuthGuard)
 export class MilestonesController {
   constructor(private readonly milestonesService: MilestonesService) {}
 
   @Get()
   getProjectMilestones(
-    @Param('projectId') projectId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SelectedMilestone[]> {
-    return this.milestonesService.milestonesByProject(Number(projectId), user);
+    return this.milestonesService.milestonesByProject(projectId, user);
   }
 
   @Post()
   createProjectMilestone(
-    @Param('projectId') projectId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @Body() data: CreateMilestoneDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SelectedMilestone> {
     return this.milestonesService.createMilestone({
-      projectId: Number(projectId),
+      projectId,
       data,
       user,
     });
@@ -42,14 +40,14 @@ export class MilestonesController {
 
   @Patch(':milestoneId')
   updateProjectMilestone(
-    @Param('projectId') projectId: string,
-    @Param('milestoneId') milestoneId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('milestoneId', ParseIntPipe) milestoneId: number,
     @Body() data: UpdateMilestoneDto,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SelectedMilestone> {
     return this.milestonesService.updateMilestone({
-      projectId: Number(projectId),
-      milestoneId: Number(milestoneId),
+      projectId,
+      milestoneId,
       data,
       user,
     });
@@ -57,13 +55,13 @@ export class MilestonesController {
 
   @Delete(':milestoneId')
   deleteProjectMilestone(
-    @Param('projectId') projectId: string,
-    @Param('milestoneId') milestoneId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('milestoneId', ParseIntPipe) milestoneId: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<SelectedMilestone> {
     return this.milestonesService.deleteMilestone({
-      projectId: Number(projectId),
-      milestoneId: Number(milestoneId),
+      projectId,
+      milestoneId,
       user,
     });
   }

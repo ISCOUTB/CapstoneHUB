@@ -5,19 +5,19 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Res,
   StreamableFile,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { memoryStorage } from 'multer';
-import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
+import { contentDisposition } from '../common/http';
 import {
   ALLOWED_ATTACHMENT_MIME_TYPES,
   MAX_ATTACHMENT_SIZE_BYTES,
@@ -25,27 +25,16 @@ import {
 import { AttachmentsService } from './attachments.service';
 import { ProjectAttachmentResponse } from './attachments.select';
 
-function contentDisposition(filename: string): string {
-  const ascii = filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
-  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(
-    filename,
-  )}`;
-}
-
 @Controller('projects/:projectId/attachments')
-@UseGuards(AuthGuard)
 export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}
 
   @Get()
   listAttachments(
-    @Param('projectId') projectId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectAttachmentResponse[]> {
-    return this.attachmentsService.attachmentsByProject(
-      Number(projectId),
-      user,
-    );
+    return this.attachmentsService.attachmentsByProject(projectId, user);
   }
 
   @Post()
@@ -66,7 +55,7 @@ export class AttachmentsController {
     }),
   )
   uploadAttachment(
-    @Param('projectId') projectId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body('reportId') reportId: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
@@ -83,7 +72,7 @@ export class AttachmentsController {
     }
 
     return this.attachmentsService.createAttachment({
-      projectId: Number(projectId),
+      projectId,
       file,
       reportId: parsedReportId,
       user,
@@ -92,15 +81,15 @@ export class AttachmentsController {
 
   @Get(':attachmentId/download')
   async downloadAttachment(
-    @Param('projectId') projectId: string,
-    @Param('attachmentId') attachmentId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('attachmentId', ParseIntPipe) attachmentId: number,
     @CurrentUser() user: AuthenticatedUser,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     const { attachment, stream } =
       await this.attachmentsService.downloadAttachment({
-        projectId: Number(projectId),
-        attachmentId: Number(attachmentId),
+        projectId,
+        attachmentId,
         user,
       });
 
@@ -115,13 +104,13 @@ export class AttachmentsController {
 
   @Delete(':attachmentId')
   deleteAttachment(
-    @Param('projectId') projectId: string,
-    @Param('attachmentId') attachmentId: string,
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('attachmentId', ParseIntPipe) attachmentId: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectAttachmentResponse> {
     return this.attachmentsService.deleteAttachment({
-      projectId: Number(projectId),
-      attachmentId: Number(attachmentId),
+      projectId,
+      attachmentId,
       user,
     });
   }
