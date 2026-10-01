@@ -30,6 +30,7 @@ import {
   ProjectUpdateFields,
 } from './projects.service';
 import { CreateProjectActorAssignmentDTO } from './dto/create-project-actor-assignment.dto';
+import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDTO } from './dto/update-project.dto';
 
 function parseProjectDate(value: string | null): Date | null {
@@ -94,25 +95,7 @@ export class ProjectsController {
   @Post()
   async createProject(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    projectData: {
-      name: string;
-      description: string;
-      context: string;
-      namep: string;
-      ncedua?: string;
-      correo: string;
-      estimatedCost?: number;
-      location?: string;
-      startDate?: string;
-      requiresLegalization?: boolean;
-      isPrivate?: boolean;
-      source?: ProjectSource;
-      facultyAdvisor?: string;
-      teamRequirements?: string;
-      expectedOutcomes?: string;
-      deliverables?: string[];
-    },
+    @Body() projectData: CreateProjectDto,
   ): Promise<ProjectDetailResponse> {
     const {
       name,
