@@ -10,7 +10,7 @@ import { getApiUrl, getAuthHeaders } from "@/lib/api";
 import { apiErrorMessage, ensureOk } from "@/lib/http";
 
 const PROJECT_EDIT_CONFLICT_MESSAGE =
-  "El proyecto está cerrado o rechazado y ya no se puede editar.";
+  "El proyecto está finalizado o rechazado y ya no se puede editar.";
 
 export type CreateProjectPayload = {
   name: string;

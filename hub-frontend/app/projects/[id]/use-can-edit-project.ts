@@ -17,7 +17,7 @@ const ASSIGNED_EDITOR_ROLES = new Set(["coordinator", "advisor"]);
  * Indica si el espectador puede editar los datos del proyecto. Pueden hacerlo
  * los administradores y los evaluadores globales, los coordinadores y asesores
  * asignados al proyecto con su rol, y el proponente mientras el proyecto siga en
- * propuesta o revisión. Nunca en proyectos cerrados o rechazados. Es la
+ * propuesta o revisión. Nunca en proyectos finalizados o rechazados. Es la
  * comprobación de interfaz; el backend vuelve a validarlo.
  */
 export function useCanEditProject(project: ProjectDetails | null): boolean {

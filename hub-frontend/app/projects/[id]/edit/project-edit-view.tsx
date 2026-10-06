@@ -66,8 +66,8 @@ export default function ProjectEditView({ id }: { readonly id: string }) {
               <CardTitle>Edición no disponible</CardTitle>
               <CardDescription>
                 Solo los administradores y evaluadores pueden editar los datos
-                del proyecto, y no es posible cuando el proyecto está cerrado o
-                rechazado.
+                del proyecto, y no es posible cuando el proyecto está finalizado
+                o rechazado.
               </CardDescription>
             </CardHeader>
             <CardContent>
