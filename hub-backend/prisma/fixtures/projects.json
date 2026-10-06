@@ -53,7 +53,7 @@
       "teamRequirements": "1 estudiante de Ingeniería Industrial y 1 de Ingeniería Mecánica.",
       "expectedOutcomes": "Sistema de monitoreo validado en una ruta interprovincial.",
       "deliverables": ["Diseño del sistema de monitoreo", "Prototipo de hardware", "Informe de validación en campo"],
-      "targetStatus": "assigned",
+      "targetStatus": "paused",
       "actors": [
         { "email": "coord.luis@capstonehub.test", "role": "coordinator" },
         { "email": "eval.carlos@capstonehub.test", "role": "evaluator" },
@@ -261,7 +261,7 @@
       "teamRequirements": "1 estudiante de Ingeniería Industrial y 1 de Ingeniería en Software.",
       "expectedOutcomes": "Sistema de trazabilidad operativo con un exportador piloto.",
       "deliverables": ["Diseño de la solución", "Prototipo de trazabilidad", "Manual de uso"],
-      "targetStatus": "assigned",
+      "targetStatus": "cancelled",
       "actors": [
         { "email": "coord.ana@capstonehub.test", "role": "coordinator" },
         { "email": "eval.maria@capstonehub.test", "role": "evaluator" },
