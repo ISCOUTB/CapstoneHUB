@@ -116,8 +116,10 @@ proyecto. El `admin` siempre pasa.
   proyecto con su rol correspondiente. Un proyecto `closed` o `rejected` es de
   solo lectura (responde `409`). Cada campo modificado se registra en
   `ProjectChangeHistory`.
-- \* Los evaluadores solo pueden mover proyectos en `proposed`/`under_review` o
-  rechazar cualquier proyecto activo; el resto son acciones de coordinador.
+- \* Los evaluadores gestionan la fase de propuesta (`proposed`/`under_review` y
+  `approved → rejected`); el resto de transiciones son acciones de coordinador
+  (`approved → in_progress`, `in_progress → {paused, closed, cancelled}`,
+  `paused → {in_progress, cancelled}`).
 - † El `student` no edita los datos por su rol, pero el **proponente** (de
   cualquier rol global, incluido `student`) puede editar mientras el proyecto
   esté en `proposed` o `under_review`.
@@ -131,22 +133,30 @@ y existen `INITIAL_ADMIN_EMAIL`, `INITIAL_ADMIN_PASSWORD` y
 El camino feliz es:
 
 ```
-proposed → under_review → approved → assigned → in_progress → closed
+proposed → under_review → approved → in_progress → closed
 ```
 
-`rejected` es terminal y puede alcanzarse desde cualquier estado activo. Las
-transiciones se validan en `ProjectsService`; cada cambio se registra en
-`ProjectStatusHistory` dentro de una transacción, exige un motivo (salvo para
-`admin`) y respeta los permisos del rol que realiza la transición.
+`rejected` es terminal y se alcanza desde la fase de propuesta
+(`proposed`/`under_review`/`approved`). `cancelled` también es terminal y
+representa un proyecto que se canceló **después de haber empezado** (desde
+`in_progress` o `paused`); `paused` suspende la ejecución y permite reanudarla o
+cancelarla. Las transiciones se validan en `ProjectsService`; cada cambio se
+registra en `ProjectStatusHistory` dentro de una transacción, exige un motivo
+(salvo para `admin`) y respeta los permisos del rol que realiza la transición.
 
 | Desde | Siguientes estados permitidos |
 | --- | --- |
 | `proposed` | `under_review`, `rejected` |
 | `under_review` | `approved`, `rejected` |
-| `approved` | `assigned`, `rejected` |
-| `assigned` | `in_progress`, `rejected` |
-| `in_progress` | `closed`, `rejected` |
-| `closed` / `rejected` | — (terminal) |
+| `approved` | `in_progress`, `rejected` |
+| `in_progress` | `paused`, `closed`, `cancelled` |
+| `paused` | `in_progress`, `cancelled` |
+| `closed` / `cancelled` / `rejected` | — (terminal) |
+
+Los evaluadores gestionan las transiciones de la fase de propuesta
+(`proposed`/`under_review`, y `approved → rejected`); los coordinadores
+asignados gestionan el resto (`approved → in_progress`, `in_progress → {paused,
+closed, cancelled}`, `paused → {in_progress, cancelled}`).
 
 ### Fases (semestres) e hitos mínimos
 
@@ -188,21 +198,24 @@ stateDiagram-v2
     [*] --> proposed
     proposed --> under_review
     under_review --> approved
-    approved --> assigned
-    assigned --> in_progress
+    approved --> in_progress
+    in_progress --> paused
+    paused --> in_progress
     in_progress --> closed
+    in_progress --> cancelled
+    paused --> cancelled
     proposed --> rejected
     under_review --> rejected
     approved --> rejected
-    assigned --> rejected
-    in_progress --> rejected
 
     classDef active fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
     classDef done fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef stopped fill:#fef3c7,stroke:#d97706,color:#92400e
     classDef bad fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
-    class proposed,under_review,approved,assigned,in_progress active
+    class proposed,under_review,approved,in_progress active
+    class paused stopped
     class closed done
-    class rejected bad
+    class cancelled,rejected bad
 ```
 
 ## Modelo de datos
@@ -335,7 +348,7 @@ Comandos: `npx prisma migrate dev`, `npm run seed` (y variantes como
 | `GET` | `/projects/mine` | Proyectos propuestos y asignados al usuario. |
 | `GET` | `/projects/:id` | Detalle (404 si el proyecto es privado y el solicitante no es miembro). |
 | `POST` | `/projects` | Crear un proyecto; `isPrivate` lo define el proponente. |
-| `PUT` | `/projects/:id` | Editar los datos (admin, evaluador, coordinador/asesor asignado o proponente en revisión; `409` si está cerrado/rechazado). Registra historial por campo. |
+| `PUT` | `/projects/:id` | Editar los datos (admin, evaluador, coordinador/asesor asignado o proponente en revisión; `409` si está finalizado/rechazado). Registra historial por campo. |
 | `DELETE` | `/projects/:id` | Borrar (admin o coordinador asignado). |
 | `PATCH` | `/projects/:id/status` | Cambiar estado (registra historial). |
 | `POST` | `/projects/:id/phase/advance` | Avanzar de fase (semestre) si los hitos mínimos de la fase actual están completos (`409` si no). |
