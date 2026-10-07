@@ -23,9 +23,10 @@ const projectStatuses = [
   { value: "proposed", label: "Propuesto" },
   { value: "under_review", label: "En revisión" },
   { value: "approved", label: "Aprobado" },
-  { value: "assigned", label: "Asignado" },
   { value: "in_progress", label: "En progreso" },
-  { value: "closed", label: "Cerrado" },
+  { value: "paused", label: "En pausa" },
+  { value: "closed", label: "Finalizado" },
+  { value: "cancelled", label: "Cancelado" },
   { value: "rejected", label: "Rechazado" },
 ] as const;
 
@@ -54,21 +55,27 @@ export function canManageStatus(
 
   const isAssignedEvaluator = assignments.some(
     (assignment) =>
-      assignment.userId === userId &&
-      assignment.role === "evaluator",
+      assignment.userId === userId && assignment.role === "evaluator",
   );
+  const canEvaluate =
+    roles.includes("evaluator") &&
+    isAssignedEvaluator &&
+    (currentStatus === "proposed" ||
+      currentStatus === "under_review" ||
+      currentStatus === "approved");
 
   const isAssignedCoordinator = assignments.some(
     (assignment) =>
-      assignment.userId === userId &&
-      assignment.role === "coordinator",
+      assignment.userId === userId && assignment.role === "coordinator",
   );
+  const canCoordinate =
+    roles.includes("coordinator") &&
+    isAssignedCoordinator &&
+    (currentStatus === "approved" ||
+      currentStatus === "in_progress" ||
+      currentStatus === "paused");
 
-  if (currentStatus === "proposed" || currentStatus === "under_review") {
-    return isAssignedEvaluator;
-  }
-
-  return isAssignedEvaluator || isAssignedCoordinator;
+  return canEvaluate || canCoordinate;
 }
 
 function getAvailableStatuses(
@@ -79,22 +86,50 @@ function getAvailableStatuses(
     return projectStatuses;
   }
 
-  if (
-    roles.includes("evaluator") &&
-    (currentStatus === "proposed" ||
-      currentStatus === "under_review")
-  ) {
-    return projectStatuses;
+  const isEvaluator = roles.includes("evaluator");
+  const isCoordinator = roles.includes("coordinator");
+  const allowed = new Set<string>();
+
+  switch (currentStatus) {
+    case "proposed":
+      if (isEvaluator) {
+        allowed.add("under_review");
+        allowed.add("rejected");
+      }
+      break;
+    case "under_review":
+      if (isEvaluator) {
+        allowed.add("approved");
+        allowed.add("rejected");
+      }
+      break;
+    case "approved":
+      if (isEvaluator) {
+        allowed.add("rejected");
+      }
+      if (isCoordinator) {
+        allowed.add("in_progress");
+      }
+      break;
+    case "in_progress":
+      if (isCoordinator) {
+        allowed.add("paused");
+        allowed.add("closed");
+        allowed.add("cancelled");
+      }
+      break;
+    case "paused":
+      if (isCoordinator) {
+        allowed.add("in_progress");
+        allowed.add("cancelled");
+      }
+      break;
+    default:
+      break;
   }
 
-  if (roles.includes("evaluator")) {
-    return projectStatuses.filter(
-      (projectStatus) => projectStatus.value === "rejected",
-    );
-  }
-
-  return projectStatuses.filter(
-    (projectStatus) => projectStatus.value !== "rejected",
+  return projectStatuses.filter((projectStatus) =>
+    allowed.has(projectStatus.value),
   );
 }
 

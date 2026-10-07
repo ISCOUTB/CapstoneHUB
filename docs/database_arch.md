@@ -8,8 +8,8 @@ Ver también: [Arquitectura del backend](./backend_arch.md).
 
 ## Enums
 
-- `ProjectStatus`: `proposed`, `under_review`, `approved`, `assigned`,
-  `in_progress`, `closed`, `rejected`.
+- `ProjectStatus`: `proposed`, `under_review`, `approved`, `in_progress`,
+  `paused`, `closed`, `cancelled`, `rejected`.
 - `UserRole`: `admin`, `evaluator`, `coordinator`, `advisor`, `student`, `proposer`.
 - `ActorRole`: `advisor`, `coordinator`, `student`, `evaluator`.
 - `ProjectSource`: `external_entity`, `research`, `internal_need`,
@@ -314,9 +314,10 @@ classDiagram
         proposed
         under_review
         approved
-        assigned
         in_progress
+        paused
         closed
+        cancelled
         rejected
     }
 

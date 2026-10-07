@@ -164,12 +164,13 @@ describe('ProjectsService', () => {
     [ProjectStatus.proposed, ProjectStatus.rejected],
     [ProjectStatus.under_review, ProjectStatus.approved],
     [ProjectStatus.under_review, ProjectStatus.rejected],
-    [ProjectStatus.approved, ProjectStatus.assigned],
+    [ProjectStatus.approved, ProjectStatus.in_progress],
     [ProjectStatus.approved, ProjectStatus.rejected],
-    [ProjectStatus.assigned, ProjectStatus.in_progress],
-    [ProjectStatus.assigned, ProjectStatus.rejected],
+    [ProjectStatus.in_progress, ProjectStatus.paused],
     [ProjectStatus.in_progress, ProjectStatus.closed],
-    [ProjectStatus.in_progress, ProjectStatus.rejected],
+    [ProjectStatus.in_progress, ProjectStatus.cancelled],
+    [ProjectStatus.paused, ProjectStatus.in_progress],
+    [ProjectStatus.paused, ProjectStatus.cancelled],
   ])('accepts valid transition %s -> %s', (previousStatus, nextStatus) => {
     expect(isValidProjectStatusTransition(previousStatus, nextStatus)).toBe(
       true,
@@ -179,7 +180,12 @@ describe('ProjectsService', () => {
   it.each([
     [ProjectStatus.proposed, ProjectStatus.approved],
     [ProjectStatus.under_review, ProjectStatus.in_progress],
+    [ProjectStatus.approved, ProjectStatus.closed],
+    [ProjectStatus.in_progress, ProjectStatus.rejected],
+    [ProjectStatus.paused, ProjectStatus.closed],
+    [ProjectStatus.paused, ProjectStatus.rejected],
     [ProjectStatus.closed, ProjectStatus.rejected],
+    [ProjectStatus.cancelled, ProjectStatus.in_progress],
     [ProjectStatus.rejected, ProjectStatus.proposed],
   ])('rejects invalid transition %s -> %s', (previousStatus, nextStatus) => {
     expect(isValidProjectStatusTransition(previousStatus, nextStatus)).toBe(
@@ -351,7 +357,7 @@ describe('ProjectsService', () => {
 
   it('rejects advancing the phase when the project is not in progress', async () => {
     const { prisma } = createAdvancePrismaMock({
-      status: ProjectStatus.assigned,
+      status: ProjectStatus.approved,
     });
     const service = createService(prisma, createAuthorizationMock());
 

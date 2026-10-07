@@ -38,9 +38,10 @@ const statusOptions = [
   { value: "proposed", label: "Propuesto" },
   { value: "under_review", label: "En revisión" },
   { value: "approved", label: "Aprobado" },
-  { value: "assigned", label: "Asignado" },
   { value: "in_progress", label: "En progreso" },
-  { value: "closed", label: "Cerrado" },
+  { value: "paused", label: "En pausa" },
+  { value: "closed", label: "Finalizado" },
+  { value: "cancelled", label: "Cancelado" },
   { value: "rejected", label: "Rechazado" },
 ];
 

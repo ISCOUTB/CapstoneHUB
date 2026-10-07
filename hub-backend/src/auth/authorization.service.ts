@@ -286,9 +286,10 @@ export class AuthorizationService {
     }
 
     const evaluatorTransitions =
-      nextStatus === ProjectStatus.rejected ||
       previousStatus === ProjectStatus.proposed ||
-      previousStatus === ProjectStatus.under_review;
+      previousStatus === ProjectStatus.under_review ||
+      (previousStatus === ProjectStatus.approved &&
+        nextStatus === ProjectStatus.rejected);
 
     if (evaluatorTransitions) {
       this.assertRole(user, UserRole.evaluator);

@@ -4,14 +4,16 @@ export function formatStatus(status: string): string {
       return "Propuesto";
     case "in_progress":
       return "En progreso";
+    case "paused":
+      return "En pausa";
     case "under_review":
       return "En revisión";
     case "approved":
       return "Aprobado";
-    case "assigned":
-      return "Asignado";
     case "closed":
-      return "Cerrado";
+      return "Finalizado";
+    case "cancelled":
+      return "Cancelado";
     case "rejected":
       return "Rechazado";
     default:

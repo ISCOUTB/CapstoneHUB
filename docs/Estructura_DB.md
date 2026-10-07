@@ -66,9 +66,10 @@ Enum ProjectStatus
 - proposed
 - under_review
 - approved
-- assigned
 - in_progress
+- paused
 - closed
+- cancelled
 - rejected
 
 Enum ActorRole
@@ -107,6 +108,6 @@ Transiciones de estado controladas
 - Se permiten solo estas transiciones:
   - proposed -> under_review | rejected
   - under_review -> approved | rejected
-  - approved -> assigned | rejected
-  - assigned -> in_progress | rejected
-  - in_progress -> closed | rejected
+  - approved -> in_progress | rejected
+  - in_progress -> paused | closed | cancelled
+  - paused -> in_progress | cancelled

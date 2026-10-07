@@ -14,9 +14,10 @@ enum ProjectStatus {
   proposed
   under_review
   approved
-  assigned
   in_progress
+  paused
   closed
+  cancelled
   rejected
 }
 

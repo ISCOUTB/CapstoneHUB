@@ -46,13 +46,21 @@ export function isValidProjectStatusTransition(
       ProjectStatus.approved,
       ProjectStatus.rejected,
     ],
-    [ProjectStatus.approved]: [ProjectStatus.assigned, ProjectStatus.rejected],
-    [ProjectStatus.assigned]: [
+    [ProjectStatus.approved]: [
       ProjectStatus.in_progress,
       ProjectStatus.rejected,
     ],
-    [ProjectStatus.in_progress]: [ProjectStatus.closed, ProjectStatus.rejected],
+    [ProjectStatus.in_progress]: [
+      ProjectStatus.paused,
+      ProjectStatus.closed,
+      ProjectStatus.cancelled,
+    ],
+    [ProjectStatus.paused]: [
+      ProjectStatus.in_progress,
+      ProjectStatus.cancelled,
+    ],
     [ProjectStatus.closed]: [],
+    [ProjectStatus.cancelled]: [],
     [ProjectStatus.rejected]: [],
   };
   return transitions[previousStatus].includes(nextStatus);

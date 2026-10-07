@@ -1,22 +1,31 @@
 import { ProjectStatus } from '../../src/generated/prisma/client';
 
+/** Camino lineal del "happy path" (sin los estados laterales paused/cancelled). */
 export const STATUS_SEQUENCE: ProjectStatus[] = [
   'proposed',
   'under_review',
   'approved',
-  'assigned',
   'in_progress',
   'closed',
 ];
 
-/**
- * Mirrors ProjectsService.isValidProjectStatusTransition: rejected is reachable
- * from any non-terminal state, so it is modeled as a direct proposed -> rejected
- * step for the seed.
- */
+/** Caminos laterales hasta un estado que no está en la secuencia lineal. */
+const SIDE_PATHS: Partial<Record<ProjectStatus, ProjectStatus[]>> = {
+  rejected: ['proposed', 'rejected'],
+  paused: ['proposed', 'under_review', 'approved', 'in_progress', 'paused'],
+  cancelled: [
+    'proposed',
+    'under_review',
+    'approved',
+    'in_progress',
+    'cancelled',
+  ],
+};
+
 export function statusPathFor(target: ProjectStatus): ProjectStatus[] {
-  if (target === 'rejected') {
-    return ['proposed', 'rejected'];
+  const sidePath = SIDE_PATHS[target];
+  if (sidePath) {
+    return sidePath;
   }
 
   const index = STATUS_SEQUENCE.indexOf(target);
@@ -36,9 +45,9 @@ export function authorRoleForTransition(
   next: ProjectStatus,
 ): 'evaluator' | 'coordinator' {
   if (
-    next === 'rejected' ||
     previous === 'proposed' ||
-    previous === 'under_review'
+    previous === 'under_review' ||
+    (previous === 'approved' && next === 'rejected')
   ) {
     return 'evaluator';
   }
