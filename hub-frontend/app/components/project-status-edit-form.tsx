@@ -15,12 +15,6 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,7 +42,7 @@ type ProjectStatusEditFormProps = {
   onProjectChange?: () => Promise<void>;
 };
 
-function canManageStatus(
+export function canManageStatus(
   userId: number,
   roles: string[],
   currentStatus: string,
@@ -188,11 +182,6 @@ export default function ProjectStatusEditForm({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Actualizar estado del proyecto</CardTitle>
-      </CardHeader>
-      <CardContent>
         <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field>
@@ -282,7 +271,5 @@ export default function ProjectStatusEditForm({
             ) : null}
           </FieldGroup>
         </form>
-      </CardContent>
-    </Card>
   );
 }

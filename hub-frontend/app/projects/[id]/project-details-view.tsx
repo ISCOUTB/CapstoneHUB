@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { RiEditLine } from "@remixicon/react";
-import ProjectStatusEditForm from "../../components/project-status-edit-form";
+import ProjectStatusDialog from "../../components/project-status-dialog";
 import ProjectCategoriesPanel from "./project-categories-panel";
 import ProjectDetailsBadges from "./project-details-badges";
 import ProjectDetailsHeader from "./project-details-header";
@@ -84,19 +84,31 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
                   onProjectChange={refresh}
                 />
 
-                {canEdit ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    nativeButton={false}
-                    render={
-                      <Link href={`/projects/${project.id}/edit`}>
-                        <RiEditLine data-icon="inline-start" />
-                        Editar proyecto
-                      </Link>
-                    }
-                  />
-                ) : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  {isMember ? (
+                    <ProjectStatusDialog
+                      projectId={project.id}
+                      currentStatus={project.status}
+                      assignments={assignments}
+                      milestones={project.milestones ?? []}
+                      onProjectChange={refresh}
+                    />
+                  ) : null}
+
+                  {canEdit ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={
+                        <Link href={`/projects/${project.id}/edit`}>
+                          <RiEditLine data-icon="inline-start" />
+                          Editar proyecto
+                        </Link>
+                      }
+                    />
+                  ) : null}
+                </div>
               </div>
 
               <TabsContent value="general" className="mt-6 flex flex-col gap-6">
@@ -117,18 +129,6 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
             </ProjectTabs>
           </CardContent>
         </Card>
-
-        {isMember ? (
-          <div className="mt-6 flex w-full justify-end">
-            <ProjectStatusEditForm
-              projectId={project.id}
-              currentStatus={project.status}
-              assignments={assignments}
-              milestones={project.milestones ?? []}
-              onProjectChange={refresh}
-            />
-          </div>
-        ) : null}
       </section>
     </main>
   );
