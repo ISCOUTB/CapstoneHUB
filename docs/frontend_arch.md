@@ -24,17 +24,18 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 
 ## Rutas
 
-| Ruta | Pantalla |
-| --- | --- |
-| `/` | Inicio. |
-| `/login` | Inicio de sesión. |
-| `/register` | Registro de proponentes (auto-login). |
-| `/projects` | Lista de proyectos. |
-| `/projects/[id]` | Detalle por pestañas (general, equipo, hitos, entregas, anexos, historial). |
-| `/projects/[id]/edit` | Edición de los datos del proyecto (admin o evaluador). |
-| `/submit`, `/submit/natural` | Propuesta de proyecto. |
-| `/profile/kpis` | Panel de indicadores (KPIs) para docentes, evaluadores y administradores. |
-| `/admin/users` | Administración de usuarios y roles. |
+| Ruta                         | Pantalla                                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `/`                          | Inicio.                                                                                                                              |
+| `/login`                     | Inicio de sesión.                                                                                                                    |
+| `/register`                  | Registro de proponentes (auto-login).                                                                                                |
+| `/projects`                  | Lista de proyectos.                                                                                                                  |
+| `/projects/[id]`             | Detalle por pestañas (general, equipo, hitos, entregas, anexos, historial).                                                          |
+| `/projects/[id]/edit`        | Edición de los datos del proyecto (admin o evaluador).                                                                               |
+| `/submit`, `/submit/natural` | Propuesta de proyecto.                                                                                                               |
+| `/profile/kpis`              | Panel de indicadores (KPIs) para docentes, evaluadores y administradores.                                                            |
+| `/dashboard`                 | Panorama por semestre (académico y por fase del proyecto). Solo administradores y evaluadores; aparece como «Panorama» en el navbar. |
+| `/admin/users`               | Administración de usuarios y roles.                                                                                                  |
 
 ## Patrón BFF (Backend For Frontend)
 
@@ -64,7 +65,7 @@ descarga/reproducción sigue pasando por el proxy `stream`, que reenvía `Range`
   (`ActorRole`), y qué roles de proyecto habilita cada rol global.
 - `project-permissions.ts` — reglas de permisos del cliente (editar, gestionar,
   hitos, estados), espejo de `AuthorizationService`.
-- `stats.ts` — indicadores (KPIs) del panel de docentes, evaluadores y admin.
+- `stats.ts` — indicadores (KPIs) del panel de docentes, evaluadores y admin, y el panorama por semestre.
 - `utils.ts` — helpers de formato (estados, fechas, roles).
 
 Cada petición autenticada lee el token de `auth.ts` y agrega
@@ -119,5 +120,5 @@ frontend redirige a `/login?next=…`. `logout` también navega al login.
 
 - Variable `BACKEND_URL` para el proxy.
 - `NEXT_PUBLIC_SITE_URL` como base de la API cuando se llama desde el cliente.
-- Build Docker multi-etapa con salida *standalone*, expuesto en el puerto
+- Build Docker multi-etapa con salida _standalone_, expuesto en el puerto
   `3000`.

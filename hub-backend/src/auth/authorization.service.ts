@@ -257,6 +257,21 @@ export class AuthorizationService {
     );
   }
 
+  /**
+   * El panorama por semestre agrega datos de todos los proyectos (incluidos
+   * los privados), así que solo lo ven quienes ya pueden consultar cualquier
+   * proyecto: administradores y evaluadores.
+   */
+  assertCanViewAllProjectsStats(user: AuthenticatedUser): void {
+    if (this.canReviewAnyProject(user)) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'An evaluator or admin role is required to view the semester statistics',
+    );
+  }
+
   async assertCanManageProject(
     user: AuthenticatedUser,
     projectId: number,

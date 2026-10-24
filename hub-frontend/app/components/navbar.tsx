@@ -9,6 +9,7 @@ import { AuthNav } from "./auth-nav";
 import { UtbLogo } from "./utb-logo";
 import { cn } from "@/lib/utils";
 import { formatRole } from "../services/utils";
+import { canViewSemesterStats } from "../services/stats";
 
 interface NavLink {
   href: string;
@@ -57,12 +58,14 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isAdmin = session?.user.roles.includes("admin") ?? false;
+  const canSeeDashboard = canViewSemesterStats(session?.user.roles ?? []);
   const userRoles = (session?.user.roles ?? [])
     .map((role) => formatRole(role))
     .join(", ");
 
   const links: NavLink[] = [
     { href: "/projects", label: "Proyectos" },
+    ...(canSeeDashboard ? [{ href: "/dashboard", label: "Panorama" }] : []),
     ...(isAdmin ? [{ href: "/admin/users", label: "Administración" }] : []),
     { href: "/submit", label: "Proponer" },
   ];
