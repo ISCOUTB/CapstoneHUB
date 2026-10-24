@@ -259,6 +259,18 @@ export type ProjectDetails = {
   endDate: string | null;
   estimatedCost: string | null;
   facultyAdvisor?: string | null;
+  facultyAdvisors?: string[];
+  engineeringArea?: string | null;
+  externalAdvisorName?: string | null;
+  externalAdvisorEmail?: string | null;
+  externalNit?: string | null;
+  researchGroup?: string | null;
+  socialOrganization?: string | null;
+  socialNit?: string | null;
+  socialLocation?: string | null;
+  projectScope?: string | null;
+  monetaryResources?: string | null;
+  monetaryResourcesDescription?: string | null;
   teamRequirements?: string | null;
   expectedOutcomes?: string | null;
   deliverables?: ProjectDeliverableItem[];

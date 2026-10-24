@@ -83,10 +83,104 @@ export default function ProjectGeneralTab({
     },
   ];
 
-  if (project.facultyAdvisor) {
+  if (project.engineeringArea) {
+    const engineeringAreas: Record<string, string> = {
+      systems: "Ingeniería de Sistemas",
+      industrial: "Ingeniería Industrial",
+      civil: "Ingeniería Civil",
+      electrical: "Ingeniería Eléctrica y Electrónica",
+      mechanical: "Ingeniería Mecánica",
+      environmental: "Ingeniería Ambiental",
+      other: "Otra área o ingeniería",
+    };
+
+    sections.push({
+      title: "Área o ingeniería",
+      content: <p>{engineeringAreas[project.engineeringArea] ?? project.engineeringArea}</p>,
+    });
+  }
+
+  if (project.projectScope) {
+    sections.push({
+      title: "Alcance del proyecto",
+      content: <p className="whitespace-pre-line">{project.projectScope}</p>,
+    });
+  }
+
+  if (project.facultyAdvisors && project.facultyAdvisors.length > 0) {
+    sections.push({
+      title: "Profesores de contacto",
+      content: (
+        <ul className="list-disc space-y-1 pl-5">
+          {project.facultyAdvisors.map((advisor) => (
+            <li key={advisor}>{advisor}</li>
+          ))}
+        </ul>
+      ),
+    });
+  } else if (project.facultyAdvisor) {
     sections.push({
       title: "Asesor de la facultad",
       content: <p>{project.facultyAdvisor}</p>,
+    });
+  }
+
+  if (project.source === "external_entity") {
+    const externalDetails = [
+      project.externalNit ? `NIT: ${project.externalNit}` : null,
+      project.externalAdvisorName ? `Asesor externo: ${project.externalAdvisorName}` : null,
+      project.externalAdvisorEmail ? `Correo: ${project.externalAdvisorEmail}` : null,
+    ].filter(Boolean);
+
+    if (externalDetails.length > 0) {
+      sections.push({
+        title: "Contacto externo",
+        content: (
+          <div className="flex flex-col gap-1">
+            {externalDetails.map((detail) => <p key={detail}>{detail}</p>)}
+          </div>
+        ),
+      });
+    }
+  }
+
+  if (project.researchGroup) {
+    sections.push({
+      title: "Grupo de investigación",
+      content: <p>{project.researchGroup}</p>,
+    });
+  }
+
+  if (project.socialOrganization || project.socialLocation || project.socialNit) {
+    sections.push({
+      title: "Información de impacto social",
+      content: (
+        <div className="flex flex-col gap-1">
+          {project.socialOrganization && <p>Junta de Acción Comunal: {project.socialOrganization}</p>}
+          {project.socialNit && <p>NIT: {project.socialNit}</p>}
+          {project.socialLocation && <p>Localización: {project.socialLocation}</p>}
+        </div>
+      ),
+    });
+  }
+
+  if (project.monetaryResources) {
+    const resourcesLabels: Record<string, string> = {
+      yes: "Sí",
+      no: "No",
+      na: "N/A",
+    };
+
+    sections.push({
+      title: "Recursos monetarios",
+      content: (
+        <div className="flex flex-col gap-1">
+          <p>{resourcesLabels[project.monetaryResources] ?? project.monetaryResources}</p>
+          {project.monetaryResourcesDescription && (
+            <p className="whitespace-pre-line">{project.monetaryResourcesDescription}</p>
+          )}
+        </div>
+      ),
     });
   }
 

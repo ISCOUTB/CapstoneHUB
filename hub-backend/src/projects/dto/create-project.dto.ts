@@ -106,4 +106,65 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   submissionConsentAt?: string;
+
+  @ApiPropertyOptional({ description: 'área o ingeniería del proyecto' })
+  @IsOptional()
+  @IsString()
+  engineeringArea?: string;
+
+  @ApiPropertyOptional({ description: 'nombre del asesor externo' })
+  @IsOptional()
+  @IsString()
+  externalAdvisorName?: string;
+
+  @ApiPropertyOptional({ description: 'correo del asesor externo' })
+  @IsOptional()
+  @IsString()
+  externalAdvisorEmail?: string;
+
+  @ApiPropertyOptional({ description: 'NIT de la empresa externa' })
+  @IsOptional()
+  @IsString()
+  externalNit?: string;
+
+  @ApiPropertyOptional({ description: 'grupo de investigación' })
+  @IsOptional()
+  @IsString()
+  researchGroup?: string;
+
+  @ApiPropertyOptional({ description: 'Junta de Acción Comunal' })
+  @IsOptional()
+  @IsString()
+  socialOrganization?: string;
+
+  @ApiPropertyOptional({ description: 'NIT de la organización social' })
+  @IsOptional()
+  @IsString()
+  socialNit?: string;
+
+  @ApiPropertyOptional({ description: 'localización del proyecto social' })
+  @IsOptional()
+  @IsString()
+  socialLocation?: string;
+
+  @ApiPropertyOptional({ description: 'alcance específico del proyecto' })
+  @IsOptional()
+  @IsString()
+  projectScope?: string;
+
+  @ApiPropertyOptional({ description: 'disponibilidad de recursos monetarios: yes, no o na' })
+  @IsOptional()
+  @IsString()
+  monetaryResources?: string;
+
+  @ApiPropertyOptional({ description: 'descripción de los recursos monetarios disponibles' })
+  @IsOptional()
+  @IsString()
+  monetaryResourcesDescription?: string;
+
+  @ApiPropertyOptional({ type: [String], description: 'profesores de contacto' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  facultyAdvisors?: string[];
 }

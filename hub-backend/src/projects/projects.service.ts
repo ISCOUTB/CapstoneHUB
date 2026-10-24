@@ -119,8 +119,8 @@ export const DEFAULT_FINAL_REPORT_MIME_TYPES = [
 export const DEFAULT_FINAL_REPORT_MAX_FILES = 1;
 
 /**
- * Fecha por defecto del hito "Documento final": un año después del inicio del
- * proyecto (o un año desde hoy si no hay fecha de inicio).
+ * Fecha por defecto del hito "Documento final": ocho meses después del inicio
+ * del proyecto o desde hoy si no hay fecha de inicio.
  */
 export function defaultFinalMilestoneDueDate(
   startDate: Date | string | null | undefined,
@@ -128,7 +128,7 @@ export function defaultFinalMilestoneDueDate(
   const parsed = startDate ? new Date(startDate) : new Date();
   const base = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   const dueDate = new Date(base);
-  dueDate.setMonth(dueDate.getMonth() + 12);
+  dueDate.setMonth(dueDate.getMonth() + 8);
   return dueDate;
 }
 
@@ -557,25 +557,91 @@ export class ProjectsService {
     return this.prisma.$transaction(async (transaction) => {
       // Todo proyecto nace con el hito mínimo "Documento final" del segundo
       // semestre y su entrega asociada para adjuntar el documento.
+      const areaMilestones: Record<string, string[]> = {
+        systems: [
+          'Levantamiento de requisitos',
+          'Diseño de la solución',
+          'Desarrollo del prototipo',
+          'Pruebas y validación',
+        ],
+        industrial: [
+          'Diagnóstico del proceso',
+          'Diseño de la propuesta de mejora',
+          'Implementación o simulación',
+          'Evaluación de resultados',
+        ],
+        civil: [
+          'Diagnóstico y levantamiento de información',
+          'Diseño preliminar',
+          'Desarrollo de la propuesta técnica',
+          'Validación de la solución',
+        ],
+        electrical: [
+          'Levantamiento de requerimientos técnicos',
+          'Diseño eléctrico o electrónico',
+          'Implementación del prototipo',
+          'Pruebas de funcionamiento',
+        ],
+        mechanical: [
+          'Análisis de necesidades',
+          'Diseño mecánico preliminar',
+          'Construcción o simulación del prototipo',
+          'Pruebas y ajustes',
+        ],
+        environmental: [
+          'Diagnóstico ambiental',
+          'Diseño de la estrategia de intervención',
+          'Implementación o evaluación piloto',
+          'Evaluación del impacto',
+        ],
+        other: [
+          'Definición de requerimientos',
+          'Diseño de la propuesta',
+          'Desarrollo o implementación',
+          'Validación de resultados',
+        ],
+      };
+      const milestoneTitles = areaMilestones[data.engineeringArea ?? ''] ?? [
+        'Definición de requerimientos',
+        'Diseño de la propuesta',
+        'Desarrollo o implementación',
+        'Validación de resultados',
+      ];
+      const milestoneData = [
+        ...milestoneTitles.map((title, index) => {
+          const milestoneDueDate = data.startDate
+            ? new Date(data.startDate)
+            : new Date();
+          milestoneDueDate.setMonth(milestoneDueDate.getMonth() + (index + 1) * 2);
+
+          return {
+            title,
+            phase: index < 2 ? ProjectPhase.semester_1 : ProjectPhase.semester_2,
+            isMinimum: true,
+            completed: false,
+            dueDate: milestoneDueDate,
+          };
+        }),
+        {
+          title: DEFAULT_FINAL_MILESTONE_TITLE,
+          phase: ProjectPhase.semester_2,
+          isMinimum: true,
+          completed: false,
+          dueDate,
+        },
+      ];
+
       const project = await transaction.project.create({
         data: {
           ...data,
-          milestones: {
-            create: [
-              {
-                title: DEFAULT_FINAL_MILESTONE_TITLE,
-                phase: ProjectPhase.semester_2,
-                isMinimum: true,
-                completed: false,
-                dueDate,
-              },
-            ],
-          },
+          milestones: { create: milestoneData },
         },
-        select: { id: true, milestones: { select: { id: true } } },
+        select: { id: true, milestones: { select: { id: true, title: true } } },
       });
 
-      const milestoneId = project.milestones[0]?.id;
+      const milestoneId = project.milestones.find(
+        (milestone) => milestone.title === DEFAULT_FINAL_MILESTONE_TITLE,
+      )?.id;
 
       if (milestoneId !== undefined) {
         const report = await transaction.projectReport.create({
