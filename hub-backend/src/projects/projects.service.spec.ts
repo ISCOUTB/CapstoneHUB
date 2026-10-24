@@ -737,10 +737,13 @@ describe('ProjectsService', () => {
     };
     const projectCreate = jest
       .fn<
-        Promise<{ id: number; milestones: { id: number }[] }>,
+        Promise<{ id: number; milestones: { id: number; title: string }[] }>,
         [{ data: unknown }]
       >()
-      .mockResolvedValue({ id: 11, milestones: [{ id: 100 }] });
+      .mockResolvedValue({
+        id: 11,
+        milestones: [{ id: 100, title: DEFAULT_FINAL_MILESTONE_TITLE }],
+      });
     const reportCreate = jest
       .fn<Promise<{ id: number }>, [{ data: Record<string, unknown> }]>()
       .mockResolvedValue({ id: 200 });
@@ -788,7 +791,13 @@ describe('ProjectsService', () => {
         proposer: { connect: { id: EVALUATOR_USER.id } },
       }),
     );
-    const milestone = data.milestones.create[0];
+    expect(data.milestones.create).toHaveLength(5);
+    expect(data.milestones.create.every((milestone) => milestone.isMinimum)).toBe(
+      true,
+    );
+    const milestone = data.milestones.create.find(
+      (item) => item.title === DEFAULT_FINAL_MILESTONE_TITLE,
+    );
     expect(milestone).toEqual(
       expect.objectContaining({
         title: DEFAULT_FINAL_MILESTONE_TITLE,
@@ -797,11 +806,11 @@ describe('ProjectsService', () => {
         completed: false,
       }),
     );
-    expect(milestone.dueDate).toBeInstanceOf(Date);
+    expect(milestone?.dueDate).toBeInstanceOf(Date);
     expect(
-      (milestone.dueDate.getFullYear() - 2026) * 12 +
-        (milestone.dueDate.getMonth() - 0),
-    ).toBe(12);
+      (milestone!.dueDate.getFullYear() - 2026) * 12 +
+        (milestone!.dueDate.getMonth() - 0),
+    ).toBe(8);
 
     expect(reportCreate).toHaveBeenCalledTimes(1);
     expect(reportCreate.mock.calls[0][0].data).toMatchObject({
