@@ -59,7 +59,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/multer": "^2.2.0",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.0.0",
     "dotenv": "^17.4.2",
