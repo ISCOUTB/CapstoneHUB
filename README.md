@@ -13,6 +13,7 @@ Monorepo con dos aplicaciones que comparten una base de datos PostgreSQL y un bu
 
 - **Backend.** Autenticación propia: contraseñas con **scrypt** y tokens **HMAC-SHA256**; `AuthGuard` global (todas las rutas exigen token salvo las marcadas `@Public()`). Los roles globales (`admin`, `directivo`, `evaluator`, `teacher`, `proposer`, `student`) se combinan con asignaciones por proyecto en `AuthorizationService`. Swagger en `/api`.
 - **Frontend.** El navegador nunca llama al backend: cada `app/api/**/route.ts` actúa como **BFF** y reenvía a `BACKEND_URL`, evitando CORS. La sesión se guarda en `localStorage` y la identidad visual sigue el [sistema de diseño UTB](./docs/frontend_design_system.md).
+- **Evaluación.** Rúbricas por área creadas por directivos, asignadas por proyecto y semestre, y una evaluación con nota ponderada por cada evaluador asignado. El avance de fase y el cierre exigen las evaluaciones correspondientes.
 - **Archivos.** Los binarios viven en RustFS/S3; las subidas y descargas pasan por la API y los objetos huérfanos se limpian con `npm run storage:gc`.
 - **Errores.** Las respuestas siguen una forma consistente (`statusCode`, `message`, `error`); la caída de la base de datos se traduce a `503` y hay una sonda `GET /health`.
 

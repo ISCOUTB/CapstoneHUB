@@ -137,6 +137,30 @@ aprobadores exigidos son el proponente (`proposerUserId`, si existe) y cada
 evaluador asignado (`ActorRole.evaluator`); la aprobación se puede retirar antes
 del avance y las filas quedan como registro histórico.
 
+### RubricTemplate y RubricCriterion
+
+Plantilla de rúbrica reutilizable. `name`, `description?`, `area?`, `isDefault`
+(plantilla de sistema “Nota general”), `isActive` y `createdByUserId?`.
+`RubricCriterion` guarda cada criterio con `position`, `title`, `description?` y
+`weightPercent`; los porcentajes deben sumar exactamente 100. La plantilla
+general se inserta en la migración inicial y no se puede editar ni archivar.
+
+### ProjectRubricAssignment
+
+Rúbrica elegida para un proyecto y una fase. Clave única `(projectId, phase)`;
+`rubricTemplateId` apunta a la plantilla elegida. Si no hay fila, la evaluación
+usa la plantilla general por defecto. Se bloquea el cambio cuando la fase ya
+tiene evaluaciones.
+
+### ProjectEvaluation y ProjectEvaluationCriterion
+
+Evaluación semestral de un evaluador. `projectId + phase + evaluatorUserId` es
+único, `totalScore` es la nota ponderada `0.00–5.00`, y `generalComment` es
+opcional. `ProjectEvaluationCriterion` guarda un snapshot de `title`,
+`weightPercent`, `score` y `comment?`, de modo que editar una plantilla no altera
+notas históricas. Cada evaluación se puede corregir mientras el proyecto esté
+`in_progress` y la fase sea la actual.
+
 ### ProjectAttachment
 
 Metadatos de un archivo subido. El binario se almacena en S3/RustFS;
@@ -345,6 +369,58 @@ classDiagram
         +DateTime createdAt
     }
 
+    class RubricTemplate {
+        +Int id
+        +String name
+        +String description
+        +String area
+        +Boolean isDefault
+        +Boolean isActive
+        +Int createdByUserId
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class RubricCriterion {
+        +Int id
+        +Int rubricTemplateId
+        +Int position
+        +String title
+        +String description
+        +Int weightPercent
+    }
+
+    class ProjectRubricAssignment {
+        +Int id
+        +Int projectId
+        +ProjectPhase phase
+        +Int rubricTemplateId
+        +Int assignedByUserId
+        +DateTime assignedAt
+    }
+
+    class ProjectEvaluation {
+        +Int id
+        +Int projectId
+        +ProjectPhase phase
+        +Int evaluatorUserId
+        +Int rubricTemplateId
+        +Decimal totalScore
+        +String generalComment
+        +DateTime submittedAt
+        +DateTime updatedAt
+    }
+
+    class ProjectEvaluationCriterion {
+        +Int id
+        +Int evaluationId
+        +Int position
+        +String title
+        +Int weightPercent
+        +Decimal score
+        +String comment
+    }
+
     %% `under_review` se conserva solo por los datos legados.
     class ProjectStatus {
         <<enumeration>>
@@ -424,9 +500,18 @@ classDiagram
     ProjectReportContent "0..1" --> "0..1" ProjectAttachment : attachment
     ProjectMilestones "1" *-- "0..*" MilestoneReportLink : reportLinks
     ProjectReport "1" *-- "0..*" MilestoneReportLink : milestoneLinks
+    RubricTemplate "1" *-- "1..*" RubricCriterion : criteria
+    RubricTemplate "1" *-- "0..*" ProjectRubricAssignment : assignments
+    Project "1" *-- "0..*" ProjectRubricAssignment : rubricAssignments
+    Project "1" *-- "0..*" ProjectEvaluation : evaluations
+    ProjectEvaluation "1" *-- "1..*" ProjectEvaluationCriterion : criteria
+    RubricTemplate "1" *-- "0..*" ProjectEvaluation : evaluations
+    User "1" *-- "0..*" RubricTemplate : createdRubricTemplates
 
     UserRoleAssignment ..> UserRole
     ProjectActorAssignment ..> ActorRole
+    ProjectRubricAssignment ..> ProjectPhase
+    ProjectEvaluation ..> ProjectPhase
     Project ..> ProjectStatus
     Project ..> ProjectPhase
     ProjectStatusHistory ..> ProjectStatus

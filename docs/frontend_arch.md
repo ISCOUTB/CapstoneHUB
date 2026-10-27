@@ -24,18 +24,19 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 
 ## Rutas
 
-| Ruta                         | Pantalla                                                                                                                             |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/`                          | Inicio.                                                                                                                              |
-| `/login`                     | Inicio de sesión.                                                                                                                    |
-| `/register`                  | Registro de proponentes (auto-login).                                                                                                |
-| `/projects`                  | Lista de proyectos.                                                                                                                  |
-| `/projects/[id]`             | Detalle por pestañas (general, equipo, hitos, entregas, anexos, historial).                                                          |
-| `/projects/[id]/edit`        | Edición de los datos del proyecto (admin o evaluador).                                                                               |
-| `/submit`, `/submit/natural` | Propuesta de proyecto.                                                                                                               |
-| `/profile/kpis`              | Panel de indicadores (KPIs) para docentes, evaluadores y administradores.                                                            |
-| `/dashboard`                 | Panorama por semestre (académico y por fase del proyecto). Solo administradores y evaluadores; aparece como «Panorama» en el navbar. |
-| `/admin/users`               | Administración de usuarios y roles.                                                                                                  |
+| Ruta | Pantalla |
+| --- | --- |
+| `/` | Inicio. |
+| `/login` | Inicio de sesión. |
+| `/register` | Registro de proponentes (auto-login). |
+| `/projects` | Lista de proyectos. |
+| `/projects/[id]` | Detalle por pestañas (general, equipo, hitos, entregas, evaluación, anexos, historial). |
+| `/projects/[id]/edit` | Edición de los datos del proyecto (admin, directivo o actor asignado). |
+| `/submit`, `/submit/natural` | Propuesta de proyecto. |
+| `/profile/kpis` | Panel de indicadores y panorama por semestre (docentes, evaluadores, directivos y admin; el panorama es solo para admin/directivo). |
+| `/admin/users` | Administración de usuarios y roles. |
+| `/admin/rubrics` | Plantillas de rúbricas para directivos y administradores. |
+| `/admin/rubrics/new`, `/admin/rubrics/[id]` | Crear y editar una plantilla de rúbrica. |
 
 ## Patrón BFF (Backend For Frontend)
 
@@ -50,6 +51,9 @@ reenvía por streaming al backend, que los guarda en el almacenamiento. La
 descarga/reproducción sigue pasando por el proxy `stream`, que reenvía `Range`.
 
 `app/api/auth/proxy.ts` es un helper reutilizable para login y usuarios.
+`app/api/rubrics/[...path]/route.ts` hace lo mismo para las plantillas de
+rúbricas; las evaluaciones y asignaciones cuelgan de `/api/projects/...` y usan
+el proxy de proyectos.
 
 ## Capa de servicios
 
@@ -65,8 +69,11 @@ descarga/reproducción sigue pasando por el proxy `stream`, que reenvía `Range`
   (`ActorRole`), y qué roles de proyecto habilita cada rol global.
 - `project-permissions.ts` — reglas de permisos del cliente (editar, gestionar,
   hitos, estados), espejo de `AuthorizationService`.
-- `stats.ts` — indicadores (KPIs) del panel de docentes, evaluadores, directivos y admin, y el panorama por semestre.
-- `utils.ts` — helpers de formato (estados, fechas, roles).
+- `rubrics.ts` — plantillas de rúbricas y su administración.
+- `evaluations.ts` — evaluación semestral, notas, rúbrica asignada y asignación
+  de plantillas desde la pestaña Evaluación.
+- `stats.ts` — KPIs del panel y panorama global por semestre.
+- `utils.ts` — helpers de formato (estados, fechas, roles, notas).
 
 Cada petición autenticada lee el token de `auth.ts` y agrega
 `Authorization: Bearer <token>`.
@@ -86,12 +93,34 @@ entrada por cada campo modificado con su valor anterior y nuevo. Al desmarcar
 «Proyecto privado» se muestra una advertencia y una confirmación antes de
 publicarlo.
 
+La pestaña **Evaluación** es visible para administradores, directivos y
+evaluadores asignados. Muestra la rúbrica de cada semestre, el estado de
+evaluaciones y el promedio. Los evaluadores asignados y el admin llenan la
+rúbrica criterio por criterio (nota 0.0–5.0 y comentario opcional); el directivo
+solo consulta y asigna la plantilla de cada fase. La fase no se puede avanzar ni
+el proyecto cerrar sin las evaluaciones exigidas.
+
 La pestaña **Hitos** permite marcar hitos como **mínimos**, asignarles una fase
 (semestre) y vincularles entregas del proyecto; un hito con entregas vinculadas
 no se puede completar hasta que todas estén aceptadas. Al elegir el estado
-«Finalizado» se avisa si aún quedan hitos mínimos pendientes. En las entregas se
-muestra a qué hitos están vinculadas y se advierte antes de eliminar hitos o
-entregas que tienen vínculos.
+«Finalizado» se avisa si aún quedan hitos mínimos pendientes o falta la
+evaluación de la fase. En las entregas se muestra a qué hitos están vinculadas y
+se advierte antes de eliminar hitos o entregas que tienen vínculos.
+
+## Statusbar y pestañas de usuario
+
+La navegación principal vive en la navbar superior: Inicio, Proyectos y
+Proponer. El widget de perfil de la navbar abre un dropdown con **Mi perfil** y
+**Cerrar sesión**. Debajo de la navbar, `PageFrame` monta un **statusbar** con la
+categoría y el título de la página (`Administración / Rúbricas`, `Proyecto #12 /
+Nombre`). Inmediatamente debajo aparecen las **pestañas de acciones de usuario**:
+Administración (solo admin), Rúbricas para admin/directivo, Indicadores para los
+roles con acceso a KPIs y Mi perfil.
+
+Solo la navbar es sticky; el statusbar y las pestañas acompañan al scroll. La
+home, login y registro no muestran este chrome. Las pestañas son solo atajos: la
+página de rúbricas vive en `/admin/rubrics` y el backend vuelve a validar los
+permisos.
 
 ## Autenticación
 
