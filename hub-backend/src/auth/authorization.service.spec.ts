@@ -900,6 +900,88 @@ describe('AuthorizationService', () => {
     });
   });
 
+  describe('rubric and evaluation permissions', () => {
+    it.each([UserRole.admin, UserRole.directivo])(
+      'allows %s users to manage rubrics',
+      (role) => {
+        const service = new AuthorizationService({} as never);
+
+        expect(() =>
+          service.assertCanManageRubrics(user([role])),
+        ).not.toThrow();
+      },
+    );
+
+    it('rejects evaluators and teachers from managing rubrics', () => {
+      const service = new AuthorizationService({} as never);
+
+      expect(() =>
+        service.assertCanManageRubrics(user([UserRole.evaluator])),
+      ).toThrow(ForbiddenException);
+      expect(() =>
+        service.assertCanManageRubrics(user([UserRole.teacher])),
+      ).toThrow(ForbiddenException);
+    });
+
+    it('lets directivos view evaluations without a project assignment', async () => {
+      const { service, findAssignment } = createService();
+
+      await expect(
+        service.assertCanViewProjectEvaluations(user([UserRole.directivo]), 10),
+      ).resolves.toBeUndefined();
+      expect(findAssignment).not.toHaveBeenCalled();
+    });
+
+    it('requires an evaluator assignment to view evaluations', async () => {
+      const { service, findAssignment } = createService({ id: 3 });
+
+      await expect(
+        service.assertCanViewProjectEvaluations(user([UserRole.evaluator]), 10),
+      ).resolves.toBeUndefined();
+      expect(findAssignment).toHaveBeenCalledWith({
+        where: { projectId: 10, userId: 7, role: ActorRole.evaluator },
+        select: { id: true },
+      });
+    });
+
+    it('rejects teachers from viewing project evaluations', async () => {
+      const { service } = createService();
+
+      await expect(
+        service.assertCanViewProjectEvaluations(user([UserRole.teacher]), 10),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('does not let an unassigned directivo submit an evaluation', async () => {
+      const { service } = createService();
+
+      await expect(
+        service.assertCanSubmitProjectEvaluation(
+          user([UserRole.directivo]),
+          10,
+        ),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('lets an admin or assigned evaluator submit an evaluation', async () => {
+      const adminService = createService().service;
+      await expect(
+        adminService.assertCanSubmitProjectEvaluation(
+          user([UserRole.admin]),
+          10,
+        ),
+      ).resolves.toBeUndefined();
+
+      const evaluatorService = createService({ id: 3 }).service;
+      await expect(
+        evaluatorService.assertCanSubmitProjectEvaluation(
+          user([UserRole.evaluator]),
+          10,
+        ),
+      ).resolves.toBeUndefined();
+    });
+  });
+
   describe('assertCanViewKpis', () => {
     it.each([
       UserRole.admin,

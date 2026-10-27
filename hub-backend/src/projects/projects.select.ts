@@ -23,6 +23,7 @@ import {
   nextProjectPhase,
   requiredPhaseApprovers,
 } from './projects.phase';
+import type { EvaluationGateResponse } from '../evaluations/evaluations.service';
 
 const projectStatusHistorySelect = {
   id: true,
@@ -191,6 +192,8 @@ export type ProjectDetailResponse = ProjectListResponse & {
   isProposer: boolean;
   /** Visto bueno de fase: quién falta y quién ya aprobó. */
   phaseApprovals: ProjectPhaseApprovalResponse;
+  /** Estado de evaluación de la fase actual; solo para miembros. */
+  evaluationGate: EvaluationGateResponse | null;
   createdAt: Date;
   updatedAt: Date;
   observations: {
@@ -437,6 +440,7 @@ export function mapProjectDetailResponse(
     expectedOutcomes: project.expectedOutcomes,
     isProposer: viewer != null && project.proposerUserId === viewer.id,
     phaseApprovals: mapPhaseApprovals(project, canViewSensitiveData),
+    evaluationGate: null,
     deliverables: project.deliverables
       .slice()
       .sort((left, right) => left.id - right.id)

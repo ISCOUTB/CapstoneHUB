@@ -286,6 +286,56 @@ export class AuthorizationService {
   }
 
   /**
+   * Crear y administrar plantillas de rúbricas está reservado a directivos y
+   * administradores.
+   */
+  assertCanManageRubrics(user: AuthenticatedUser): void {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.directivo)
+    ) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'A directivo or admin role is required to manage rubrics',
+    );
+  }
+
+  /**
+   * Consultar la pestaña de evaluación: admin y directivo ven cualquier
+   * proyecto; el resto solo si está asignado como evaluador.
+   */
+  async assertCanViewProjectEvaluations(
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<void> {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.directivo)
+    ) {
+      return;
+    }
+
+    await this.assertProjectAssignment(user, projectId, ActorRole.evaluator);
+  }
+
+  /**
+   * Enviar una evaluación: admin o evaluador asignado. Un directivo sin
+   * asignación de evaluador solo puede consultar y asignar la rúbrica.
+   */
+  async assertCanSubmitProjectEvaluation(
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<void> {
+    if (user.roles.includes(UserRole.admin)) {
+      return;
+    }
+
+    await this.assertProjectAssignment(user, projectId, ActorRole.evaluator);
+  }
+
+  /**
    * Exige que el usuario pueda dar su visto bueno para avanzar de fase: el
    * proponente del proyecto o un evaluador asignado. Devuelve el papel con el
    * que participa en la aprobación.

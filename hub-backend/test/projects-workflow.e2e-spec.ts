@@ -12,7 +12,10 @@ import {
   ProjectStatus,
   UserRole,
 } from '../src/generated/prisma/client';
-import { createProject } from './helpers/projects';
+import {
+  createProject,
+  submitCurrentPhaseEvaluation,
+} from './helpers/projects';
 import { PrismaService } from '../src/prisma.service';
 
 describe('Projects workflow (e2e)', () => {
@@ -69,6 +72,14 @@ describe('Projects workflow (e2e)', () => {
       .post(`/projects/${projectId}/phase/approvals`)
       .set(bearer(evaluator.accessToken))
       .expect(201);
+
+    // La evaluación de la fase es obligatoria antes de avanzar.
+    await request(app.getHttpServer())
+      .post(`/projects/${projectId}/phase/advance`)
+      .set(bearer(admin.accessToken))
+      .expect(409);
+
+    await submitCurrentPhaseEvaluation(app, projectId, evaluator.accessToken);
 
     // Ahora sí avanza a semester_2.
     await request(app.getHttpServer())

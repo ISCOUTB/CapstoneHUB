@@ -14,6 +14,8 @@ import { AttachmentsModule } from './attachments/attachments.module';
 import { ReportsModule } from './reports/reports.module';
 import { StatsModule } from './stats/stats.module';
 import { AuthModule } from './auth/auth.module';
+import { RubricsModule } from './rubrics/rubrics.module';
+import { EvaluationsModule } from './evaluations/evaluations.module';
 import { HealthModule } from './health/health.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
@@ -32,6 +34,8 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     ReportsModule,
     StatsModule,
     AuthModule,
+    RubricsModule,
+    EvaluationsModule,
     HealthModule,
     ThrottlerModule.forRoot({
       throttlers: [{ name: 'default', ttl: 60_000, limit: 300 }],
