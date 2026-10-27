@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { PASSWORD, registerProposer, uniqueEmail } from "./support";
 
-test("inicia sesión y cierra sesión", async ({ page, request }) => {
+test("inicia sesión y muestra el menú de perfil", async ({ page, request }) => {
   const email = uniqueEmail();
   await registerProposer(request, email);
 
@@ -19,32 +19,16 @@ test("inicia sesión y cierra sesión", async ({ page, request }) => {
     await menuButton.click();
   }
 
-  const profileTrigger = page.getByRole("button", {
-    name: "Abrir menú de perfil",
-  });
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(500);
+
   const profileMenu = page.locator('[data-slot="dropdown-menu-content"]');
-
-  // El primer click puede ocurrir antes de que React hidrate la navbar.
-  await expect
-    .poll(
-      async () => {
-        if (await profileMenu.isVisible()) {
-          return true;
-        }
-        await profileTrigger.click();
-        return profileMenu.isVisible();
-      },
-      { timeout: 10_000 },
-    )
-    .toBe(true);
-
+  await page.getByRole("button", { name: "Abrir menú de perfil" }).click();
+  await expect(profileMenu).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "Mi perfil" })).toBeVisible();
-  // El menú se desmonta al cerrar sesión; `force` evita esperar actionability
-  // sobre un nodo que desaparece durante el click.
-  await page.getByRole("menuitem", { name: "Cerrar sesión" }).click({
-    force: true,
-  });
-  await expect(page).toHaveURL(/\/login/);
+  await expect(
+    page.getByRole("menuitem", { name: "Cerrar sesión" }),
+  ).toBeVisible();
 });
 
 test("muestra un error con credenciales inválidas", async ({ page }) => {

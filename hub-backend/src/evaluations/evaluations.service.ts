@@ -109,11 +109,11 @@ export type EvaluationGateResponse = {
   missingEvaluators: { userId: number; fullName: string }[];
 };
 
-const TERMINAL_PROJECT_STATUSES: ProjectStatus[] = [
+const TERMINAL_PROJECT_STATUSES = new Set<ProjectStatus>([
   ProjectStatus.closed,
   ProjectStatus.cancelled,
   ProjectStatus.rejected,
-];
+]);
 
 const EVALUATION_PHASES: ProjectPhase[] = [
   ProjectPhase.semester_1,
@@ -233,7 +233,7 @@ export class EvaluationsService {
           canEvaluate: canSubmit,
           canAssignRubric:
             manager &&
-            !TERMINAL_PROJECT_STATUSES.includes(project.status) &&
+            !TERMINAL_PROJECT_STATUSES.has(project.status) &&
             evaluations.length === 0,
         } satisfies PhaseEvaluationResponse;
       }),

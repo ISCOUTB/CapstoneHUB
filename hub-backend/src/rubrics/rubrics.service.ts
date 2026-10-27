@@ -60,11 +60,11 @@ export type RubricTemplateResponse = {
   criteria: RubricCriterionResponse[];
 };
 
-const TERMINAL_PROJECT_STATUSES: ProjectStatus[] = [
+const TERMINAL_PROJECT_STATUSES = new Set<ProjectStatus>([
   ProjectStatus.closed,
   ProjectStatus.cancelled,
   ProjectStatus.rejected,
-];
+]);
 
 function managerRole(user: AuthenticatedUser): boolean {
   return (
@@ -356,7 +356,7 @@ export class RubricsService {
       throw new NotFoundException(`Project ${projectId} not found`);
     }
 
-    if (TERMINAL_PROJECT_STATUSES.includes(project.status)) {
+    if (TERMINAL_PROJECT_STATUSES.has(project.status)) {
       throw new BadRequestException(
         'Rubrics cannot be assigned to a closed project',
       );
@@ -440,7 +440,7 @@ export class RubricsService {
       throw new NotFoundException(`Project ${projectId} not found`);
     }
 
-    if (TERMINAL_PROJECT_STATUSES.includes(project.status)) {
+    if (TERMINAL_PROJECT_STATUSES.has(project.status)) {
       throw new BadRequestException(
         'Rubrics cannot be changed on a closed project',
       );

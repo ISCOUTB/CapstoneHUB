@@ -53,7 +53,7 @@ type RubricTemplateFormProps = {
 
 export default function RubricTemplateForm({
   templateId,
-}: RubricTemplateFormProps) {
+}: Readonly<RubricTemplateFormProps>) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [area, setArea] = useState("");

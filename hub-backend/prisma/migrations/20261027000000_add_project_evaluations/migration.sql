@@ -2,9 +2,9 @@
 
 CREATE TABLE "rubric_template" (
     "id" SERIAL NOT NULL,
-    "name" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL, -- NOSONAR: PostgreSQL, no PL/SQL
     "description" TEXT,
-    "area" VARCHAR(120),
+    "area" VARCHAR(120), -- NOSONAR: PostgreSQL, no PL/SQL
     "is_default" BOOLEAN NOT NULL DEFAULT false,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_by_user_id" INTEGER,
@@ -18,7 +18,7 @@ CREATE TABLE "rubric_criterion" (
     "id" SERIAL NOT NULL,
     "rubric_template_id" INTEGER NOT NULL,
     "position" INTEGER NOT NULL,
-    "title" VARCHAR(255) NOT NULL,
+    "title" VARCHAR(255) NOT NULL, -- NOSONAR: PostgreSQL, no PL/SQL
     "description" TEXT,
     "weight_percent" INTEGER NOT NULL,
 
@@ -54,7 +54,7 @@ CREATE TABLE "project_evaluation_criterion" (
     "id" SERIAL NOT NULL,
     "evaluation_id" INTEGER NOT NULL,
     "position" INTEGER NOT NULL,
-    "title" VARCHAR(255) NOT NULL,
+    "title" VARCHAR(255) NOT NULL, -- NOSONAR: PostgreSQL, no PL/SQL
     "weight_percent" INTEGER NOT NULL,
     "score" DECIMAL(3,2) NOT NULL,
     "comment" TEXT,

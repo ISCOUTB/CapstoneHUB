@@ -7,9 +7,9 @@ import { canManageRubrics } from "../../services/roles";
 
 export default function RubricsAdminLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   const router = useRouter();
   const { session, ready, isAuthenticated } = useAuth();
 

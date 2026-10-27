@@ -50,19 +50,85 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
+function evaluationSubmitLabel(
+  isPending: boolean,
+  hasEvaluation: boolean,
+): string {
+  if (isPending) {
+    return "Guardando evaluación...";
+  }
+
+  return hasEvaluation ? "Actualizar evaluación" : "Guardar evaluación";
+}
+
+function rubricDescription(rubric: PhaseEvaluation["rubric"]): string {
+  const parts = [rubric.name];
+
+  if (rubric.area) {
+    parts.push(`· ${rubric.area}`);
+  }
+
+  if (rubric.isDefault) {
+    parts.push("· Rúbrica general");
+  }
+
+  return parts.join(" ");
+}
+
+function PhaseStatusBadge({
+  phaseEvaluation,
+  projectPhase,
+}: Readonly<{
+  phaseEvaluation: PhaseEvaluation;
+  projectPhase?: ProjectPhase;
+}>) {
+  if (phaseEvaluation.isCurrent) {
+    return <Badge>Fase actual</Badge>;
+  }
+
+  if (
+    phaseEvaluation.phase === "semester_2" &&
+    projectPhase === "semester_1"
+  ) {
+    return <Badge variant="outline">Próxima</Badge>;
+  }
+
+  return <Badge variant="outline">Historial</Badge>;
+}
+
+function EvaluationCompletionBadge({
+  completed,
+}: Readonly<{ completed: boolean }>) {
+  if (completed) {
+    return (
+      <Badge variant="secondary">
+        <RiCheckLine data-icon="inline-start" />
+        Evaluación completa
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="outline">
+      <RiErrorWarningLine data-icon="inline-start" />
+      Evaluación pendiente
+    </Badge>
+  );
+}
+
 function RubricAssignControl({
   projectId,
   phase,
   phaseEvaluation,
   templates,
   onChanged,
-}: {
+}: Readonly<{
   projectId: number;
   phase: ProjectPhase;
   phaseEvaluation: PhaseEvaluation;
   templates: PhaseEvaluation["rubric"][];
   onChanged: () => Promise<void>;
-}) {
+}>) {
   const [selection, setSelection] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -166,11 +232,11 @@ function EvaluationForm({
   projectId,
   phaseEvaluation,
   onSaved,
-}: {
+}: Readonly<{
   projectId: number;
   phaseEvaluation: PhaseEvaluation;
   onSaved: () => Promise<void>;
-}) {
+}>) {
   const { session } = useAuth();
   const currentUserId = session?.user.id;
   const mine = phaseEvaluation.evaluations.find(
@@ -360,11 +426,7 @@ function EvaluationForm({
         <div>
           <Button type="submit" disabled={isPending || !allScoresPresent}>
             {isPending ? <Spinner data-icon="inline-start" /> : null}
-            {isPending
-              ? "Guardando evaluación..."
-              : mine
-                ? "Actualizar evaluación"
-                : "Guardar evaluación"}
+            {evaluationSubmitLabel(isPending, Boolean(mine))}
           </Button>
         </div>
       </FieldGroup>
@@ -372,11 +434,56 @@ function EvaluationForm({
   );
 }
 
+function EvaluationSection({
+  project,
+  phaseEvaluation,
+  onChanged,
+}: Readonly<{
+  project: ProjectDetails;
+  phaseEvaluation: PhaseEvaluation;
+  onChanged: () => Promise<void>;
+}>) {
+  if (!phaseEvaluation.isCurrent) {
+    return null;
+  }
+
+  if (project.status !== "in_progress") {
+    return (
+      <Alert className="mt-4">
+        <AlertDescription>
+          La evaluación solo se puede editar mientras el proyecto está en
+          progreso.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!phaseEvaluation.canEvaluate) {
+    return (
+      <Alert className="mt-4">
+        <AlertDescription>
+          Solo los evaluadores asignados y administradores pueden enviar la
+          evaluación. Los directivos pueden consultar y asignar la rúbrica.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <EvaluationForm
+      key={`${phaseEvaluation.phase}-${phaseEvaluation.rubric.id}`}
+      projectId={project.id}
+      phaseEvaluation={phaseEvaluation}
+      onSaved={onChanged}
+    />
+  );
+}
+
 function EvaluationDetails({
   evaluation,
-}: {
+}: Readonly<{
   evaluation: ProjectEvaluationItem;
-}) {
+}>) {
   return (
     <details className="rounded-xl border border-border/70 px-4 py-3">
       <summary className="flex cursor-pointer flex-wrap items-center gap-2 text-sm">
@@ -424,44 +531,26 @@ function PhaseEvaluationCard({
   templates,
   canManageRubrics,
   onChanged,
-}: {
+}: Readonly<{
   project: ProjectDetails;
   phaseEvaluation: PhaseEvaluation;
   templates: PhaseEvaluation["rubric"][];
   canManageRubrics: boolean;
   onChanged: () => Promise<void>;
-}) {
+}>) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
           {phaseLabel(phaseEvaluation.phase)}
-          {phaseEvaluation.isCurrent ? (
-            <Badge>Fase actual</Badge>
-          ) : phaseEvaluation.phase === "semester_2" &&
-            project.phase === "semester_1" ? (
-            <Badge variant="outline">Próxima</Badge>
-          ) : (
-            <Badge variant="outline">Historial</Badge>
-          )}
-          {phaseEvaluation.completed ? (
-            <Badge variant="secondary">
-              <RiCheckLine data-icon="inline-start" />
-              Evaluación completa
-            </Badge>
-          ) : (
-            <Badge variant="outline">
-              <RiErrorWarningLine data-icon="inline-start" />
-              Evaluación pendiente
-            </Badge>
-          )}
+          <PhaseStatusBadge
+            phaseEvaluation={phaseEvaluation}
+            projectPhase={project.phase}
+          />
+          <EvaluationCompletionBadge completed={phaseEvaluation.completed} />
         </CardTitle>
         <CardDescription>
-          {phaseEvaluation.rubric.name}
-          {phaseEvaluation.rubric.area
-            ? ` · ${phaseEvaluation.rubric.area}`
-            : ""}
-          {phaseEvaluation.rubric.isDefault ? " · Rúbrica general" : ""}
+          {rubricDescription(phaseEvaluation.rubric)}
         </CardDescription>
       </CardHeader>
 
@@ -493,32 +582,11 @@ function PhaseEvaluationCard({
           </div>
         ) : null}
 
-        {phaseEvaluation.isCurrent &&
-        project.status === "in_progress" &&
-        phaseEvaluation.canEvaluate ? (
-          <EvaluationForm
-            key={`${phaseEvaluation.phase}-${phaseEvaluation.rubric.id}`}
-            projectId={project.id}
-            phaseEvaluation={phaseEvaluation}
-            onSaved={onChanged}
-          />
-        ) : phaseEvaluation.isCurrent &&
-          project.status === "in_progress" &&
-          !phaseEvaluation.canEvaluate ? (
-          <Alert className="mt-4">
-            <AlertDescription>
-              Solo los evaluadores asignados y administradores pueden enviar la
-              evaluación. Los directivos pueden consultar y asignar la rúbrica.
-            </AlertDescription>
-          </Alert>
-        ) : phaseEvaluation.isCurrent ? (
-          <Alert className="mt-4">
-            <AlertDescription>
-              La evaluación solo se puede editar mientras el proyecto está en
-              progreso.
-            </AlertDescription>
-          </Alert>
-        ) : null}
+        <EvaluationSection
+          project={project}
+          phaseEvaluation={phaseEvaluation}
+          onChanged={onChanged}
+        />
 
         <div className="mt-5 flex flex-col gap-2">
           <p className="text-sm font-medium">Evaluaciones recibidas</p>
@@ -543,7 +611,7 @@ function PhaseEvaluationCard({
 export default function ProjectEvaluationTab({
   project,
   onProjectChange,
-}: ProjectEvaluationTabProps) {
+}: Readonly<ProjectEvaluationTabProps>) {
   const { data, loading, error, reload } = useApiResource(
     () => getProjectEvaluations(project.id),
     [project.id],

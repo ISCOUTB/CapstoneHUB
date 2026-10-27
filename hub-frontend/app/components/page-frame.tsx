@@ -25,7 +25,7 @@ export default function PageFrame({
   maxWidth = "max-w-[96rem]",
   className,
   children,
-}: PageFrameProps) {
+}: Readonly<PageFrameProps>) {
   return (
     <main className="flex-1 text-foreground">
       <div className="border-b border-border/60 bg-card">

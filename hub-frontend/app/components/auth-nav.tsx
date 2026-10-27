@@ -24,10 +24,10 @@ import {
 export function AuthNav({
   showUserInfo = true,
   onNavigate,
-}: {
+}: Readonly<{
   showUserInfo?: boolean;
   onNavigate?: () => void;
-}) {
+}>) {
   const { session, isAuthenticated, ready, logout } = useAuth();
 
   const userRoles = (session?.user.roles ?? [])
