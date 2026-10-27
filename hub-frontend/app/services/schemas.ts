@@ -263,10 +263,9 @@ export type ProjectDetails = {
   engineeringArea?: string | null;
   externalAdvisorName?: string | null;
   externalAdvisorEmail?: string | null;
-  externalNit?: string | null;
+  nit?: string | null;
   researchGroup?: string | null;
   socialOrganization?: string | null;
-  socialNit?: string | null;
   socialLocation?: string | null;
   projectScope?: string | null;
   monetaryResources?: string | null;

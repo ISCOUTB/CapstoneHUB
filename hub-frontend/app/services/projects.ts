@@ -29,10 +29,9 @@ export type CreateProjectPayload = {
   engineeringArea?: string;
   externalAdvisorName?: string;
   externalAdvisorEmail?: string;
-  externalNit?: string;
+  nit?: string;
   researchGroup?: string;
   socialOrganization?: string;
-  socialNit?: string;
   socialLocation?: string;
   projectScope?: string;
   monetaryResources?: string;

@@ -85,7 +85,7 @@ export default function ProjectGeneralTab({
 
   if (project.engineeringArea) {
     const engineeringAreas: Record<string, string> = {
-      systems: "Ingeniería de Sistemas",
+      systems: "Ingeniería de Sistemas y Computación",
       industrial: "Ingeniería Industrial",
       civil: "Ingeniería Civil",
       electrical: "Ingeniería Eléctrica y Electrónica",
@@ -94,9 +94,17 @@ export default function ProjectGeneralTab({
       other: "Otra área o ingeniería",
     };
 
+    const selectedAreas = project.engineeringArea.split(",").filter(Boolean);
+
     sections.push({
       title: "Área o ingeniería",
-      content: <p>{engineeringAreas[project.engineeringArea] ?? project.engineeringArea}</p>,
+      content: (
+        <ul className="list-disc space-y-1 pl-5">
+          {selectedAreas.map((area) => (
+            <li key={area}>{engineeringAreas[area] ?? area}</li>
+          ))}
+        </ul>
+      ),
     });
   }
 
@@ -127,7 +135,7 @@ export default function ProjectGeneralTab({
 
   if (project.source === "external_entity") {
     const externalDetails = [
-      project.externalNit ? `NIT: ${project.externalNit}` : null,
+      project.nit ? `NIT: ${project.nit}` : null,
       project.externalAdvisorName ? `Asesor externo: ${project.externalAdvisorName}` : null,
       project.externalAdvisorEmail ? `Correo: ${project.externalAdvisorEmail}` : null,
     ].filter(Boolean);
@@ -151,13 +159,13 @@ export default function ProjectGeneralTab({
     });
   }
 
-  if (project.socialOrganization || project.socialLocation || project.socialNit) {
+  if (project.socialOrganization || project.socialLocation || (project.source === "social_impact" && project.nit)) {
     sections.push({
       title: "Información de impacto social",
       content: (
         <div className="flex flex-col gap-1">
           {project.socialOrganization && <p>Junta de Acción Comunal: {project.socialOrganization}</p>}
-          {project.socialNit && <p>NIT: {project.socialNit}</p>}
+          {project.nit && <p>NIT: {project.nit}</p>}
           {project.socialLocation && <p>Localización: {project.socialLocation}</p>}
         </div>
       ),

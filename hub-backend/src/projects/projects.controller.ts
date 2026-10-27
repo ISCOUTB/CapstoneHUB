@@ -120,10 +120,9 @@ export class ProjectsController {
       engineeringArea,
       externalAdvisorName,
       externalAdvisorEmail,
-      externalNit,
+      nit,
       researchGroup,
       socialOrganization,
-      socialNit,
       socialLocation,
       projectScope,
       monetaryResources,
@@ -155,6 +154,29 @@ export class ProjectsController {
       );
     }
 
+    if (
+      source === ProjectSource.external_entity &&
+      (!nit?.trim() ||
+        !externalAdvisorName?.trim() ||
+        !externalAdvisorEmail?.trim())
+    ) {
+      throw new BadRequestException(
+        'External projects require a NIT and external advisor contact details',
+      );
+    }
+
+    if (source === ProjectSource.research && !researchGroup?.trim()) {
+      throw new BadRequestException(
+        'Research projects require a research group',
+      );
+    }
+
+    if (source === ProjectSource.social_impact && !socialLocation?.trim()) {
+      throw new BadRequestException(
+        'Social impact projects require a location',
+      );
+    }
+
     const deliverableDescriptions = (deliverables ?? [])
       .map((deliverable) => deliverable.trim())
       .filter((deliverable) => deliverable.length > 0);
@@ -170,21 +192,22 @@ export class ProjectsController {
       isPrivate: isPrivate ?? true,
       source: source ?? ProjectSource.external_entity,
       sourceDetails: sourceDetails?.trim() || null,
-      facultyAdvisor: facultyAdvisor?.trim() || facultyAdvisors?.[0]?.trim() || null,
+      facultyAdvisor:
+        facultyAdvisor?.trim() || facultyAdvisors?.[0]?.trim() || null,
       facultyAdvisors: (facultyAdvisors ?? [])
         .map((advisor) => advisor.trim())
         .filter(Boolean),
       engineeringArea: engineeringArea?.trim() || null,
       externalAdvisorName: externalAdvisorName?.trim() || null,
       externalAdvisorEmail: externalAdvisorEmail?.trim() || null,
-      externalNit: externalNit?.trim() || null,
+      nit: nit?.trim() || null,
       researchGroup: researchGroup?.trim() || null,
       socialOrganization: socialOrganization?.trim() || null,
-      socialNit: socialNit?.trim() || null,
       socialLocation: socialLocation?.trim() || null,
       projectScope: projectScope?.trim() || null,
       monetaryResources: monetaryResources?.trim() || null,
-      monetaryResourcesDescription: monetaryResourcesDescription?.trim() || null,
+      monetaryResourcesDescription:
+        monetaryResourcesDescription?.trim() || null,
       teamRequirements: teamRequirements?.trim() || null,
       expectedOutcomes: expectedOutcomes?.trim() || null,
       submissionConsentAt: parsedSubmissionConsentAt,

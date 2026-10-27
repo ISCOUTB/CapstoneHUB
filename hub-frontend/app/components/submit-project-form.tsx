@@ -3,13 +3,6 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-
 import { createProject } from "../services/projects";
 import { type ProjectSource } from "../services/schemas";
 import { useAuth } from "./auth-provider";
@@ -65,7 +58,7 @@ const projectSources: ReadonlyArray<{
   { value: "social_impact", label: "Impacto social" },
 ];
 
-const engineeringAreas = [
+const engineeringAreaOptions = [
   { value: "systems", label: "Ingeniería de Sistemas y Computación" },
   { value: "industrial", label: "Ingeniería Industrial" },
   { value: "civil", label: "Ingeniería Civil" },
@@ -74,6 +67,7 @@ const engineeringAreas = [
   { value: "environmental", label: "Ingeniería Ambiental" },
   { value: "other", label: "Otra área o ingeniería" },
 ] as const;
+
 
 const steps = [
   {
@@ -104,10 +98,9 @@ type FormState = {
   sourceDetails: string;
   externalAdvisorName: string;
   externalAdvisorEmail: string;
-  externalNit: string;
+  nit: string;
   researchGroup: string;
   socialOrganization: string;
-  socialNit: string;
   socialLocation: string;
   engineeringAreas: string[];
   projectScope: string;
@@ -139,10 +132,9 @@ const initialForm: FormState = {
   sourceDetails: "",
   externalAdvisorName: "",
   externalAdvisorEmail: "",
-  externalNit: "",
+  nit: "",
   researchGroup: "",
   socialOrganization: "",
-  socialNit: "",
   socialLocation: "",
   engineeringAreas: [""],
   projectScope: "",
@@ -203,7 +195,7 @@ function validateStepOne(form: FormState): string | null {
     form.source === "external_entity" &&
     (!form.externalAdvisorName.trim() ||
       !form.externalAdvisorEmail.trim() ||
-      !form.externalNit.trim())
+      !form.nit.trim())
   ) {
     return "Ingresa el nombre, correo y NIT de la entidad o asesor externo.";
   }
@@ -309,6 +301,7 @@ export default function SubmitProjectForm() {
     setForm((prev) => ({
       ...prev,
       source,
+      nit: "",
       sourceDetails:
         source === "external_entity" ? prev.sourceDetails : "",
     }));
@@ -489,14 +482,15 @@ export default function SubmitProjectForm() {
           form.source === "external_entity" ? form.externalAdvisorName.trim() : undefined,
         externalAdvisorEmail:
           form.source === "external_entity" ? form.externalAdvisorEmail.trim() : undefined,
-        externalNit:
-          form.source === "external_entity" ? form.externalNit.trim() : undefined,
+        nit:
+          form.source === "external_entity" || form.source === "social_impact"
+            ? form.nit.trim() || undefined
+            : undefined,
         researchGroup:
           form.source === "research" ? form.researchGroup.trim() : undefined,
         socialOrganization:
           form.source === "social_impact" ? form.socialOrganization.trim() : undefined,
-        socialNit:
-          form.source === "social_impact" ? form.socialNit.trim() : undefined,
+
         socialLocation:
           form.source === "social_impact" ? form.socialLocation.trim() : undefined,
         projectScope: form.projectScope.trim(),
@@ -522,11 +516,7 @@ export default function SubmitProjectForm() {
       });
 
       setStatus("success");
-      router.push("/projects?propuestos=1");
-      setForm(initialForm);
-      setCurrentStep(1);
-      setSubmissionConsentAt(null);
-      setShowDurationNotice(true);
+      router.replace("/projects?propuestos=1");
     } catch (error) {
       setStatus("error");
       setErrorMessage(
@@ -716,123 +706,110 @@ export default function SubmitProjectForm() {
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="source">
+                <FieldLabel>
                   Fuente del proyecto
                 </FieldLabel>
 
-                <Select
-                  value={form.source}
-                  onValueChange={(value) => {
-                    if (value !== null) {
-                      handleSourceChange(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger id="source" className="w-full">
-                    <SelectValue>
-                      {projectSources.find(
-                        (option) => option.value === form.source,
-                      )?.label ?? "Selecciona una fuente"}
-                    </SelectValue>
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {projectSources.map((option) => (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                      >
-                        <span>{option.label}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {projectSources.map((option) => (
-                    <Popover key={option.value}>
-                      <PopoverTrigger
-                        render={<button type="button" className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground" />}
-                      >
-                        ¿Qué es {option.label.toLowerCase()}?
-                      </PopoverTrigger>
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSourceChange(option.value)}
+                      aria-pressed={form.source === option.value}
+                      className={`flex flex-col items-start gap-1 rounded-lg border p-2 text-left transition-colors ${
+                        form.source === option.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 font-medium text-foreground">
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border text-xs ${
+                            form.source === option.value
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-input"
+                          }`}
+                        >
+                          {form.source === option.value ? "✓" : ""}
+                        </span>
+                        {option.label}
+                      </span>
 
-                      <PopoverContent
-                        side="bottom"
-                        align="start"
-                        className="w-64"
-                      >
-                        <PopoverDescription>
-                          {{
-                            external_entity: "Propuesta presentada por una empresa u organización externa a la UTB.",
-                            research: "Propuesta vinculada a un grupo o proyecto de investigación.",
-                            internal_need: "Propuesta que responde a una necesidad de una dependencia o área interna de la UTB.",
-                            social_impact: "Propuesta orientada a resolver una necesidad de una comunidad u organización social.",
-                          }[option.value]}
-                        </PopoverDescription>
-                      </PopoverContent>
-                    </Popover>
+                      <span className="text-xs leading-snug text-muted-foreground">
+                        {{
+                          external_entity: "Propuesta presentada por una empresa u organización externa a la UTB.",
+                          research: "Propuesta vinculada a un grupo o proyecto de investigación.",
+                          internal_need: "Propuesta que responde a una necesidad de una dependencia o área interna de la UTB.",
+                          social_impact: "Propuesta orientada a resolver una necesidad de una comunidad u organización social.",
+                        }[option.value]}
+                      </span>
+                    </button>
                   ))}
                 </div>
-
               </Field>
+
               <Field>
                 <FieldLabel>
                   Área o ingeniería del proyecto
                 </FieldLabel>
 
-                {form.engineeringAreas.map((area, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Select
-                      value={area}
-                      onValueChange={(value) => {
-                        if (value !== null) {
-                          setForm((prev) => ({
-                            ...prev,
-                            engineeringAreas: prev.engineeringAreas.map((currentArea, currentIndex) =>
-                              currentIndex === index ? value : currentArea,
-                            ),
-                          }));
-                          setStepError(null);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecciona un área o ingeniería">
-                        {engineeringAreas.find((engineering) => engineering.value === area)?.label}
-                      </SelectValue>
-                      </SelectTrigger>
-
-                      <SelectContent>
-                        {engineeringAreas.map((area) => (
-                          <SelectItem
-                            key={area.value}
-                            value={area.value}
-                          >
-                            {area.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    {form.engineeringAreas.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          setForm((prev) => ({
-                            ...prev,
-                            engineeringAreas: prev.engineeringAreas.filter((_, currentIndex) => currentIndex !== index),
-                          }));
+                <div className="space-y-2">
+                  {form.engineeringAreas.map((area, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Select
+                        value={area}
+                        onValueChange={(value) => {
+                          if (value !== null) {
+                            setForm((prev) => ({
+                              ...prev,
+                              engineeringAreas: prev.engineeringAreas.map((currentArea, currentIndex) =>
+                                currentIndex === index ? value : currentArea,
+                              ),
+                            }));
+                            setStepError(null);
+                          }
                         }}
-                        aria-label="Eliminar área"
                       >
-                        <RiDeleteBinLine />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecciona un área o ingeniería">
+                            {engineeringAreaOptions.find((engineering) => engineering.value === area)?.label}
+                          </SelectValue>
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          {engineeringAreaOptions.map((engineering) => (
+                            <SelectItem
+                              key={engineering.value}
+                              value={engineering.value}
+                              disabled={form.engineeringAreas.includes(engineering.value) && area !== engineering.value}
+                            >
+                              {engineering.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {form.engineeringAreas.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setForm((prev) => ({
+                              ...prev,
+                              engineeringAreas: prev.engineeringAreas.filter((_, currentIndex) => currentIndex !== index),
+                            }));
+                          }}
+                          aria-label="Eliminar área"
+                        >
+                          <RiDeleteBinLine />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
                 <Button
                   type="button"
@@ -854,6 +831,7 @@ export default function SubmitProjectForm() {
                 </FieldDescription>
               </Field>
 
+              <div className="space-y-4">
               {form.source === "external_entity" && (
                 <Field>
                   <FieldLabel htmlFor="sourceDetails">
@@ -881,11 +859,11 @@ export default function SubmitProjectForm() {
               {form.source === "external_entity" && (
                 <>
                   <Field>
-                    <FieldLabel htmlFor="externalNit">NIT de la empresa o entidad</FieldLabel>
+                    <FieldLabel htmlFor="nit">NIT de la empresa o entidad</FieldLabel>
                     <Input
-                      id="externalNit"
-                      name="externalNit"
-                      value={form.externalNit}
+                      id="nit"
+                      name="nit"
+                      value={form.nit}
                       onChange={handleChange}
                       maxLength={30}
                       placeholder="NIT de la entidad externa"
@@ -945,20 +923,20 @@ export default function SubmitProjectForm() {
                       name="socialOrganization"
                       value={form.socialOrganization}
                       onChange={handleChange}
-                      maxLength={MAX_TEXT_LENGTH}
+                      maxLength={MAX_NAME_LENGTH}
                       placeholder="Nombre de la Junta de Acción Comunal"
                     />
                   </Field>
 
                   <Field>
-                    <FieldLabel htmlFor="socialNit">NIT de la organización</FieldLabel>
+                    <FieldLabel htmlFor="nit">NIT de la organización (opcional)</FieldLabel>
                     <Input
-                      id="socialNit"
-                      name="socialNit"
-                      value={form.socialNit}
+                      id="nit"
+                      name="nit"
+                      value={form.nit}
                       onChange={handleChange}
-                      maxLength={MAX_TEXT_LENGTH}
-                      placeholder="NIT de la Junta de Acción Comunal"
+                      maxLength={30}
+                      placeholder="NIT de la Junta de Acción Comunal, si aplica"
                     />
                   </Field>
 
@@ -976,6 +954,7 @@ export default function SubmitProjectForm() {
                   </Field>
                 </>
               )}
+              </div>
             </FieldSet>
           )}
 
@@ -1057,6 +1036,7 @@ export default function SubmitProjectForm() {
                   name="projectScope"
                   value={form.projectScope}
                   onChange={handleChange}
+                  maxLength={MAX_TEXT_LENGTH}
                   rows={4}
                   placeholder="Delimita qué se necesita desarrollar, qué incluye la propuesta y cuáles son sus límites."
                   required
@@ -1269,6 +1249,7 @@ export default function SubmitProjectForm() {
                     name="monetaryResourcesDescription"
                     value={form.monetaryResourcesDescription}
                     onChange={handleChange}
+                    maxLength={MAX_TEXT_LENGTH}
                     rows={3}
                     placeholder="Describe el tipo de recursos disponibles y para qué se utilizarán."
                     required

@@ -177,10 +177,9 @@ export type ProjectDetailResponse = ProjectListResponse & {
   engineeringArea: string | null;
   externalAdvisorName: string | null;
   externalAdvisorEmail: string | null;
-  externalNit: string | null;
+  nit: string | null;
   researchGroup: string | null;
   socialOrganization: string | null;
-  socialNit: string | null;
   socialLocation: string | null;
   projectScope: string | null;
   monetaryResources: string | null;
@@ -421,12 +420,15 @@ export function mapProjectDetailResponse(
     facultyAdvisor: project.facultyAdvisor,
     facultyAdvisors: canViewSensitiveData ? project.facultyAdvisors : [],
     engineeringArea: project.engineeringArea,
-    externalAdvisorName: canViewSensitiveData ? project.externalAdvisorName : null,
-    externalAdvisorEmail: canViewSensitiveData ? project.externalAdvisorEmail : null,
-    externalNit: canViewSensitiveData ? project.externalNit : null,
+    externalAdvisorName: canViewSensitiveData
+      ? project.externalAdvisorName
+      : null,
+    externalAdvisorEmail: canViewSensitiveData
+      ? project.externalAdvisorEmail
+      : null,
+    nit: canViewSensitiveData ? (project.nit as string | null) : null,
     researchGroup: project.researchGroup,
     socialOrganization: project.socialOrganization,
-    socialNit: canViewSensitiveData ? project.socialNit : null,
     socialLocation: project.socialLocation,
     projectScope: project.projectScope,
     monetaryResources: project.monetaryResources,

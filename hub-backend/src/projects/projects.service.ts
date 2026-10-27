@@ -601,22 +601,41 @@ export class ProjectsService {
           'Validación de resultados',
         ],
       };
-      const milestoneTitles = areaMilestones[data.engineeringArea ?? ''] ?? [
+      const fallbackMilestones = [
         'Definición de requerimientos',
         'Diseño de la propuesta',
         'Desarrollo o implementación',
         'Validación de resultados',
       ];
+      const selectedAreas = (data.engineeringArea ?? '')
+        .split(',')
+        .map((area) => area.trim())
+        .filter(Boolean);
+      const milestoneTitles = Array.from(
+        new Set(
+          selectedAreas.flatMap(
+            (area) => areaMilestones[area] ?? fallbackMilestones,
+          ),
+        ),
+      );
+      const minimumMilestoneCount = milestoneTitles.length;
       const milestoneData = [
         ...milestoneTitles.map((title, index) => {
           const milestoneDueDate = data.startDate
             ? new Date(data.startDate)
             : new Date();
-          milestoneDueDate.setMonth(milestoneDueDate.getMonth() + (index + 1) * 2);
+          const dueMonth = Math.max(
+            1,
+            Math.floor(((index + 1) * 7) / (minimumMilestoneCount + 1)),
+          );
+          milestoneDueDate.setMonth(milestoneDueDate.getMonth() + dueMonth);
 
           return {
             title,
-            phase: index < 2 ? ProjectPhase.semester_1 : ProjectPhase.semester_2,
+            phase:
+              index < Math.ceil(minimumMilestoneCount / 2)
+                ? ProjectPhase.semester_1
+                : ProjectPhase.semester_2,
             isMinimum: true,
             completed: false,
             dueDate: milestoneDueDate,
