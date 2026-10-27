@@ -68,6 +68,17 @@ export default function ProjectPhaseActions({
     [project.phaseApprovals],
   );
 
+  const pendingEvaluations = useMemo(
+    () =>
+      project.evaluationGate && !project.evaluationGate.completed
+        ? project.evaluationGate.missingEvaluators
+        : [],
+    [project.evaluationGate],
+  );
+
+  const isEvaluationPending =
+    project.evaluationGate != null && !project.evaluationGate.completed;
+
   if (!canManage || project.status !== "in_progress") {
     return null;
   }
@@ -77,6 +88,17 @@ export default function ProjectPhaseActions({
     currentPhase === "semester_1" ? "Semestre 2" : "siguiente fase";
 
   function handleAdvanceClick() {
+    if (isEvaluationPending) {
+      setErrorMessage(
+        pendingEvaluations.length > 0
+          ? `No puedes avanzar de fase: faltan las evaluaciones de ${pendingEvaluations
+              .map((evaluator) => evaluator.fullName)
+              .join(", ")}.`
+          : "No puedes avanzar de fase: la fase actual todavía no tiene evaluaciones.",
+      );
+      return;
+    }
+
     if (pendingMinimums.length > 0) {
       setErrorMessage(
         `No puedes avanzar de fase: hay hitos mínimos pendientes (${pendingMinimums

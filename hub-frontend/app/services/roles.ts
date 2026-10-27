@@ -27,6 +27,11 @@ export function isActorRole(value: string): value is ActorRole {
   return (ACTOR_ROLES as readonly string[]).includes(value);
 }
 
+/** Crear y administrar plantillas de rúbricas: admin y directivo. */
+export function canManageRubrics(roles: readonly string[]): boolean {
+  return roles.includes("admin") || roles.includes("directivo");
+}
+
 /**
  * Roles de proyecto que puede recibir un usuario según sus roles globales.
  * Un docente puede participar como docente o como evaluador; un evaluador de

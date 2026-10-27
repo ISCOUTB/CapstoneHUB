@@ -86,6 +86,32 @@ export function isAssignedTeacher(
   return isAssignedWith(viewer, assignments, TEACHER_ROLES);
 }
 
+export function isAssignedEvaluator(
+  viewer: ProjectViewer,
+  assignments: readonly ProjectAssignment[],
+): boolean {
+  return isAssignedWith(viewer, assignments, ["evaluator"]);
+}
+
+/**
+ * Pestaña de evaluación: admin y directivo la ven siempre; un evaluador solo
+ * cuando está asignado al proyecto.
+ */
+export function canViewProjectEvaluations(
+  viewer: ProjectViewer,
+  assignments: readonly ProjectAssignment[],
+): boolean {
+  return reviewsAnyProject(viewer) || isAssignedEvaluator(viewer, assignments);
+}
+
+/** Enviar evaluación: admin o evaluador asignado. Un directivo no asignado no. */
+export function canSubmitProjectEvaluation(
+  viewer: ProjectViewer,
+  assignments: readonly ProjectAssignment[],
+): boolean {
+  return isAdmin(viewer) || isAssignedEvaluator(viewer, assignments);
+}
+
 export function canViewSensitiveData(
   viewer: ProjectViewer | null | undefined,
   project: Pick<ProjectDetails, "isProposer" | "actorAssignments">,

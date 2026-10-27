@@ -68,6 +68,14 @@ export function formatRole(role: string): string {
   }
 }
 
+export function formatGrade(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) {
+    return "Sin nota";
+  }
+
+  return `${value.toFixed(2)} / 5.00`;
+}
+
 export function getInitials(fullName: string): string {
   return fullName
     .split(/\s+/)

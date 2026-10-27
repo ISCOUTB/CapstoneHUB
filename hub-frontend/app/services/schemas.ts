@@ -238,6 +238,12 @@ export type ProjectPhaseApprovals = {
   required: ProjectPhaseApprovalItem[];
 };
 
+export type ProjectEvaluationGate = {
+  phase: ProjectPhase;
+  completed: boolean;
+  missingEvaluators: { userId: number; fullName: string }[];
+};
+
 export type ProjectDetails = {
   id: number;
   name: string;
@@ -253,6 +259,8 @@ export type ProjectDetails = {
   isProposer?: boolean;
   /** Visto bueno de fase: quién falta y quién ya aprobó. */
   phaseApprovals?: ProjectPhaseApprovals;
+  /** Estado de evaluación de la fase actual, sin notas. */
+  evaluationGate?: ProjectEvaluationGate | null;
   source?: ProjectSource;
   proposer?: ProjectProposer;
   startDate: string | null;

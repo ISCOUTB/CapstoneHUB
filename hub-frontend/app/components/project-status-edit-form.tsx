@@ -2,7 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { updateProjectStatus } from "../services/projects";
-import { ProjectMilestoneItem } from "../services/schemas";
+import {
+  ProjectEvaluationGate,
+  ProjectMilestoneItem,
+} from "../services/schemas";
 import {
   canManageStatus,
   getAvailableStatuses,
@@ -34,6 +37,7 @@ type ProjectStatusEditFormProps = {
   currentStatus: string;
   assignments: ProjectAssignment[];
   milestones?: ProjectMilestoneItem[];
+  evaluationGate?: ProjectEvaluationGate | null;
   onProjectChange?: () => Promise<void>;
 };
 
@@ -42,6 +46,7 @@ export default function ProjectStatusEditForm({
   currentStatus,
   assignments,
   milestones = [],
+  evaluationGate = null,
   onProjectChange,
 }: ProjectStatusEditFormProps) {
   const { session, isAuthenticated, ready } = useAuth();
@@ -87,7 +92,15 @@ export default function ProjectStatusEditForm({
   const pendingMinimums = milestones.filter(
     (milestone) => milestone.isMinimum && !milestone.completed,
   );
-  const isCloseBlocked = status === "closed" && pendingMinimums.length > 0;
+  const missingEvaluators =
+    evaluationGate && !evaluationGate.completed
+      ? evaluationGate.missingEvaluators
+      : [];
+  const isEvaluationBlocked =
+    status === "closed" && evaluationGate != null && !evaluationGate.completed;
+  const isCloseBlocked =
+    status === "closed" &&
+    (pendingMinimums.length > 0 || isEvaluationBlocked);
   const isSubmitDisabled =
     isPending ||
     isCloseBlocked ||
@@ -182,16 +195,41 @@ export default function ProjectStatusEditForm({
             {isCloseBlocked ? (
               <Alert variant="destructive">
                 <AlertDescription>
-                  No puedes cerrar el proyecto hasta completar sus hitos
-                  mínimos:
-                  <ul className="mt-2 list-disc pl-5">
-                    {pendingMinimums.map((milestone) => (
-                      <li key={milestone.id}>
-                        {milestone.title} · vence{" "}
-                        {formatDate(milestone.dueDate)}
-                      </li>
-                    ))}
-                  </ul>
+                  {pendingMinimums.length > 0 ? (
+                    <>
+                      No puedes cerrar el proyecto hasta completar sus hitos
+                      mínimos:
+                      <ul className="mt-2 list-disc pl-5">
+                        {pendingMinimums.map((milestone) => (
+                          <li key={milestone.id}>
+                            {milestone.title} · vence{" "}
+                            {formatDate(milestone.dueDate)}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : null}
+
+                  {isEvaluationBlocked ? (
+                    <>
+                      No puedes cerrar el proyecto hasta que la fase actual esté
+                      evaluada.
+                      {missingEvaluators.length > 0 ? (
+                        <ul className="mt-2 list-disc pl-5">
+                          {missingEvaluators.map((evaluator) => (
+                            <li key={evaluator.userId}>
+                              Falta la evaluación de {evaluator.fullName}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-2">
+                          Todavía no hay ninguna evaluación registrada para la
+                          fase actual.
+                        </p>
+                      )}
+                    </>
+                  ) : null}
                 </AlertDescription>
               </Alert>
             ) : null}
