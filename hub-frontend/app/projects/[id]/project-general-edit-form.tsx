@@ -511,7 +511,7 @@ export default function ProjectGeneralEditForm({
                 </FieldLabel>
                 <FieldDescription>
                   Si está marcado, solo el proponente, el equipo asignado y los
-                  evaluadores podrán verlo, incluso después de finalizar.
+                  directivos podrán verlo, incluso después de finalizar.
                 </FieldDescription>
               </FieldContent>
             </Field>
@@ -521,7 +521,7 @@ export default function ProjectGeneralEditForm({
                 <AlertDescription>
                   {isPublishing
                     ? "Vas a hacer público este proyecto: desde que sea aprobado, cualquier usuario con sesión podrá verlo; sin sesión, solo cuando esté finalizado. Un proyecto rechazado nunca se publica."
-                    : "Vas a hacer privado este proyecto: solo el proponente, los actores asignados y los evaluadores podrán verlo, incluso después de finalizar."}
+                    : "Vas a hacer privado este proyecto: solo el proponente, los actores asignados y los directivos podrán verlo, incluso después de finalizar."}
                 </AlertDescription>
               </Alert>
             ) : null}

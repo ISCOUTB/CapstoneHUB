@@ -598,7 +598,7 @@ export default function ProjectReportsPanel({
         <CardTitle>Entregas</CardTitle>
         <CardDescription>
           {reports.length === 0
-            ? "Los asesores, evaluadores y coordinadores crean las entregas para que los estudiantes las envíen."
+            ? "Los docentes, evaluadores asignados, directivos y administradores crean las entregas para que los estudiantes las envíen."
             : `${acceptedCount} de ${reports.length} aceptadas`}
         </CardDescription>
 

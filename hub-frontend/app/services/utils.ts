@@ -53,6 +53,8 @@ export function formatRole(role: string): string {
   switch (role) {
     case "admin":
       return "Administrador";
+    case "directivo":
+      return "Directivo";
     case "evaluator":
       return "Evaluador";
     case "teacher":

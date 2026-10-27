@@ -65,7 +65,7 @@ descarga/reproducción sigue pasando por el proxy `stream`, que reenvía `Range`
   (`ActorRole`), y qué roles de proyecto habilita cada rol global.
 - `project-permissions.ts` — reglas de permisos del cliente (editar, gestionar,
   hitos, estados), espejo de `AuthorizationService`.
-- `stats.ts` — indicadores (KPIs) del panel de docentes, evaluadores y admin, y el panorama por semestre.
+- `stats.ts` — indicadores (KPIs) del panel de docentes, evaluadores, directivos y admin, y el panorama por semestre.
 - `utils.ts` — helpers de formato (estados, fechas, roles).
 
 Cada petición autenticada lee el token de `auth.ts` y agrega
@@ -76,9 +76,9 @@ visible desde cualquier pestaña. A la izquierda, los administradores y docentes
 asignados ven el control compacto **Fase** con el botón para
 avanzar de semestre; se habilita cuando los hitos mínimos de la fase actual
 están completos (al pulsarlo con pendientes, avisa cuáles faltan). A la derecha,
-quienes pueden editar (administradores, evaluadores globales, docentes y
-evaluadores asignados al proyecto y el proponente mientras la propuesta siga en
-revisión) ven
+quienes pueden editar (administradores, directivos, docentes y evaluadores
+asignados al proyecto y el proponente mientras la propuesta siga en revisión)
+ven
 el botón **Editar proyecto** que abre la pantalla dedicada `/projects/[id]/edit`
 (los mismos campos de la propuesta, salvo el proponente). Los cambios se envían
 por `PUT` y la pestaña **Historial** muestra, junto al historial de estados, una

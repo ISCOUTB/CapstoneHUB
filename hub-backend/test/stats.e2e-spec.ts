@@ -60,14 +60,43 @@ describe('Stats (e2e)', () => {
     ]);
   });
 
-  it('da alcance global a evaluadores y administradores', async () => {
+  it('limita los indicadores del evaluador a sus proyectos asignados', async () => {
     const app = getApp();
+    const admin = await adminSession(app);
     const evaluator = await userWithRole(app, UserRole.evaluator);
+    const { projectId } = await createProjectWithProposer(app);
+    await assignProjectActor(
+      app,
+      projectId,
+      admin.accessToken,
+      evaluator.user.id,
+      ActorRole.evaluator,
+    );
+
+    // Proyecto ajeno: ni asignado ni propuesto por el evaluador.
     await createProjectWithProposer(app);
 
     const response = await request(app.getHttpServer())
       .get('/stats/kpis')
       .set(bearer(evaluator.accessToken))
+      .expect(200);
+
+    const body = response.body as {
+      scope: string;
+      projects: { total: number };
+    };
+    expect(body.scope).toBe('assigned');
+    expect(body.projects.total).toBe(1);
+  });
+
+  it('da alcance global a directivos y administradores', async () => {
+    const app = getApp();
+    const directivo = await userWithRole(app, UserRole.directivo);
+    await createProjectWithProposer(app);
+
+    const response = await request(app.getHttpServer())
+      .get('/stats/kpis')
+      .set(bearer(directivo.accessToken))
       .expect(200);
 
     const body = response.body as {

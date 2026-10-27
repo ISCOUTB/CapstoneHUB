@@ -23,6 +23,7 @@ enum ProjectStatus {
 
 enum UserRole {
   admin
+  directivo
   evaluator
   teacher
   proposer

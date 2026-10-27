@@ -11,7 +11,8 @@ Ver también: [Arquitectura del backend](./backend_arch.md).
 - `ProjectStatus`: `proposed`, `approved`, `in_progress`, `paused`, `closed`,
   `cancelled`, `rejected`. `under_review` se conserva solo como **legado** para
   los proyectos antiguos, que pueden salir hacia `approved` o `rejected`.
-- `UserRole`: `admin`, `evaluator`, `teacher`, `proposer`, `student`.
+- `UserRole`: `admin`, `directivo`, `evaluator`, `teacher`, `proposer`,
+  `student`.
 - `ActorRole`: `teacher`, `evaluator`, `student`.
 - `ProjectSource`: `external_entity`, `research`, `internal_need`,
   `social_impact`.
@@ -69,7 +70,8 @@ listando quién falta; el bloqueo también aplica al `admin`.
     no privados en `approved`, `in_progress` o `paused`, y por supuesto los que
     propuso y en los que está asignado. `proposed`, el legado `under_review`,
     `cancelled` y `rejected` **nunca** se publican.
-  - `admin` y `evaluator` global ven todos los proyectos.
+  - `admin` y `directivo` ven todos los proyectos. Un `evaluator` sin
+    asignación solo ve los públicos y los que propuso.
 - A los visitantes que solo pueden ver la información pública se les ocultan las
   secciones sensibles (equipo, observaciones, hitos, entregas, anexos e
   historial) tanto en la API como en la interfaz.
@@ -97,8 +99,8 @@ iniciativa de impacto social; el formulario de propuesta es único y flexible.
 Vincula un `User` con un `Project` mediante un `ActorRole` (`teacher`,
 `evaluator` o `student`). Único por `(projectId, userId)`. Para asignarlo, el
 usuario debe tener el rol global que licencia ese rol de proyecto: `student`
-para `student`; `teacher` para `teacher` o `evaluator`; `evaluator` para
-`evaluator`.
+para `student`; `teacher` para `teacher` o `evaluator`; `evaluator` o
+`directivo` para `evaluator`.
 
 ### ProjectObservation
 
@@ -143,7 +145,8 @@ archivo pertenece a una entrega y se muestra en su pestaña, no en Anexos.
 
 ### ProjectReport
 
-Entrega creada por un docente, evaluador o administrador: `title`, `description`
+Entrega creada por un docente, evaluador asignado, directivo o administrador:
+`title`, `description`
 opcional, `dueDate`, `type` (el tipo de contenido que debe aportar el estudiante:
 `text`, `link` o `file`), `allowedMimeTypes` y
 `maxFiles` (MIME permitidos y máximo de archivos, obligatorios para el tipo
@@ -364,6 +367,7 @@ classDiagram
     class UserRole {
         <<enumeration>>
         admin
+        directivo
         evaluator
         teacher
         proposer

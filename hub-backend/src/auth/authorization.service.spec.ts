@@ -52,7 +52,7 @@ describe('AuthorizationService', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('requires an evaluator assignment for proposal transitions without a global evaluator role', async () => {
+  it('requires an evaluator assignment for proposal transitions without a directivo role', async () => {
     const { service, findAssignment } = createService({ id: 3 });
 
     await expect(
@@ -69,12 +69,12 @@ describe('AuthorizationService', () => {
     });
   });
 
-  it('lets a global evaluator approve a proposal without a project assignment', async () => {
+  it('lets a directivo approve a proposal without a project assignment', async () => {
     const { service, findAssignment } = createService();
 
     await expect(
       service.assertCanTransitionProject(
-        user([UserRole.evaluator]),
+        user([UserRole.directivo]),
         10,
         'proposed',
         'approved',
@@ -83,12 +83,12 @@ describe('AuthorizationService', () => {
     expect(findAssignment).not.toHaveBeenCalled();
   });
 
-  it('lets a global evaluator move a legacy under_review project forward', async () => {
+  it('lets a directivo move a legacy under_review project forward', async () => {
     const { service, findAssignment } = createService();
 
     await expect(
       service.assertCanTransitionProject(
-        user([UserRole.evaluator]),
+        user([UserRole.directivo]),
         10,
         'under_review',
         'approved',
@@ -108,6 +108,40 @@ describe('AuthorizationService', () => {
         'approved',
       ),
     ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(findAssignment).toHaveBeenCalledWith({
+      where: { projectId: 10, userId: 7, role: ActorRole.evaluator },
+      select: { id: true },
+    });
+  });
+
+  it('rejects an unassigned evaluator from resolving proposal transitions', async () => {
+    const { service, findAssignment } = createService();
+
+    await expect(
+      service.assertCanTransitionProject(
+        user([UserRole.evaluator]),
+        10,
+        'proposed',
+        'approved',
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(findAssignment).toHaveBeenCalledWith({
+      where: { projectId: 10, userId: 7, role: ActorRole.evaluator },
+      select: { id: true },
+    });
+  });
+
+  it('lets an assigned evaluator resolve proposal transitions', async () => {
+    const { service, findAssignment } = createService({ id: 3 });
+
+    await expect(
+      service.assertCanTransitionProject(
+        user([UserRole.evaluator]),
+        10,
+        'proposed',
+        'approved',
+      ),
+    ).resolves.toBeUndefined();
     expect(findAssignment).toHaveBeenCalledWith({
       where: { projectId: 10, userId: 7, role: ActorRole.evaluator },
       select: { id: true },
@@ -175,6 +209,17 @@ describe('AuthorizationService', () => {
       ).resolves.toBeUndefined();
     });
 
+    it.each([UserRole.evaluator, UserRole.directivo])(
+      'allows %s users to be assigned as project evaluators',
+      async (role) => {
+        const service = userService(userWith({ roleAssignments: [{ role }] }));
+
+        await expect(
+          service.assertAssignableUser(8, ActorRole.evaluator),
+        ).resolves.toBeUndefined();
+      },
+    );
+
     it('allows students to be assigned as students', async () => {
       const service = userService(userWith({}));
 
@@ -217,11 +262,11 @@ describe('AuthorizationService', () => {
     expect(findAssignment).not.toHaveBeenCalled();
   });
 
-  it('rejects an unassigned global evaluator for milestones', async () => {
+  it('rejects an unassigned directivo for milestones', async () => {
     const { service } = createService();
 
     await expect(
-      service.assertCanManageMilestone(user([UserRole.evaluator]), 10),
+      service.assertCanManageMilestone(user([UserRole.directivo]), 10),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
@@ -234,13 +279,37 @@ describe('AuthorizationService', () => {
     expect(findAssignment).not.toHaveBeenCalled();
   });
 
-  it('allows global evaluators to manage reports without a project assignment', async () => {
+  it('allows directivos to manage reports without a project assignment', async () => {
+    const { service, findAssignment } = createService();
+
+    await expect(
+      service.assertCanManageReports(user([UserRole.directivo]), 10),
+    ).resolves.toBeUndefined();
+    expect(findAssignment).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unassigned evaluator from managing reports', async () => {
     const { service, findAssignment } = createService();
 
     await expect(
       service.assertCanManageReports(user([UserRole.evaluator]), 10),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(findAssignment).toHaveBeenCalledWith({
+      where: {
+        projectId: 10,
+        userId: 7,
+        role: { in: [ActorRole.teacher, ActorRole.evaluator] },
+      },
+      select: { id: true },
+    });
+  });
+
+  it('lets an assigned evaluator manage reports', async () => {
+    const { service } = createService({ id: 3 });
+
+    await expect(
+      service.assertCanManageReports(user([UserRole.evaluator]), 10),
     ).resolves.toBeUndefined();
-    expect(findAssignment).not.toHaveBeenCalled();
   });
 
   it('requires an assigned teacher or evaluator to manage reports', async () => {
@@ -276,13 +345,21 @@ describe('AuthorizationService', () => {
     expect(findAssignment).not.toHaveBeenCalled();
   });
 
-  it('allows global evaluators to assign actors without a project assignment', async () => {
+  it('allows directivos to assign actors without a project assignment', async () => {
     const { service, findAssignment } = createService();
 
     await expect(
-      service.assertCanAssignActors(user([UserRole.evaluator]), 10),
+      service.assertCanAssignActors(user([UserRole.directivo]), 10),
     ).resolves.toBeUndefined();
     expect(findAssignment).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unassigned evaluator from assigning actors', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.assertCanAssignActors(user([UserRole.evaluator]), 10),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('requires a teacher assignment for other users to assign actors', async () => {
@@ -368,12 +445,12 @@ describe('AuthorizationService', () => {
     expect(findAssignment).not.toHaveBeenCalled();
   });
 
-  it('allows a global evaluator to edit project details without an assignment', async () => {
+  it('allows a directivo to edit project details without an assignment', async () => {
     const { service, findAssignment } = createService();
 
     await expect(
       service.assertCanEditProjectDetails(
-        user([UserRole.evaluator]),
+        user([UserRole.directivo]),
         editableProject(),
       ),
     ).resolves.toBeUndefined();
@@ -481,13 +558,25 @@ describe('AuthorizationService', () => {
     expect(findAssignment).not.toHaveBeenCalled();
   });
 
-  it('allows global evaluators to comment without a project assignment', async () => {
+  it('allows directivos to comment without a project assignment', async () => {
+    const { service, findAssignment } = createService();
+
+    await expect(
+      service.assertCanComment(user([UserRole.directivo]), 10),
+    ).resolves.toBeUndefined();
+    expect(findAssignment).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unassigned evaluator from commenting', async () => {
     const { service, findAssignment } = createService();
 
     await expect(
       service.assertCanComment(user([UserRole.evaluator]), 10),
-    ).resolves.toBeUndefined();
-    expect(findAssignment).not.toHaveBeenCalled();
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(findAssignment).toHaveBeenCalledWith({
+      where: { projectId: 10, userId: 7 },
+      select: { id: true },
+    });
   });
 
   it('rejects commenting without a project assignment', async () => {
@@ -551,8 +640,23 @@ describe('AuthorizationService', () => {
       );
 
       await expect(
-        service.assertProjectMember(user([UserRole.evaluator]), 10),
+        service.assertProjectMember(user([UserRole.directivo]), 10),
       ).resolves.toBeUndefined();
+    });
+
+    it('keeps evaluators scoped to their own or assigned projects', async () => {
+      const service = new AuthorizationService(
+        visibilityPrisma({
+          proposerUserId: 999,
+          actorAssignments: [],
+          status: ProjectStatus.in_progress,
+          isPrivate: true,
+        }) as never,
+      );
+
+      await expect(
+        service.assertProjectMember(user([UserRole.evaluator]), 10),
+      ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
     it('keeps teachers scoped to their own or assigned projects', async () => {
@@ -749,13 +853,13 @@ describe('AuthorizationService', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('rejects an unassigned global evaluator', async () => {
+    it('rejects an unassigned directivo', async () => {
       const service = new AuthorizationService(
         writePrisma({ proposerUserId: 999, actorAssignments: [] }) as never,
       );
 
       await expect(
-        service.assertCanWriteProjectData(user([UserRole.evaluator]), 10),
+        service.assertCanWriteProjectData(user([UserRole.directivo]), 10),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
 
@@ -797,14 +901,16 @@ describe('AuthorizationService', () => {
   });
 
   describe('assertCanViewKpis', () => {
-    it.each([UserRole.admin, UserRole.teacher, UserRole.evaluator])(
-      'allows %s users',
-      (role) => {
-        const service = new AuthorizationService({} as never);
+    it.each([
+      UserRole.admin,
+      UserRole.teacher,
+      UserRole.evaluator,
+      UserRole.directivo,
+    ])('allows %s users', (role) => {
+      const service = new AuthorizationService({} as never);
 
-        expect(() => service.assertCanViewKpis(user([role]))).not.toThrow();
-      },
-    );
+      expect(() => service.assertCanViewKpis(user([role]))).not.toThrow();
+    });
 
     it('rejects users without an authorized role', () => {
       const service = new AuthorizationService({} as never);

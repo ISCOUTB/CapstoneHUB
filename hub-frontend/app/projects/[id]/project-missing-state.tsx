@@ -23,7 +23,7 @@ export default function ProjectMissingState({
             Este proyecto no existe, es privado o todavía no se ha publicado:
             las propuestas se publican al ser aprobadas, y sin sesión solo se
             ven los proyectos finalizados. Los proyectos privados solo son
-            visibles para el proponente, los actores asignados y los evaluadores
+            visibles para el proponente, los actores asignados y los directivos
             o administradores. Si ya iniciaste sesión con una cuenta autorizada,
             verifica el enlace.
           </EmptyDescription>

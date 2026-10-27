@@ -122,7 +122,7 @@ function createAuthorizationMock() {
         },
       ) =>
         viewer.roles.includes(UserRole.admin) ||
-        viewer.roles.includes(UserRole.evaluator) ||
+        viewer.roles.includes(UserRole.directivo) ||
         project.proposerUserId === viewer.id ||
         project.actorAssignments.some(
           (assignment) => assignment.userId === viewer.id,

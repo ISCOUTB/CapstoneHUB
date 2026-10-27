@@ -28,7 +28,7 @@ export default function ProjectDetailsHeader({
             Estás viendo la información pública de un proyecto. El equipo, las
             observaciones, los anexos, los hitos y las entregas solo son
             visibles para el proponente, los actores asignados y los
-            evaluadores.
+            directivos.
           </AlertDescription>
         </Alert>
       ) : null}

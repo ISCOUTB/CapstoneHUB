@@ -30,9 +30,9 @@ export function statusPathFor(target: ProjectStatus): ProjectStatus[] {
 }
 
 /**
- * Mirrors AuthorizationService.assertCanTransitionProject: evaluators handle
- * review transitions and rejections, teachers handle the rest. `under_review`
- * se conserva por los datos legados.
+ * Mirrors AuthorizationService.assertCanTransitionProject: assigned evaluators
+ * handle review transitions and rejections, teachers handle the rest.
+ * `under_review` se conserva por los datos legados.
  */
 export function authorRoleForTransition(
   previous: ProjectStatus,

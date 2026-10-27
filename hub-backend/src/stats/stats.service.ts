@@ -311,7 +311,7 @@ export class StatsService {
   }
 
   /**
-   * Los revisores globales (admin/evaluador) ven todo el sistema; el resto,
+   * Los revisores globales (admin/directivo) ven todo el sistema; el resto,
    * solo los proyectos asignados como docente/evaluador o propuestos.
    */
   private projectScope(

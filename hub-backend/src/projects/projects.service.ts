@@ -477,7 +477,7 @@ export class ProjectsService {
   }
   /**
    * Los miembros pueden leer los datos sensibles del proyecto: admins,
-   * evaluadores globales, el proponente y los actores asignados.
+   * directivos, el proponente y los actores asignados.
    */
   private canViewSensitiveData(
     project: ProjectWithRelations,
@@ -688,8 +688,8 @@ export class ProjectsService {
   }
   /**
    * Edita los datos del proyecto y registra una fila de historial por cada
-   * campo que cambió. Solo administradores y evaluadores; un proyecto cerrado
-   * o rechazado es de solo lectura.
+   * campo que cambió. Solo administradores, directivos y actores asignados; un
+   * proyecto cerrado o rechazado es de solo lectura.
    */
   async updateProject(params: {
     user: AuthenticatedUser;

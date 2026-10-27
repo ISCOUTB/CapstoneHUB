@@ -53,7 +53,32 @@ describe('Projects (e2e)', () => {
     await request(app.getHttpServer()).get(`/projects/${id}`).expect(404);
   });
 
-  it('permite a un evaluador global asignar actores sin estar asignado', async () => {
+  it('permite a un directivo asignar actores sin estar asignado', async () => {
+    const app = getApp();
+    const { accessToken } = await registerUser(app, uniqueEmail('owner'));
+    const { id } = await createProject(app, accessToken);
+    const directivo = await userWithRole(app, UserRole.directivo);
+    const student = await userWithRole(app, UserRole.student);
+
+    await request(app.getHttpServer())
+      .post(`/projects/${id}/actors`)
+      .set(bearer(directivo.accessToken))
+      .send({ userId: student.user.id, role: ActorRole.student })
+      .expect(201);
+
+    const assignable = await request(app.getHttpServer())
+      .get(`/projects/${id}/assignable-users`)
+      .set(bearer(directivo.accessToken))
+      .expect(200);
+
+    expect(
+      (assignable.body as { id: number }[]).some(
+        (candidate) => candidate.id === student.user.id,
+      ),
+    ).toBe(true);
+  });
+
+  it('rechaza asignar actores a un evaluador sin asignación', async () => {
     const app = getApp();
     const { accessToken } = await registerUser(app, uniqueEmail('owner'));
     const { id } = await createProject(app, accessToken);
@@ -64,18 +89,7 @@ describe('Projects (e2e)', () => {
       .post(`/projects/${id}/actors`)
       .set(bearer(evaluator.accessToken))
       .send({ userId: student.user.id, role: ActorRole.student })
-      .expect(201);
-
-    const assignable = await request(app.getHttpServer())
-      .get(`/projects/${id}/assignable-users`)
-      .set(bearer(evaluator.accessToken))
-      .expect(200);
-
-    expect(
-      (assignable.body as { id: number }[]).some(
-        (candidate) => candidate.id === student.user.id,
-      ),
-    ).toBe(true);
+      .expect(403);
   });
 
   it('publica los proyectos no privados aprobados para usuarios con sesión', async () => {

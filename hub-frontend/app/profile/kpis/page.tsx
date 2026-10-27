@@ -91,8 +91,8 @@ export default function KpisPage() {
     content = (
       <Alert>
         <AlertDescription>
-          El panel de indicadores está disponible para docentes, evaluadores y
-          administradores.
+          El panel de indicadores está disponible para docentes, evaluadores,
+          directivos y administradores.
         </AlertDescription>
       </Alert>
     );

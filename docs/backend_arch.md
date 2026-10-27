@@ -102,12 +102,21 @@ re-loguear. Las ventanas se ajustan con `AUTH_TOKEN_TTL_SECONDS` y
 con scrypt, exige mínimo 8 caracteres y que la nueva sea distinta. Si la actual
 no coincide responde `400` (no `401`, para no cerrar la sesión global).
 
-Roles globales (`UserRole`): `admin`, `evaluator`, `teacher`, `proposer`,
-`student`. Roles dentro de un proyecto (`ActorRole`): `teacher`, `evaluator`,
-`student`.
+Roles globales (`UserRole`): `admin`, `directivo`, `evaluator`, `teacher`,
+`proposer`, `student`. Roles dentro de un proyecto (`ActorRole`): `teacher`,
+`evaluator`, `student`.
 
 `teacher` unifica a los antiguos `coordinator` y `advisor`: agrupa al personal
 docente que supervisa proyectos.
+
+`directivo` es el rol de gestión académica: revisa cualquier proyecto sin
+asignarse, edita sus datos, asigna actores, comenta, gestiona o revisa entregas
+y resuelve las transiciones de la fase de propuesta. Sustituye al antiguo
+`evaluator` global.
+
+`evaluator` identifica a quienes evalúan la expo. No tiene acceso global: solo
+actúa en los proyectos donde se le asigna el rol de proyecto `evaluator` y, en
+ellos, conserva los permisos de revisión (hitos, entregas, fase y comentarios).
 
 `proposer` identifica a los proponentes externos que se registran solos desde
 `/register`. No es un `ActorRole`, así que no se les asigna como actores;
@@ -115,14 +124,15 @@ proponen proyectos y, como proponentes del proyecto, pueden editarlo mientras
 siga en `proposed` (o en el legado `under_review`).
 
 La asignación a un proyecto **licencia** el rol global una sola vez: un
-`teacher` puede ser asignado como `teacher` o como `evaluator`; un `evaluator`
-global solo como `evaluator`; un `student`, solo como `student`. Después de la
-asignación, los permisos dependen del rol en el proyecto, no del rol global.
+`teacher` puede ser asignado como `teacher` o como `evaluator`; un `evaluator` o
+un `directivo`, solo como `evaluator`; un `student`, solo como `student`.
+Después de la asignación, los permisos dependen del rol en el proyecto, no del
+rol global.
 
 `AuthorizationService` responde preguntas como "¿puede este usuario crear un
 proyecto?", "¿puede gestionar este proyecto?" o "¿puede asignar actores?",
 combinando la asignación en el proyecto con el `admin` (que siempre pasa) y el
-`evaluator` global, que revisa cualquier proyecto sin asignarse y, además, puede
+`directivo`, que revisa cualquier proyecto sin asignarse y, además, puede
 asignar actores, comentar, gestionar o revisar entregas y resolver las
 transiciones de la fase de propuesta sin estar asignado.
 
@@ -147,29 +157,30 @@ pasa.
 | Ver observaciones / hitos / anexos |   no    |  sí   |         sí         |       miembro       |       miembro        |      miembro       |
 | Comentar un proyecto               |   no    |  sí   |         sí         |       miembro       |       miembro        |      miembro       |
 
-- \* Un `evaluator` global resuelve las transiciones de la fase de propuesta
-  (`proposed → approved`/`rejected`, el legado `under_review → approved`/
-  `rejected` y `approved → rejected`) sin asignarse; las transiciones de
-  ejecución requieren estar asignado como `teacher`.
+- \* El `directivo` y el `evaluator` asignado resuelven las transiciones de la
+  fase de propuesta (`proposed → approved`/`rejected`, el legado
+  `under_review → approved`/`rejected` y `approved → rejected`); las
+  transiciones de ejecución requieren estar asignado como `teacher`.
 - `Crear proyecto` solo requiere que el usuario tenga al menos un rol global.
 - `Listar / ver proyectos`: sin sesión solo los finalizados y no privados; con
-  sesión, además los no privados en `approved`, `in_progress` o `paused`.
-- `Editar datos del proyecto`: lo permiten `admin` y cualquier `evaluator`
-  global (sin asignarse); un `teacher` o `evaluator` asignado al proyecto con su
-  rol correspondiente. Un proyecto `closed` o `rejected` es de solo lectura
+  sesión, además los no privados en `approved`, `in_progress` o `paused`. El
+  `directivo` ve todos; un `evaluator` sin asignación solo ve los públicos y los
+  que propuso.
+- `Editar datos del proyecto`: lo permiten `admin` y `directivo` (sin
+  asignarse); un `teacher` o `evaluator` asignado al proyecto con su rol
+  correspondiente. Un proyecto `closed` o `rejected` es de solo lectura
   (responde `409`). Cada campo modificado se registra en `ProjectChangeHistory`.
-- El `evaluator` global ve todos los proyectos y, sin asignarse, puede editar
-  sus datos, asignar actores, comentar, gestionar o revisar entregas y resolver
-  la fase de propuesta. Para gestionar hitos, avanzar de fase o hacer las
-  transiciones de ejecución necesita la asignación.
+- El `directivo` ve todos los proyectos y, sin asignarse, puede editar sus
+  datos, asignar actores, comentar, gestionar o revisar entregas y resolver la
+  fase de propuesta. Para gestionar hitos o aprobar la fase necesita una
+  asignación como `evaluator`; para avanzar de fase o hacer las transiciones de
+  ejecución, una asignación como `teacher`.
 - `Preparar y enviar entregas` (contenido y envío) queda reservado al `student`
-  asignado o a un `admin`. Docentes, evaluadores y proponentes solo configuran y
-  revisan la entrega, aunque estén asignados al proyecto.
-- Los evaluadores (globales o asignados) gestionan la fase de propuesta
-  (`proposed → approved`/`rejected`, el legado `under_review` y
-  `approved → rejected`); los docentes asignados, el resto
-  (`approved → in_progress`, `in_progress → {paused, closed, cancelled}`,
-  `paused → {in_progress, cancelled}`).
+  asignado o a un `admin`. Docentes, evaluadores, directivos y proponentes solo
+  configuran y revisan la entrega, aunque estén asignados al proyecto.
+- El `evaluator` de expo no tiene acceso global: solo participa en los
+  proyectos donde se le asigna el rol de proyecto `evaluator`. En ellos conserva
+  los permisos de revisión y aprobación de fase.
 - † El `student` no edita los datos por su rol, pero el **proponente** (de
   cualquier rol global, incluido `student`) puede editar mientras el proyecto
   esté en `proposed` (o en el legado `under_review`).
@@ -206,9 +217,9 @@ rol que realiza la transición.
 | `paused`                            | `in_progress`, `cancelled`      |
 | `closed` / `cancelled` / `rejected` | — (terminal)                    |
 
-Los evaluadores (globales o asignados) gestionan las transiciones de la fase de
-propuesta (`proposed → approved`/`rejected`, el legado `under_review`, y
-`approved → rejected`); los docentes asignados gestionan el resto
+Los directivos y los evaluadores asignados gestionan las transiciones de la
+fase de propuesta (`proposed → approved`/`rejected`, el legado `under_review`,
+y `approved → rejected`); los docentes asignados gestionan el resto
 (`approved → in_progress`, `in_progress → {paused, closed, cancelled}`,
 `paused → {in_progress, cancelled}`).
 
@@ -307,7 +318,7 @@ listado de Anexos y se sirven desde la pestaña Entregas.
 ## Entregas
 
 Una entrega (`ProjectReport`) tiene un **tipo** fijo (`type`: `text`, `link` o
-`file`) definido por el docente/evaluador al crearla; solo se puede
+`file`) definido por el docente/evaluador asignado al crearla; solo se puede
 cambiar mientras esté `pending` y no tenga contenido. Para el tipo Archivo
 (`file`) también se eligen los MIME permitidos (`allowedMimeTypes`) y el máximo
 de archivos (`maxFiles`), obligatorios al crear. El estudiante agrega
@@ -445,7 +456,7 @@ mostrados, y si es inválido se responde `401` en lugar de degradar a anónimo.
   el detalle: para visitantes anónimos, público es `isPrivate = false` y estado
   `closed`; para usuarios autenticados, además los no privados en `approved`,
   `in_progress` o `paused`. A eso se suman `proposerUserId` y las asignaciones
-  del solicitante; los roles `admin` y `evaluator` ven todo.
+  del solicitante; los roles `admin` y `directivo` ven todo.
 - `assertProjectMember` (usado por observaciones, hitos, anexos y entregas) es
   de miembros: proponente, actores asignados y roles revisores. Los proyectos
   públicos solo exponen su información base en el listado y el detalle.

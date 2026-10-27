@@ -4,8 +4,8 @@ import type { ProjectDetails } from "./schemas";
  * Reglas de permisos del proyecto en el cliente. Reflejan
  * `AuthorizationService` en el backend: el rol asignado al proyecto decide lo
  * que se puede hacer; los roles globales solo habilitan la asignación, salvo el
- * evaluador global (y el admin), que además asigna actores, comenta y gestiona
- * o revisa entregas en cualquier proyecto sin asignarse.
+ * directivo (y el admin), que además asigna actores, comenta y gestiona o
+ * revisa entregas en cualquier proyecto sin asignarse.
  */
 
 export type ProjectViewer = {
@@ -56,9 +56,9 @@ export function isAdmin(viewer: ProjectViewer): boolean {
   return viewer.roles.includes("admin");
 }
 
-/** Admin y evaluadores globales revisan cualquier proyecto sin asignarse. */
+/** Admin y directivos revisan cualquier proyecto sin asignarse. */
 export function reviewsAnyProject(viewer: ProjectViewer): boolean {
-  return isAdmin(viewer) || viewer.roles.includes("evaluator");
+  return isAdmin(viewer) || viewer.roles.includes("directivo");
 }
 
 function isAssignedWith(
@@ -128,7 +128,7 @@ export function canEditProjectDetails(
   );
 }
 
-/** Asignar actores: admin, evaluador global o docente asignado. */
+/** Asignar actores: admin, directivo o docente asignado. */
 export function canAssignActors(
   viewer: ProjectViewer,
   assignments: readonly ProjectAssignment[],
@@ -144,7 +144,7 @@ export function canManageMilestones(
   return isAdmin(viewer) || isAssignedWith(viewer, assignments, MANAGEMENT_ROLES);
 }
 
-/** Gestionar y revisar entregas: admin, evaluador global o docentes/evaluadores asignados. */
+/** Gestionar y revisar entregas: admin, directivo o docentes/evaluadores asignados. */
 export function canManageReports(
   viewer: ProjectViewer,
   assignments: readonly ProjectAssignment[],
@@ -168,7 +168,7 @@ export function canSubmitReports(
   return isAdmin(viewer) || isAssignedWith(viewer, assignments, SUBMITTER_ROLES);
 }
 
-/** Comentar/observar el proyecto: admin, evaluador global o miembro asignado. */
+/** Comentar/observar el proyecto: admin, directivo o miembro asignado. */
 export function canComment(
   viewer: ProjectViewer,
   assignments: readonly ProjectAssignment[],
@@ -197,29 +197,30 @@ function getManagedStatuses(
     return SELECTABLE_STATUS_OPTIONS;
   }
 
-  // Un evaluador global resuelve la fase de propuesta sin asignarse.
-  const isEvaluator =
-    viewer.roles.includes("evaluator") ||
+  // Un directivo resuelve la fase de propuesta sin asignarse; un evaluador de
+  // expo solo cuando está asignado al proyecto.
+  const canResolveProposal =
+    viewer.roles.includes("directivo") ||
     isAssignedWith(viewer, assignments, ["evaluator"]);
   const isTeacher = isAssignedTeacher(viewer, assignments);
   const allowed = new Set<string>();
 
   switch (currentStatus) {
     case "proposed":
-      if (isEvaluator) {
+      if (canResolveProposal) {
         allowed.add("approved");
         allowed.add("rejected");
       }
       break;
     // `under_review` es legado: los proyectos que quedaron ahí pueden salir.
     case "under_review":
-      if (isEvaluator) {
+      if (canResolveProposal) {
         allowed.add("approved");
         allowed.add("rejected");
       }
       break;
     case "approved":
-      if (isEvaluator) {
+      if (canResolveProposal) {
         allowed.add("rejected");
       }
       if (isTeacher) {

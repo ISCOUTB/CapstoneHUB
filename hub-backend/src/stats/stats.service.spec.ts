@@ -77,10 +77,18 @@ describe('StatsService', () => {
     expect(result.scope).toBe('assigned');
   });
 
-  it('widens the scope for global reviewers', async () => {
-    const { service, prisma } = createService(true);
+  it('scopes evaluators to assigned or proposed projects', async () => {
+    const { service } = createService();
 
     const result = await service.kpisForUser(user([UserRole.evaluator]));
+
+    expect(result.scope).toBe('assigned');
+  });
+
+  it('widens the scope for directivos', async () => {
+    const { service, prisma } = createService(true);
+
+    const result = await service.kpisForUser(user([UserRole.directivo]));
 
     expect(prisma.project.count).toHaveBeenCalledWith({ where: {} });
     expect(prisma.projectMilestones.count).toHaveBeenCalledWith({

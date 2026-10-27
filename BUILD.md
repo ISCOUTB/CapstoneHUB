@@ -191,7 +191,7 @@ Credenciales de ejemplo (los emails de los fixtures terminan en
 
 ```
 coord.ana@capstonehub.test   / Capstone123!   (teacher)
-eval.maria@capstonehub.test  / Capstone123!   (evaluator)
+eval.maria@capstonehub.test  / Capstone123!   (directivo)
 student.juan@capstonehub.test / Capstone123!  (student)
 proposer.roberto@capstonehub.test / Capstone123! (proposer)
 ```
