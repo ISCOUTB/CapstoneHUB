@@ -9,7 +9,6 @@ import { AuthNav } from "./auth-nav";
 import { UtbLogo } from "./utb-logo";
 import { cn } from "@/lib/utils";
 import { formatRole } from "../services/utils";
-import { canViewSemesterStats } from "../services/stats";
 
 interface NavLink {
   href: string;
@@ -58,14 +57,12 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isAdmin = session?.user.roles.includes("admin") ?? false;
-  const canSeeDashboard = canViewSemesterStats(session?.user.roles ?? []);
   const userRoles = (session?.user.roles ?? [])
     .map((role) => formatRole(role))
     .join(", ");
 
   const links: NavLink[] = [
     { href: "/projects", label: "Proyectos" },
-    ...(canSeeDashboard ? [{ href: "/dashboard", label: "Panorama" }] : []),
     ...(isAdmin ? [{ href: "/admin/users", label: "Administración" }] : []),
     { href: "/submit", label: "Proponer" },
   ];
@@ -78,7 +75,7 @@ export default function Navbar() {
         <div className="grid-lines-dark pointer-events-none absolute inset-0 opacity-60" />
 
         {/* Una sola fila: marca a la izquierda, enlaces, sesión a la derecha. */}
-        <div className="relative z-10 mx-auto flex w-full max-w-[96rem] items-center gap-2 px-4 py-2.5 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto flex w-full max-w-384 items-center gap-2 px-4 py-2.5 sm:px-6 lg:px-8">
           <Link
             href="/"
             onClick={closeMobile}
@@ -120,9 +117,9 @@ export default function Navbar() {
             className="ml-auto flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-utb-blue-pale/60 focus-visible:outline-none lg:hidden"
           >
             {mobileOpen ? (
-              <X className="size-[18px]" aria-hidden="true" />
+              <X className="size-4.5" aria-hidden="true" />
             ) : (
-              <Menu className="size-[18px]" aria-hidden="true" />
+              <Menu className="size-4.5" aria-hidden="true" />
             )}
           </button>
         </div>

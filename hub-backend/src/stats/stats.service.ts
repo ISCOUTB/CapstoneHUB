@@ -9,10 +9,7 @@ import {
 import { AuthenticatedUser } from '../auth/auth.types';
 import { AuthorizationService } from '../auth/authorization.service';
 import { PrismaService } from '../prisma.service';
-import {
-  buildSemesterStats,
-  SemesterStatsResponse,
-} from './semester-stats';
+import { buildSemesterStats, SemesterStatsResponse } from './semester-stats';
 
 /** Máximo de pendientes listados por sección. */
 const PENDING_ITEMS_LIMIT = 5;
@@ -140,9 +137,7 @@ export class StatsService {
    * Panorama global por semestre. Solo para quienes pueden ver todos los
    * proyectos, porque incluye también los privados.
    */
-  async semesterStats(
-    user: AuthenticatedUser,
-  ): Promise<SemesterStatsResponse> {
+  async semesterStats(user: AuthenticatedUser): Promise<SemesterStatsResponse> {
     this.authorization.assertCanViewAllProjectsStats(user);
 
     const rows = await this.prisma.project.findMany({
