@@ -31,7 +31,13 @@ test("muestra las pestañas del detalle sin desborde horizontal", async ({
 
   await page.goto(`/projects/${id}`);
 
-  // El proponente es miembro: ve las 8 pestañas.
+  // Statusbar con el contexto del proyecto y pestañas de usuario.
+  await expect(
+    page.getByRole("heading", { name: "Proyecto E2E" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Mi perfil" })).toBeVisible();
+
+  // El proponente es miembro: ve las 8 pestañas internas.
   await expect(page.locator('[data-slot="tabs-trigger"]')).toHaveCount(8);
 
   // La lista no debe generar scroll horizontal (fix #80).

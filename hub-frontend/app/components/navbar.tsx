@@ -4,11 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { useAuth } from "./auth-provider";
 import { AuthNav } from "./auth-nav";
 import { UtbLogo } from "./utb-logo";
+import { navigationLinks } from "./navigation-links";
 import { cn } from "@/lib/utils";
-import { formatRole } from "../services/utils";
 
 interface NavLink {
   href: string;
@@ -53,20 +52,9 @@ function NavItem({
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { session } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isAdmin = session?.user.roles.includes("admin") ?? false;
-  const userRoles = (session?.user.roles ?? [])
-    .map((role) => formatRole(role))
-    .join(", ");
-
-  const links: NavLink[] = [
-    { href: "/projects", label: "Proyectos" },
-    ...(isAdmin ? [{ href: "/admin/users", label: "Administración" }] : []),
-    { href: "/submit", label: "Proponer" },
-  ];
-
+  const links: NavLink[] = navigationLinks();
   const closeMobile = () => setMobileOpen(false);
 
   return (
@@ -93,7 +81,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Menú de escritorio: se oculta antes de que le falte espacio */}
+          {/* Menú de escritorio */}
           <nav
             aria-label="Navegación principal"
             className="ml-3 hidden min-w-0 items-center gap-1 lg:flex"
@@ -143,27 +131,8 @@ export default function Navbar() {
             </nav>
 
             <div className="mt-3 flex flex-col gap-3 border-t border-white/10 pt-3">
-              {session ? (
-                <>
-                  <p className="px-3.5 text-sm">
-                    <span className="block font-semibold text-white">
-                      {session.user.fullName}
-                    </span>
-                    <span className="block text-xs text-utb-blue-pale/70">
-                      {userRoles || "Sin rol asignado"}
-                    </span>
-                  </p>
-                  <NavItem
-                    href="/profile"
-                    label="Mi perfil"
-                    pathname={pathname}
-                    onNavigate={closeMobile}
-                    className="justify-start"
-                  />
-                </>
-              ) : null}
               <div className="px-1.5">
-                <AuthNav showUserInfo={false} />
+                <AuthNav onNavigate={closeMobile} />
               </div>
             </div>
           </div>

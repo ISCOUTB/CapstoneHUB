@@ -7,7 +7,7 @@ import { useApiResource } from "@/lib/use-api-resource";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "../../components/auth-provider";
-import ModuleHeader from "../../components/module-header";
+import PageFrame from "../../components/page-frame";
 import ServiceUnavailable from "../../components/service-unavailable";
 import {
   canViewKpis,
@@ -117,30 +117,26 @@ export default function KpisPage() {
   }
 
   return (
-    <main className="flex-1 text-foreground">
-      <section className="mx-auto w-full max-w-384 px-4 py-8 sm:px-6 lg:px-8">
-        <ModuleHeader
-          eyebrow="Mi cuenta"
-          title="Indicadores"
-          accentColor="rgba(34,211,238,0.28)"
-        />
+    <PageFrame
+      eyebrow="Mi cuenta"
+      title="Indicadores"
+      accentColor="rgba(34,211,238,0.28)"
+    >
+      {content}
 
-        {content}
+      {ready && isAuthenticated && canSeeSemesters ? (
+        <section className="mt-6">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Panorama por semestre
+          </h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Desarrollo general de todos los proyectos, por semestre académico y
+            por fase del proyecto.
+          </p>
 
-        {ready && isAuthenticated && canSeeSemesters ? (
-          <section className="mt-6">
-            <h2 className="text-lg font-semibold tracking-tight">
-              Panorama por semestre
-            </h2>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Desarrollo general de todos los proyectos, por semestre académico
-              y por fase del proyecto.
-            </p>
-
-            {semesterBody}
-          </section>
-        ) : null}
-      </section>
-    </main>
+          {semesterBody}
+        </section>
+      ) : null}
+    </PageFrame>
   );
 }

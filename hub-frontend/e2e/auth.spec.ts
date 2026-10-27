@@ -11,14 +11,39 @@ test("inicia sesión y cierra sesión", async ({ page, request }) => {
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
 
   await expect(page).toHaveURL(/\/projects/);
+  await page.getByRole("heading", { name: "Lista de proyectos" }).waitFor();
 
-  // En móvil el botón vive en el menú hamburguesa.
+  // En móvil el widget de perfil vive en el menú hamburguesa.
   const menuButton = page.getByRole("button", { name: "Abrir menú" });
   if (await menuButton.isVisible()) {
     await menuButton.click();
   }
 
-  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  const profileTrigger = page.getByRole("button", {
+    name: "Abrir menú de perfil",
+  });
+  const profileMenu = page.locator('[data-slot="dropdown-menu-content"]');
+
+  // El primer click puede ocurrir antes de que React hidrate la navbar.
+  await expect
+    .poll(
+      async () => {
+        if (await profileMenu.isVisible()) {
+          return true;
+        }
+        await profileTrigger.click();
+        return profileMenu.isVisible();
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true);
+
+  await expect(page.getByRole("menuitem", { name: "Mi perfil" })).toBeVisible();
+  // El menú se desmonta al cerrar sesión; `force` evita esperar actionability
+  // sobre un nodo que desaparece durante el click.
+  await page.getByRole("menuitem", { name: "Cerrar sesión" }).click({
+    force: true,
+  });
   await expect(page).toHaveURL(/\/login/);
 });
 

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../components/auth-provider";
-import ModuleHeader from "../../../components/module-header";
+import PageFrame from "../../../components/page-frame";
 import ProjectDetailsSkeleton from "../project-details-skeleton";
 import ProjectGeneralEditForm from "../project-general-edit-form";
 import ProjectMissingState from "../project-missing-state";
@@ -33,16 +33,14 @@ export default function ProjectEditView({ id }: { readonly id: string }) {
   }
 
   return (
-    <main className="flex-1 text-foreground">
-      <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <ModuleHeader
-          eyebrow={`Proyecto #${project.id}`}
-          title="Editar proyecto"
-          accentColor="rgba(16,185,129,0.32)"
-          teamSize={project.actorAssignments?.length ?? 0}
-        />
-
-        {canEdit ? (
+    <PageFrame
+      eyebrow={`Proyecto #${project.id}`}
+      title="Editar proyecto"
+      accentColor="rgba(16,185,129,0.32)"
+      teamSize={project.actorAssignments?.length ?? 0}
+      maxWidth="max-w-4xl"
+    >
+      {canEdit ? (
           <ProjectGeneralEditForm
             project={project}
             onSaved={() => {
@@ -68,9 +66,8 @@ export default function ProjectEditView({ id }: { readonly id: string }) {
                 </AlertDescription>
               </Alert>
             </CardContent>
-          </Card>
-        )}
-      </section>
-    </main>
+        </Card>
+      )}
+    </PageFrame>
   );
 }
