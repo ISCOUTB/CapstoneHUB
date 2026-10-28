@@ -173,6 +173,17 @@ export type ProjectDetailResponse = ProjectListResponse & {
   endDate: Date | null;
   estimatedCost: Prisma.Decimal | null;
   facultyAdvisor: string | null;
+  facultyAdvisors: string[];
+  engineeringArea: string | null;
+  externalAdvisorName: string | null;
+  externalAdvisorEmail: string | null;
+  nit: string | null;
+  researchGroup: string | null;
+  socialOrganization: string | null;
+  socialLocation: string | null;
+  projectScope: string | null;
+  monetaryResources: string | null;
+  monetaryResourcesDescription: string | null;
   teamRequirements: string | null;
   expectedOutcomes: string | null;
   deliverables: ProjectDeliverableResponse[];
@@ -407,6 +418,21 @@ export function mapProjectDetailResponse(
     endDate: project.endDate,
     estimatedCost: project.estimatedCost,
     facultyAdvisor: project.facultyAdvisor,
+    facultyAdvisors: canViewSensitiveData ? project.facultyAdvisors : [],
+    engineeringArea: project.engineeringArea,
+    externalAdvisorName: canViewSensitiveData
+      ? project.externalAdvisorName
+      : null,
+    externalAdvisorEmail: canViewSensitiveData
+      ? project.externalAdvisorEmail
+      : null,
+    nit: canViewSensitiveData ? (project.nit as string | null) : null,
+    researchGroup: project.researchGroup,
+    socialOrganization: project.socialOrganization,
+    socialLocation: project.socialLocation,
+    projectScope: project.projectScope,
+    monetaryResources: project.monetaryResources,
+    monetaryResourcesDescription: project.monetaryResourcesDescription,
     teamRequirements: project.teamRequirements,
     expectedOutcomes: project.expectedOutcomes,
     isProposer: viewer != null && project.proposerUserId === viewer.id,

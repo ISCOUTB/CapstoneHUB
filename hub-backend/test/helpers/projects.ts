@@ -22,9 +22,16 @@ export async function createProject(
       isPrivate: true,
       submissionConsentAt: new Date().toISOString(),
       ...overrides,
+      source: overrides.source ?? 'internal_need',
     })
-    .expect(201);
-
+    .expect((res) => {
+      if (res.status !== 201) {
+        console.error('Error al crear proyecto:', res.status, res.body);
+        throw new Error(
+          `Expected 201, received ${res.status}: ${JSON.stringify(res.body)}`,
+        );
+      }
+    });
   return response.body as { id: number };
 }
 

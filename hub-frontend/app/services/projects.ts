@@ -26,6 +26,17 @@ export type CreateProjectPayload = {
   isPrivate?: boolean;
   source?: ProjectSource;
   sourceDetails?: string;
+  engineeringArea?: string;
+  externalAdvisorName?: string;
+  externalAdvisorEmail?: string;
+  nit?: string;
+  researchGroup?: string;
+  socialOrganization?: string;
+  socialLocation?: string;
+  projectScope?: string;
+  monetaryResources?: string;
+  monetaryResourcesDescription?: string;
+  facultyAdvisors?: string[];
   ncedua?: string;
   facultyAdvisor?: string;
   teamRequirements?: string;

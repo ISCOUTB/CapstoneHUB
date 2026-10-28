@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { getProjects } from "../services/projects";
 import { ProjectItem } from "../services/schemas";
 import ProjectsList from "./projects-list";
@@ -17,12 +18,14 @@ import { isServiceUnavailableStatus } from "@/lib/http";
 import { useApiResource } from "@/lib/use-api-resource";
 
 export default function ProjectsExplorer() {
+  const searchParams = useSearchParams();
+  const proposedByMe = searchParams.get("propuestos") === "1";
   const {
     data: projectsResult,
     loading,
     error: loadError,
     reload,
-  } = useApiResource(() => getProjects());
+  } = useApiResource(() => getProjects({ proposedByMe }), [proposedByMe]);
 
   const projects: ProjectItem[] = projectsResult?.projects ?? [];
   const error = projectsResult?.error ?? loadError ?? null;
@@ -71,8 +74,9 @@ export default function ProjectsExplorer() {
         <EmptyHeader>
           <EmptyTitle>No hay proyectos</EmptyTitle>
           <EmptyDescription>
-            No se encontraron proyectos visibles para tu cuenta. Propón uno nuevo
-            para empezar.
+            {proposedByMe
+              ? "Todavía no se encontraron propuestas registradas por tu cuenta."
+              : "No se encontraron proyectos visibles para tu cuenta. Propón uno nuevo para empezar."}
           </EmptyDescription>
         </EmptyHeader>
       </Empty>

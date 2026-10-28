@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
 import { createProject } from "../services/projects";
 import { type ProjectSource } from "../services/schemas";
@@ -57,6 +58,17 @@ const projectSources: ReadonlyArray<{
   { value: "social_impact", label: "Impacto social" },
 ];
 
+const engineeringAreaOptions = [
+  { value: "systems", label: "Ingeniería de Sistemas y Computación" },
+  { value: "industrial", label: "Ingeniería Industrial" },
+  { value: "civil", label: "Ingeniería Civil" },
+  { value: "electrical", label: "Ingeniería Eléctrica y Electrónica" },
+  { value: "mechanical", label: "Ingeniería Mecánica" },
+  { value: "environmental", label: "Ingeniería Ambiental" },
+  { value: "other", label: "Otra área o ingeniería" },
+] as const;
+
+
 const steps = [
   {
     number: 1,
@@ -84,6 +96,17 @@ type FormState = {
   name: string;
   source: ProjectSource;
   sourceDetails: string;
+  externalAdvisorName: string;
+  externalAdvisorEmail: string;
+  nit: string;
+  researchGroup: string;
+  socialOrganization: string;
+  socialLocation: string;
+  engineeringAreas: DeliverableFormItem[];
+  projectScope: string;
+  monetaryResources: string;
+  monetaryResourcesDescription: string;
+  facultyAdvisors: DeliverableFormItem[];
   namep: string;
   description: string;
   context: string;
@@ -107,6 +130,17 @@ const initialForm: FormState = {
   name: "",
   source: "external_entity",
   sourceDetails: "",
+  externalAdvisorName: "",
+  externalAdvisorEmail: "",
+  nit: "",
+  researchGroup: "",
+  socialOrganization: "",
+  socialLocation: "",
+  engineeringAreas: [{ id: createClientId(), value: "" }],
+  projectScope: "",
+  monetaryResources: "na",
+  monetaryResourcesDescription: "",
+  facultyAdvisors: [{ id: createClientId(), value: "" }],
   namep: "",
   description: "",
   context: "",
@@ -137,6 +171,19 @@ function CharacterCounter({
   );
 }
 
+function isValidEmail(email: string): boolean {
+  const value = email.trim();
+  const atIndex = value.indexOf("@");
+
+  if (atIndex <= 0 || atIndex !== value.lastIndexOf("@") || /\s/.test(value)) {
+    return false;
+  }
+
+  const domain = value.slice(atIndex + 1);
+  const dotIndex = domain.lastIndexOf(".");
+  return dotIndex > 0 && dotIndex < domain.length - 1;
+}
+
 function validateStepOne(form: FormState): string | null {
   if (!form.namep.trim()) {
     return "Ingresa el nombre del responsable.";
@@ -147,6 +194,42 @@ function validateStepOne(form: FormState): string | null {
     !form.sourceDetails.trim()
   ) {
     return "Describe la entidad externa de la que proviene el proyecto.";
+  }
+
+  if (!form.engineeringAreas.some((area) => area.value.trim())) {
+    return "Selecciona al menos un área o ingeniería del proyecto.";
+  }
+
+  const selectedAreas = form.engineeringAreas.map((area) => area.value).filter(Boolean);
+  if (new Set(selectedAreas).size !== selectedAreas.length) {
+    return "No puedes seleccionar la misma área o ingeniería más de una vez.";
+  }
+
+  if (
+    form.source === "external_entity" &&
+    (!form.externalAdvisorName.trim() ||
+      !form.externalAdvisorEmail.trim() ||
+      !form.nit.trim())
+  ) {
+    return "Ingresa el nombre, correo y NIT de la entidad o asesor externo.";
+  }
+
+  if (
+    form.source === "external_entity" &&
+    !isValidEmail(form.externalAdvisorEmail)
+  ) {
+    return "Ingresa un correo válido para el asesor externo.";
+  }
+
+  if (form.source === "research" && !form.researchGroup.trim()) {
+    return "Ingresa el grupo de investigación.";
+  }
+
+  if (
+    form.source === "social_impact" &&
+    !form.socialLocation.trim()
+  ) {
+    return "Ingresa la localización del proyecto.";
   }
 
   return null;
@@ -165,6 +248,10 @@ function validateStepTwo(form: FormState): string | null {
     return "Ingresa la justificación del proyecto.";
   }
 
+  if (!form.projectScope.trim()) {
+    return "Describe el alcance específico del proyecto.";
+  }
+
   return null;
 }
 
@@ -175,6 +262,13 @@ function validateStepThree(form: FormState): string | null {
 
   if (!form.teamRequirements.trim()) {
     return "Describe el tipo de estudiantes o perfiles requeridos.";
+  }
+
+  if (
+    form.monetaryResources === "yes" &&
+    !form.monetaryResourcesDescription.trim()
+  ) {
+    return "Describe los recursos monetarios disponibles.";
   }
 
   return null;
@@ -188,6 +282,7 @@ const stepValidators: Record<number, StepValidator> = {
 
 export default function SubmitProjectForm() {
   const { session, isAuthenticated, ready } = useAuth();
+  const router = useRouter();
   const userEmail = session?.user?.email ?? "";
 
   const [form, setForm] = useState<FormState>(initialForm);
@@ -220,11 +315,49 @@ export default function SubmitProjectForm() {
     setForm((prev) => ({
       ...prev,
       source,
+      nit: "",
       sourceDetails:
         source === "external_entity" ? prev.sourceDetails : "",
     }));
 
     setStepError(null);
+  }
+
+  function handleFacultyAdvisorChange(id: string, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      facultyAdvisors: prev.facultyAdvisors.map((advisor) =>
+        advisor.id === id ? { ...advisor, value } : advisor,
+      ),
+    }));
+
+    setStepError(null);
+  }
+
+  function addFacultyAdvisor() {
+    setForm((prev) => ({
+      ...prev,
+      facultyAdvisors: [
+        ...prev.facultyAdvisors,
+        { id: createClientId(), value: "" },
+      ],
+    }));
+  }
+
+  function removeFacultyAdvisor(id: string) {
+    setForm((prev) => {
+      const facultyAdvisors = prev.facultyAdvisors.filter(
+        (advisor) => advisor.id !== id,
+      );
+
+      return {
+        ...prev,
+        facultyAdvisors:
+          facultyAdvisors.length > 0
+            ? facultyAdvisors
+            : [{ id: createClientId(), value: "" }],
+      };
+    });
   }
 
   function handleAdvisorChange(value: boolean) {
@@ -317,30 +450,39 @@ export default function SubmitProjectForm() {
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  function validateSubmissionPrerequisites(): boolean {
     if (!submissionConsentAt) {
       setShowDurationNotice(true);
-      return;
+      return false;
     }
 
     if (currentStep !== steps.length) {
       goToNextStep();
-      return;
+      return false;
     }
 
-    if (!validateCurrentStep()) {
-      return;
-    }
+    if (!validateCurrentStep()) return false;
 
     if (!userEmail.trim()) {
       setStatus("error");
-      setErrorMessage(
-        "No se pudo obtener el correo electrónico de la cuenta.",
-      );
-      return;
+      setErrorMessage("No se pudo obtener el correo electrónico de la cuenta.");
+      return false;
     }
+
+    return true;
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const consentAt = submissionConsentAt;
+
+    if (!consentAt) {
+    setShowDurationNotice(true);
+    return;
+    }
+
+
+    if (!validateSubmissionPrerequisites()) return;
 
     setStatus("saving");
     setErrorMessage(null);
@@ -358,6 +500,31 @@ export default function SubmitProjectForm() {
           form.source === "external_entity"
             ? form.sourceDetails.trim()
             : undefined,
+        engineeringArea: form.engineeringAreas.map((area) => area.value).filter(Boolean).join(","),
+        externalAdvisorName:
+          form.source === "external_entity" ? form.externalAdvisorName.trim() : undefined,
+        externalAdvisorEmail:
+          form.source === "external_entity" ? form.externalAdvisorEmail.trim() : undefined,
+        nit:
+          form.source === "external_entity" || form.source === "social_impact"
+            ? form.nit.trim() || undefined
+            : undefined,
+        researchGroup:
+          form.source === "research" ? form.researchGroup.trim() : undefined,
+        socialOrganization:
+          form.source === "social_impact" ? form.socialOrganization.trim() : undefined,
+
+        socialLocation:
+          form.source === "social_impact" ? form.socialLocation.trim() : undefined,
+        projectScope: form.projectScope.trim(),
+        monetaryResources: form.monetaryResources,
+        monetaryResourcesDescription:
+          form.monetaryResources === "yes"
+            ? form.monetaryResourcesDescription.trim()
+            : undefined,
+        facultyAdvisors: form.facultyAdvisors
+          .map((advisor) => advisor.value.trim())
+          .filter(Boolean),
         requiresLegalization: form.requiresLegalization,
         isPrivate: form.isPrivate,
         facultyAdvisor: form.hasFacultyAdvisor
@@ -368,14 +535,11 @@ export default function SubmitProjectForm() {
         deliverables: form.deliverables
           .map((deliverable) => deliverable.value.trim())
           .filter(Boolean),
-        submissionConsentAt,
+        submissionConsentAt: consentAt,
       });
 
       setStatus("success");
-      setForm(initialForm);
-      setCurrentStep(1);
-      setSubmissionConsentAt(null);
-      setShowDurationNotice(true);
+      router.replace("/projects?propuestos=1");
     } catch (error) {
       setStatus("error");
       setErrorMessage(
@@ -437,7 +601,7 @@ export default function SubmitProjectForm() {
               Los proyectos propuestos mediante esta plataforma se
               ejecutan durante{" "}
               <strong>
-                2 semestres académicos, aproximadamente 1 año
+                8 meses aproximadamente
               </strong>
               .
             </p>
@@ -565,39 +729,135 @@ export default function SubmitProjectForm() {
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="source">
+                <FieldLabel>
                   Fuente del proyecto
                 </FieldLabel>
 
-                <Select
-                  value={form.source}
-                  onValueChange={(value) => {
-                    if (value !== null) {
-                      handleSourceChange(value);
-                    }
-                  }}
-                >
-                  <SelectTrigger id="source" className="w-full">
-                    <SelectValue>
-                      {projectSources.find(
-                        (option) => option.value === form.source,
-                      )?.label ?? "Selecciona una fuente"}
-                    </SelectValue>
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {projectSources.map((option) => (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                      >
+                <div className="grid grid-cols-2 gap-2">
+                  {projectSources.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSourceChange(option.value)}
+                      aria-pressed={form.source === option.value}
+                      className={`flex flex-col items-start gap-1 rounded-lg border p-2 text-left transition-colors ${
+                        form.source === option.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 font-medium text-foreground">
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border text-xs ${
+                            form.source === option.value
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-input"
+                          }`}
+                        >
+                          {form.source === option.value ? "✓" : ""}
+                        </span>
                         {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      </span>
+
+                      <span className="text-xs leading-snug text-muted-foreground">
+                        {{
+                          external_entity: "Propuesta presentada por una empresa u organización externa a la UTB.",
+                          research: "Propuesta vinculada a un grupo o proyecto de investigación.",
+                          internal_need: "Propuesta que responde a una necesidad de una dependencia o área interna de la UTB.",
+                          social_impact: "Propuesta orientada a resolver una necesidad de una comunidad u organización social.",
+                        }[option.value]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </Field>
 
+              <Field>
+                <FieldLabel>
+                  Área o ingeniería del proyecto
+                </FieldLabel>
+
+                <div className="space-y-2">
+                  {form.engineeringAreas.map((area, index) => (
+                    <div key={area.id} className="flex items-center gap-2">
+                      <Select
+                        value={area.value}
+                        onValueChange={(value) => {
+                          if (value !== null) {
+                            setForm((prev) => ({
+                              ...prev,
+                              engineeringAreas: prev.engineeringAreas.map((currentArea) =>
+                                currentArea.id === area.id
+                                  ? { ...currentArea, value }
+                                  : currentArea,
+                              ),
+                            }));
+                            setStepError(null);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecciona un área o ingeniería">
+                            {engineeringAreaOptions.find((engineering) => engineering.value === area.value)?.label}
+                          </SelectValue>
+                        </SelectTrigger>
+
+                        <SelectContent>
+                          {engineeringAreaOptions.map((engineering) => (
+                            <SelectItem
+                              key={engineering.value}
+                              value={engineering.value}
+                              disabled={form.engineeringAreas.some((item) => item.value === engineering.value) && area.value !== engineering.value}
+                            >
+                              {engineering.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {form.engineeringAreas.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setForm((prev) => ({
+                              ...prev,
+                              engineeringAreas: prev.engineeringAreas.filter((item) => item.id !== area.id),
+                            }));
+                            setStepError(null);
+                          }}
+                          aria-label={`Eliminar área ${index + 1}`}
+                        >
+                          <RiDeleteBinLine />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-fit"
+                  onClick={() => {
+                    setForm((prev) => ({
+                      ...prev,
+                      engineeringAreas: [...prev.engineeringAreas, { id: createClientId(), value: "" }],
+                    }));
+                  }}
+                >
+                  <RiAddLine />
+                  Agregar otra área
+                </Button>
+
+                <FieldDescription>
+                  Selecciona todas las áreas relacionadas con la propuesta. Cada área puede definir hitos mínimos adicionales.
+                </FieldDescription>
+              </Field>
+
+              <div className="space-y-4">
               {form.source === "external_entity" && (
                 <Field>
                   <FieldLabel htmlFor="sourceDetails">
@@ -621,6 +881,106 @@ export default function SubmitProjectForm() {
                   />
                 </Field>
               )}
+
+              {form.source === "external_entity" && (
+                <>
+                  <Field>
+                    <FieldLabel htmlFor="nit">NIT de la empresa o entidad</FieldLabel>
+                    <Input
+                      id="nit"
+                      name="nit"
+                      value={form.nit}
+                      onChange={handleChange}
+                      maxLength={30}
+                      placeholder="NIT de la entidad externa"
+                      required
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="externalAdvisorName">Nombre del asesor externo</FieldLabel>
+                    <Input
+                      id="externalAdvisorName"
+                      name="externalAdvisorName"
+                      value={form.externalAdvisorName}
+                      onChange={handleChange}
+                      maxLength={MAX_NAME_LENGTH}
+                      required
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="externalAdvisorEmail">Correo del asesor externo</FieldLabel>
+                    <Input
+                      type="email"
+                      id="externalAdvisorEmail"
+                      name="externalAdvisorEmail"
+                      value={form.externalAdvisorEmail}
+                      onChange={handleChange}
+                      maxLength={MAX_TEXT_LENGTH}
+                      placeholder="asesor@empresa.com"
+                      required
+                    />
+                  </Field>
+                </>
+              )}
+
+              {form.source === "research" && (
+                <Field>
+                  <FieldLabel htmlFor="researchGroup">Grupo de investigación</FieldLabel>
+                  <Input
+                    id="researchGroup"
+                    name="researchGroup"
+                    value={form.researchGroup}
+                    onChange={handleChange}
+                    maxLength={MAX_TEXT_LENGTH}
+                    placeholder="Nombre del grupo de investigación"
+                    required
+                  />
+                </Field>
+              )}
+
+              {form.source === "social_impact" && (
+                <>
+                  <Field>
+                    <FieldLabel htmlFor="socialOrganization">Junta de Acción Comunal</FieldLabel>
+                    <Input
+                      id="socialOrganization"
+                      name="socialOrganization"
+                      value={form.socialOrganization}
+                      onChange={handleChange}
+                      maxLength={MAX_NAME_LENGTH}
+                      placeholder="Nombre de la Junta de Acción Comunal"
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="nit">NIT de la organización (opcional)</FieldLabel>
+                    <Input
+                      id="nit"
+                      name="nit"
+                      value={form.nit}
+                      onChange={handleChange}
+                      maxLength={30}
+                      placeholder="NIT de la Junta de Acción Comunal, si aplica"
+                    />
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor="socialLocation">Localización</FieldLabel>
+                    <Input
+                      id="socialLocation"
+                      name="socialLocation"
+                      value={form.socialLocation}
+                      onChange={handleChange}
+                      maxLength={MAX_TEXT_LENGTH}
+                      placeholder="Barrio, municipio o dirección de referencia"
+                      required
+                    />
+                  </Field>
+                </>
+              )}
+              </div>
             </FieldSet>
           )}
 
@@ -695,13 +1055,27 @@ export default function SubmitProjectForm() {
                 />
               </Field>
 
+              <Field>
+                <FieldLabel htmlFor="projectScope">Alcance específico del proyecto</FieldLabel>
+                <Textarea
+                  id="projectScope"
+                  name="projectScope"
+                  value={form.projectScope}
+                  onChange={handleChange}
+                  maxLength={MAX_TEXT_LENGTH}
+                  rows={4}
+                  placeholder="Delimita qué se necesita desarrollar, qué incluye la propuesta y cuáles son sus límites."
+                  required
+                />
+              </Field>
+
               <div className="rounded-lg border bg-muted/40 p-4">
                 <p className="font-medium">Duración estimada</p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
                   Los proyectos se ejecutan durante{" "}
                   <strong>
-                    2 semestres académicos (aproximadamente 1 año)
+                    8 meses aproximadamente
                   </strong>
                   .
                 </p>
@@ -717,60 +1091,48 @@ export default function SubmitProjectForm() {
               </FieldLegend>
 
               <Field>
-                <FieldLabel>
-                  ¿Cuenta con un contacto o asesor de la UTB?
-                </FieldLabel>
+                <FieldLabel>Profesores de contacto</FieldLabel>
 
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={
-                      form.hasFacultyAdvisor
-                        ? "default"
-                        : "outline"
-                    }
-                    onClick={() => handleAdvisorChange(true)}
-                  >
-                    Sí
-                  </Button>
+                <FieldDescription>
+                  Puedes agregar uno o varios profesores de contacto para la propuesta.
+                </FieldDescription>
 
-                  <Button
-                    type="button"
-                    variant={
-                      !form.hasFacultyAdvisor
-                        ? "default"
-                        : "outline"
-                    }
-                    onClick={() => handleAdvisorChange(false)}
-                  >
-                    No
-                  </Button>
+                <div className="flex flex-col gap-2">
+                  {form.facultyAdvisors.map((advisor, index) => (
+                    <div key={advisor.id} className="flex items-center gap-2">
+                      <Input
+                        value={advisor.value}
+                        onChange={(event) =>
+                          handleFacultyAdvisorChange(advisor.id, event.target.value)
+                        }
+                        maxLength={MAX_TEXT_LENGTH}
+                        placeholder={`Profesor de contacto ${index + 1}`}
+                      />
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFacultyAdvisor(advisor.id)}
+                        aria-label="Eliminar profesor de contacto"
+                      >
+                        <RiDeleteBinLine />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-fit"
+                  onClick={addFacultyAdvisor}
+                >
+                  <RiAddLine data-icon="inline-start" />
+                  Agregar profesor
+                </Button>
               </Field>
-
-              {form.hasFacultyAdvisor && (
-                <Field>
-                  <FieldLabel htmlFor="facultyAdvisor">
-                    Nombre o contacto UTB
-                  </FieldLabel>
-
-                  <Input
-                    id="facultyAdvisor"
-                    name="facultyAdvisor"
-                    value={form.facultyAdvisor}
-                    onChange={handleChange}
-                    maxLength={MAX_TEXT_LENGTH}
-                    placeholder="Nombre del docente o contacto de la UTB"
-                    required
-                  />
-
-                  <CharacterCounter
-                    value={form.facultyAdvisor}
-                    maxLength={MAX_TEXT_LENGTH}
-                  />
-                </Field>
-              )}
-
               <Field>
                 <FieldLabel htmlFor="teamRequirements">
                   Estudiantes requeridos
@@ -873,6 +1235,53 @@ export default function SubmitProjectForm() {
                   maxLength={MAX_TEXT_LENGTH}
                 />
               </Field>
+
+              <Field>
+                <FieldLabel htmlFor="monetaryResources">
+                  ¿Se tienen contemplados recursos monetarios disponibles?
+                </FieldLabel>
+
+                <Select
+                  value={form.monetaryResources}
+                  onValueChange={(value) => {
+                    if (value !== null) {
+                      setForm((prev) => ({
+                        ...prev,
+                        monetaryResources: value,
+                        monetaryResourcesDescription:
+                          value === "yes" ? prev.monetaryResourcesDescription : "",
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger id="monetaryResources" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Sí</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="na">N/A</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              {form.monetaryResources === "yes" && (
+                <Field>
+                  <FieldLabel htmlFor="monetaryResourcesDescription">
+                    Descripción de los recursos monetarios
+                  </FieldLabel>
+                  <Textarea
+                    id="monetaryResourcesDescription"
+                    name="monetaryResourcesDescription"
+                    value={form.monetaryResourcesDescription}
+                    onChange={handleChange}
+                    maxLength={MAX_TEXT_LENGTH}
+                    rows={3}
+                    placeholder="Describe el tipo de recursos disponibles y para qué se utilizarán."
+                    required
+                  />
+                </Field>
+              )}
 
               <Field orientation="horizontal">
                 <Checkbox
