@@ -65,17 +65,70 @@ export type KpiResponse = {
   };
 };
 
-export function getKpis(): Promise<KpiResponse> {
-  return apiRequest<KpiResponse>("/api/stats/kpis", {
+export async function getKpis(): Promise<KpiResponse> {
+  const kpis = await apiRequest<KpiResponse>("/api/stats/kpis", {
     action: "consultar los indicadores",
   });
-}
 
+  if (!kpis?.projects) {
+    throw new Error(
+      `Respuesta inesperada de /stats/kpis. Claves recibidas: ${
+        Object.keys(kpis ?? {}).join(", ") || "(vacía)"
+      }`,
+    );
+  }
+
+  return kpis;
+}
 const KPI_ROLES = ["admin", "teacher", "evaluator"] as const;
 
 /** El panel está disponible para docentes, evaluadores y administradores. */
 export function canViewKpis(roles: readonly string[]): boolean {
   return roles.some((role) =>
     (KPI_ROLES as readonly string[]).includes(role),
+  );
+}
+
+export type SemesterBucket = {
+  projects: number;
+  /** Proyectos con decisión tomada (ya no están en propuesta/revisión). */
+  decided: number;
+  /** Proyectos con decisión que no fueron rechazados. */
+  accepted: number;
+  rejected: number;
+  inProgress: number;
+  closed: number;
+  byStatus: { status: KpiProjectStatus; count: number }[];
+  minimumMilestones: { total: number; completed: number };
+  reports: { total: number; accepted: number };
+};
+
+export type CalendarSemester = SemesterBucket & {
+  /** Semestre académico, p. ej. "2026-1". */
+  period: string;
+  year: number;
+  half: 1 | 2;
+};
+
+export type PhaseSemester = SemesterBucket & { phase: KpiPhase };
+
+export type SemesterStatsResponse = {
+  totalProjects: number;
+  calendar: CalendarSemester[];
+  phases: PhaseSemester[];
+};
+
+export function getSemesterStats(): Promise<SemesterStatsResponse> {
+  return apiRequest<SemesterStatsResponse>("/api/stats/semesters", {
+    action: "consultar el panorama por semestre",
+  });
+}
+
+const SEMESTER_STATS_ROLES = ["admin", "evaluator"] as const;
+
+/** Solo quienes pueden ver todos los proyectos acceden al panorama global. */
+export function canViewSemesterStats(roles: readonly string[]): boolean {
+  return roles.some((role) =>
+    (SEMESTER_STATS_ROLES as readonly string[]).includes(role),
   );
 }

@@ -10,15 +10,15 @@ Ver también: [Esquema de base de datos](./database_arch.md),
 
 ## Resumen
 
-| Aspecto | Elección |
-| --- | --- |
-| Framework | NestJS 11 (módulos, controllers, services, guards) |
-| Lenguaje | TypeScript sobre Node.js 26 |
-| Base de datos | PostgreSQL 15 vía Prisma 7 (adaptador `pg`) |
-| Almacenamiento | RustFS (S3-compatible) localmente y en producción |
-| Autenticación | JWT HS256 (`@nestjs/jwt`) + hash de contraseñas con scrypt |
-| Documentación | Swagger / OpenAPI en `/api` |
-| Pruebas | Tests unitarios con Jest y e2e con Supertest |
+| Aspecto        | Elección                                                   |
+| -------------- | ---------------------------------------------------------- |
+| Framework      | NestJS 11 (módulos, controllers, services, guards)         |
+| Lenguaje       | TypeScript sobre Node.js 26                                |
+| Base de datos  | PostgreSQL 15 vía Prisma 7 (adaptador `pg`)                |
+| Almacenamiento | RustFS (S3-compatible) localmente y en producción          |
+| Autenticación  | JWT HS256 (`@nestjs/jwt`) + hash de contraseñas con scrypt |
+| Documentación  | Swagger / OpenAPI en `/api`                                |
+| Pruebas        | Tests unitarios con Jest y e2e con Supertest               |
 
 ## Arranque
 
@@ -56,14 +56,14 @@ respuesta, con `timestamp`, `level`, `requestId`, `method`, `path`, `status`,
 
 ## Capas
 
-| Capa | Responsabilidad |
-| --- | --- |
-| **Controller** | Define rutas, valida DTOs y recibe al usuario autenticado. Delgado por diseño. |
-| **Guard** | `AuthGuard` valida el token Bearer; `AdminGuard` exige el rol `admin`. |
-| **Service** | Lógica de negocio, reglas de estado y mapeo de respuestas. Un service por dominio. |
+| Capa                     | Responsabilidad                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| **Controller**           | Define rutas, valida DTOs y recibe al usuario autenticado. Delgado por diseño.             |
+| **Guard**                | `AuthGuard` valida el token Bearer; `AdminGuard` exige el rol `admin`.                     |
+| **Service**              | Lógica de negocio, reglas de estado y mapeo de respuestas. Un service por dominio.         |
 | **AuthorizationService** | Centraliza las reglas de permisos (rol asignado en el proyecto, admin y evaluador global). |
-| **PrismaService** | Acceso a datos (cliente Prisma con adaptador `pg`). |
-| **StorageService** | Abstracción de archivos; la implementación concreta es `S3StorageService`. |
+| **PrismaService**        | Acceso a datos (cliente Prisma con adaptador `pg`).                                        |
+| **StorageService**       | Abstracción de archivos; la implementación concreta es `S3StorageService`.                 |
 
 Los services devuelven **tipos de respuesta propios** (`ProjectDetailResponse`,
 etc.) en lugar de modelos crudos de Prisma, para no filtrar detalles de la base
@@ -71,16 +71,16 @@ de datos y mantener estable el contrato de la API aunque cambie el esquema.
 
 ## Módulos
 
-| Módulo | Descripción |
-| --- | --- |
-| **Auth** | Registro público, login, gestión de usuarios y asignación de roles. Crea el primer admin. |
-| **Projects** | CRUD de proyectos, asignación de actores y transición de estados. |
-| **Observations** | Observaciones de texto libre asociadas a un proyecto. |
-| **Milestones** | Entregables programados por proyecto. |
-| **Attachments** | Subida, listado, descarga y borrado de archivos. |
-| **Reports** | Entregas por proyecto, su contenido y su revisión. |
-| **Stats** | Indicadores (KPIs) agregados para docentes, evaluadores y administradores. |
-| **Storage** | Expone `StorageService` para el módulo de anexos (S3/RustFS). |
+| Módulo           | Descripción                                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| **Auth**         | Registro público, login, gestión de usuarios y asignación de roles. Crea el primer admin. |
+| **Projects**     | CRUD de proyectos, asignación de actores y transición de estados.                         |
+| **Observations** | Observaciones de texto libre asociadas a un proyecto.                                     |
+| **Milestones**   | Entregables programados por proyecto.                                                     |
+| **Attachments**  | Subida, listado, descarga y borrado de archivos.                                          |
+| **Reports**      | Entregas por proyecto, su contenido y su revisión.                                        |
+| **Stats**        | Indicadores (KPIs) agregados para docentes, evaluadores y administradores.                |
+| **Storage**      | Expone `StorageService` para el módulo de anexos (S3/RustFS).                             |
 
 ## Autenticación y autorización
 
@@ -132,20 +132,20 @@ Leyenda: **público** = no requiere token, **miembro** = asignado al proyecto
 con cualquier rol, **rol** = requiere al menos un rol global. El `admin` siempre
 pasa.
 
-| Acción | Público | admin | evaluator (global) | teacher (asignado) | evaluator (asignado) | student (asignado) |
-| --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Listar / ver proyectos | sí* | sí | sí | miembro | miembro | miembro |
-| Crear proyecto | no | rol | rol | rol | rol | rol |
-| Editar datos del proyecto | no | sí | sí | miembro | miembro | no† |
-| Gestionar / borrar proyecto | no | sí | no | miembro | no | no |
-| Asignar actores | no | sí | sí | miembro | no | no |
-| Gestionar hitos | no | sí | no | miembro | miembro | no |
-| Gestionar y revisar entregas | no | sí | sí | miembro | miembro | no |
-| Preparar y enviar entregas | no | sí | no | no | no | miembro |
-| Avanzar fase (semestre) | no | sí | no | miembro | no | no |
-| Cambiar estado | no | sí | sí (propuesta)* | miembro (ejecución) | miembro (propuesta) | no |
-| Ver observaciones / hitos / anexos | no | sí | sí | miembro | miembro | miembro |
-| Comentar un proyecto | no | sí | sí | miembro | miembro | miembro |
+| Acción                             | Público | admin | evaluator (global) | teacher (asignado)  | evaluator (asignado) | student (asignado) |
+| ---------------------------------- | :-----: | :---: | :----------------: | :-----------------: | :------------------: | :----------------: |
+| Listar / ver proyectos             |  sí\*   |  sí   |         sí         |       miembro       |       miembro        |      miembro       |
+| Crear proyecto                     |   no    |  rol  |        rol         |         rol         |         rol          |        rol         |
+| Editar datos del proyecto          |   no    |  sí   |         sí         |       miembro       |       miembro        |        no†         |
+| Gestionar / borrar proyecto        |   no    |  sí   |         no         |       miembro       |          no          |         no         |
+| Asignar actores                    |   no    |  sí   |         sí         |       miembro       |          no          |         no         |
+| Gestionar hitos                    |   no    |  sí   |         no         |       miembro       |       miembro        |         no         |
+| Gestionar y revisar entregas       |   no    |  sí   |         sí         |       miembro       |       miembro        |         no         |
+| Preparar y enviar entregas         |   no    |  sí   |         no         |         no          |          no          |      miembro       |
+| Avanzar fase (semestre)            |   no    |  sí   |         no         |       miembro       |          no          |         no         |
+| Cambiar estado                     |   no    |  sí   |  sí (propuesta)\*  | miembro (ejecución) | miembro (propuesta)  |         no         |
+| Ver observaciones / hitos / anexos |   no    |  sí   |         sí         |       miembro       |       miembro        |      miembro       |
+| Comentar un proyecto               |   no    |  sí   |         sí         |       miembro       |       miembro        |      miembro       |
 
 - \* Un `evaluator` global resuelve las transiciones de la fase de propuesta
   (`proposed → approved`/`rejected`, el legado `under_review → approved`/
@@ -197,14 +197,14 @@ permite reanudarla o cancelarla. Las transiciones se validan en
 una transacción, exige un motivo (salvo para `admin`) y respeta los permisos del
 rol que realiza la transición.
 
-| Desde | Siguientes estados permitidos |
-| --- | --- |
-| `proposed` | `approved`, `rejected` |
-| `under_review` (legado) | `approved`, `rejected` |
-| `approved` | `in_progress`, `rejected` |
-| `in_progress` | `paused`, `closed`, `cancelled` |
-| `paused` | `in_progress`, `cancelled` |
-| `closed` / `cancelled` / `rejected` | — (terminal) |
+| Desde                               | Siguientes estados permitidos   |
+| ----------------------------------- | ------------------------------- |
+| `proposed`                          | `approved`, `rejected`          |
+| `under_review` (legado)             | `approved`, `rejected`          |
+| `approved`                          | `in_progress`, `rejected`       |
+| `in_progress`                       | `paused`, `closed`, `cancelled` |
+| `paused`                            | `in_progress`, `cancelled`      |
+| `closed` / `cancelled` / `rejected` | — (terminal)                    |
 
 Los evaluadores (globales o asignados) gestionan las transiciones de la fase de
 propuesta (`proposed → approved`/`rejected`, el legado `under_review`, y
@@ -340,15 +340,15 @@ limpian con `npm run storage:gc`.
 Se usan las excepciones HTTP integradas de Nest, por lo que las respuestas
 siguen una forma consistente (`statusCode`, `message`, `error`):
 
-| Estado | Cuándo |
-| --- | --- |
-| `400` | DTO inválido, transición de estado inválida o motivo faltante. |
-| `401` | Token ausente, malformado o expirado. |
-| `403` | Autenticado pero sin rol/asignación en el proyecto. |
-| `404` | Proyecto, usuario, hito o anexo no encontrado. |
-| `409` | Valor único duplicado (por ejemplo email o asignación de actor). |
-| `500` | Configuración requerida faltante (S3, secreto de auth). |
-| `503` | La base de datos no está disponible (conexión rechazada o agotada). |
+| Estado | Cuándo                                                              |
+| ------ | ------------------------------------------------------------------- |
+| `400`  | DTO inválido, transición de estado inválida o motivo faltante.      |
+| `401`  | Token ausente, malformado o expirado.                               |
+| `403`  | Autenticado pero sin rol/asignación en el proyecto.                 |
+| `404`  | Proyecto, usuario, hito o anexo no encontrado.                      |
+| `409`  | Valor único duplicado (por ejemplo email o asignación de actor).    |
+| `500`  | Configuración requerida faltante (S3, secreto de auth).             |
+| `503`  | La base de datos no está disponible (conexión rechazada o agotada). |
 
 Los errores de conexión a PostgreSQL (`P1001`, `P1002`, `P1008`, `P1017` y
 códigos del driver como `ECONNREFUSED`) se traducen a `503 Service Unavailable`
@@ -359,18 +359,18 @@ rutas que la necesitan.
 
 ## Configuración
 
-| Variable | Propósito |
-| --- | --- |
-| `DATABASE_URL` | Cadena de conexión a PostgreSQL. |
-| `AUTH_SECRET` | Clave de firma HMAC (mínimo 32 caracteres). |
-| `AUTH_TOKEN_TTL_SECONDS` | Vida del token de acceso (86400 s por defecto). |
-| `AUTH_TOKEN_RENEW_AFTER_SECONDS` | Antigüedad para reemitir el token en una petición válida (mitad del TTL por defecto). |
-| `INITIAL_ADMIN_*` | Email, contraseña y nombre del admin inicial. |
-| `MAX_FILE_SIZE_BYTES` | Límite de tamaño de anexos (por defecto 10 MB). |
-| `MAX_REPORT_FILE_SIZE_BYTES` | Límite de tamaño de archivos de una entrega (100 MB por defecto). |
-| `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Almacenamiento de archivos. |
-| `S3_REGION`, `S3_FORCE_PATH_STYLE` | Ajustes del cliente S3 (`true` para RustFS/S3 path-style). |
-| `LOG_LEVEL` | Nivel mínimo del log de peticiones (`error`, `warn`, `log`/`info` o `debug`; `log` por defecto). |
+| Variable                                                     | Propósito                                                                                        |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`                                               | Cadena de conexión a PostgreSQL.                                                                 |
+| `AUTH_SECRET`                                                | Clave de firma HMAC (mínimo 32 caracteres).                                                      |
+| `AUTH_TOKEN_TTL_SECONDS`                                     | Vida del token de acceso (86400 s por defecto).                                                  |
+| `AUTH_TOKEN_RENEW_AFTER_SECONDS`                             | Antigüedad para reemitir el token en una petición válida (mitad del TTL por defecto).            |
+| `INITIAL_ADMIN_*`                                            | Email, contraseña y nombre del admin inicial.                                                    |
+| `MAX_FILE_SIZE_BYTES`                                        | Límite de tamaño de anexos (por defecto 10 MB).                                                  |
+| `MAX_REPORT_FILE_SIZE_BYTES`                                 | Límite de tamaño de archivos de una entrega (100 MB por defecto).                                |
+| `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Almacenamiento de archivos.                                                                      |
+| `S3_REGION`, `S3_FORCE_PATH_STYLE`                           | Ajustes del cliente S3 (`true` para RustFS/S3 path-style).                                       |
+| `LOG_LEVEL`                                                  | Nivel mínimo del log de peticiones (`error`, `warn`, `log`/`info` o `debug`; `log` por defecto). |
 
 ## Semillas y migraciones
 
@@ -398,37 +398,38 @@ Comandos: `npx prisma migrate dev`, `npm run seed` (y variantes como
 
 ## Endpoints principales
 
-| Método | Ruta | Descripción |
-| --- | --- | --- |
-| `GET` | `/health` | Sonda pública: `200` si la base de datos responde, `503` si no. |
-| `POST` | `/auth/register` | Registro público de un proponente; crea la cuenta con rol `proposer` y devuelve usuario + token (público). |
-| `POST` | `/auth/login` | Iniciar sesión y recibir un token de acceso (público). |
-| `GET` | `/auth/me` | Usuario autenticado actual (lo usa el BFF para hidratar la sesión). |
-| `GET/POST` | `/auth/users` | Listar / crear usuarios (admin). |
-| `PATCH` | `/auth/users/:id/roles` | Reemplazar los roles de un usuario (admin). |
-| `PATCH` | `/auth/me/password` | Cambiar la contraseña propia (valida la actual; `400` si no coincide o si la nueva es igual). |
-| `GET` | `/projects` | Listar los proyectos visibles para el solicitante (sin sesión: solo finalizados y no privados; con sesión: además los no privados aprobados o en ejecución). |
-| `GET` | `/projects/mine` | Proyectos propuestos y asignados al usuario. |
-| `GET` | `/projects/:id` | Detalle (404 si el proyecto es privado y el solicitante no es miembro). |
-| `POST` | `/projects` | Crear un proyecto; `isPrivate` lo define el proponente. |
-| `PUT` | `/projects/:id` | Editar los datos (admin, evaluador global o docente/evaluador asignado; proponente mientras siga en propuesta; `409` si está finalizado/rechazado). Registra historial por campo. |
-| `DELETE` | `/projects/:id` | Borrar (admin o docente asignado). |
-| `PATCH` | `/projects/:id/status` | Cambiar estado (registra historial; `under_review` solo como legado). |
-| `POST` | `/projects/:id/phase/advance` | Avanzar de fase (semestre) si los hitos mínimos están completos y el proponente y los evaluadores dieron su visto bueno (`409` si no). |
-| `POST` | `/projects/:id/phase/approvals` | Dar el visto bueno de fase (proponente o evaluador asignado). |
-| `DELETE` | `/projects/:id/phase/approvals` | Retirar el visto bueno de fase propio. |
-| `POST` | `/projects/:id/actors` | Asignar un usuario a un proyecto. |
-| `GET/POST` | `/projects/:id/observations` | Listar / agregar observaciones. |
-| `GET/POST/PATCH/DELETE` | `/projects/:id/milestones` | Gestionar hitos: marca de mínimo (`isMinimum`), fase y entregas vinculadas (`reportIds`). |
-| `GET/POST/DELETE` | `/projects/:id/attachments` | Gestionar anexos. |
-| `GET` | `/projects/:id/attachments/:aid/download` | Descargar un anexo. |
-| `GET/POST/PATCH/DELETE` | `/projects/:id/reports` | Gestionar entregas y su contenido. |
-| `POST` | `/projects/:id/reports/:rid/submit` | Enviar una entrega con contenido. |
-| `POST` | `/projects/:id/reports/:rid/review` | Aceptar o rechazar una entrega. |
-| `POST/PATCH/DELETE` | `/projects/:id/reports/:rid/contents[/:cid]` | Añadir, editar o borrar contenido de la entrega. |
-| `POST` | `/projects/:id/reports/:rid/contents/files` | Sube un archivo de entrega (multipart) y lo registra como contenido. |
-| `GET` | `/projects/:id/reports/:rid/contents/:cid/stream` | Ver o reproducir el archivo inline, con `Range`. |
-| `GET` | `/stats/kpis` | Indicadores agregados: pendientes, distribución de proyectos y actividad de revisión (admin, docente o evaluador; el alcance es global para admin/evaluador global y los proyectos asignados o propuestos para el resto). |
+| Método                  | Ruta                                              | Descripción                                                                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`                   | `/health`                                         | Sonda pública: `200` si la base de datos responde, `503` si no.                                                                                                                                                           |
+| `POST`                  | `/auth/register`                                  | Registro público de un proponente; crea la cuenta con rol `proposer` y devuelve usuario + token (público).                                                                                                                |
+| `POST`                  | `/auth/login`                                     | Iniciar sesión y recibir un token de acceso (público).                                                                                                                                                                    |
+| `GET`                   | `/auth/me`                                        | Usuario autenticado actual (lo usa el BFF para hidratar la sesión).                                                                                                                                                       |
+| `GET/POST`              | `/auth/users`                                     | Listar / crear usuarios (admin).                                                                                                                                                                                          |
+| `PATCH`                 | `/auth/users/:id/roles`                           | Reemplazar los roles de un usuario (admin).                                                                                                                                                                               |
+| `PATCH`                 | `/auth/me/password`                               | Cambiar la contraseña propia (valida la actual; `400` si no coincide o si la nueva es igual).                                                                                                                             |
+| `GET`                   | `/projects`                                       | Listar los proyectos visibles para el solicitante (sin sesión: solo finalizados y no privados; con sesión: además los no privados aprobados o en ejecución).                                                              |
+| `GET`                   | `/projects/mine`                                  | Proyectos propuestos y asignados al usuario.                                                                                                                                                                              |
+| `GET`                   | `/projects/:id`                                   | Detalle (404 si el proyecto es privado y el solicitante no es miembro).                                                                                                                                                   |
+| `POST`                  | `/projects`                                       | Crear un proyecto; `isPrivate` lo define el proponente.                                                                                                                                                                   |
+| `PUT`                   | `/projects/:id`                                   | Editar los datos (admin, evaluador global o docente/evaluador asignado; proponente mientras siga en propuesta; `409` si está finalizado/rechazado). Registra historial por campo.                                         |
+| `DELETE`                | `/projects/:id`                                   | Borrar (admin o docente asignado).                                                                                                                                                                                        |
+| `PATCH`                 | `/projects/:id/status`                            | Cambiar estado (registra historial; `under_review` solo como legado).                                                                                                                                                     |
+| `POST`                  | `/projects/:id/phase/advance`                     | Avanzar de fase (semestre) si los hitos mínimos están completos y el proponente y los evaluadores dieron su visto bueno (`409` si no).                                                                                    |
+| `POST`                  | `/projects/:id/phase/approvals`                   | Dar el visto bueno de fase (proponente o evaluador asignado).                                                                                                                                                             |
+| `DELETE`                | `/projects/:id/phase/approvals`                   | Retirar el visto bueno de fase propio.                                                                                                                                                                                    |
+| `POST`                  | `/projects/:id/actors`                            | Asignar un usuario a un proyecto.                                                                                                                                                                                         |
+| `GET/POST`              | `/projects/:id/observations`                      | Listar / agregar observaciones.                                                                                                                                                                                           |
+| `GET/POST/PATCH/DELETE` | `/projects/:id/milestones`                        | Gestionar hitos: marca de mínimo (`isMinimum`), fase y entregas vinculadas (`reportIds`).                                                                                                                                 |
+| `GET/POST/DELETE`       | `/projects/:id/attachments`                       | Gestionar anexos.                                                                                                                                                                                                         |
+| `GET`                   | `/projects/:id/attachments/:aid/download`         | Descargar un anexo.                                                                                                                                                                                                       |
+| `GET/POST/PATCH/DELETE` | `/projects/:id/reports`                           | Gestionar entregas y su contenido.                                                                                                                                                                                        |
+| `POST`                  | `/projects/:id/reports/:rid/submit`               | Enviar una entrega con contenido.                                                                                                                                                                                         |
+| `POST`                  | `/projects/:id/reports/:rid/review`               | Aceptar o rechazar una entrega.                                                                                                                                                                                           |
+| `POST/PATCH/DELETE`     | `/projects/:id/reports/:rid/contents[/:cid]`      | Añadir, editar o borrar contenido de la entrega.                                                                                                                                                                          |
+| `POST`                  | `/projects/:id/reports/:rid/contents/files`       | Sube un archivo de entrega (multipart) y lo registra como contenido.                                                                                                                                                      |
+| `GET`                   | `/projects/:id/reports/:rid/contents/:cid/stream` | Ver o reproducir el archivo inline, con `Range`.                                                                                                                                                                          |
+| `GET`                   | `/stats/kpis`                                     | Indicadores agregados: pendientes, distribución de proyectos y actividad de revisión (admin, docente o evaluador; el alcance es global para admin/evaluador global y los proyectos asignados o propuestos para el resto). |
+| `GET`                   | `/stats/semesters`                                | Panorama global por semestre: proyectos, aceptación, hitos mínimos y entregas agrupados por semestre académico (según fecha de inicio) y por fase del proyecto. Solo admin o evaluador (quienes ven todos los proyectos). |
 
 La autenticación es **global** (`AuthGuard` como `APP_GUARD`): todas las rutas
 requieren token salvo las marcadas con `@Public()` (`/health`, `/auth/register`,
