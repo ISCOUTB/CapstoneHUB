@@ -127,7 +127,7 @@ export function getSemesterStats(): Promise<SemesterStatsResponse> {
   });
 }
 
-const SEMESTER_STATS_ROLES = ["admin", "evaluator"] as const;
+const SEMESTER_STATS_ROLES = ["admin", "directivo"] as const;
 
 /** Solo quienes pueden ver todos los proyectos acceden al panorama global. */
 export function canViewSemesterStats(roles: readonly string[]): boolean {
