@@ -7,6 +7,7 @@ import {
   ProjectsService,
 } from './projects.service';
 import { AuthorizationService } from '../auth/authorization.service';
+import { EvaluationsService } from '../evaluations/evaluations.service';
 import { PrismaService } from '../prisma.service';
 import { ProjectStatus } from '../generated/prisma/client';
 import {
@@ -122,7 +123,7 @@ function createAuthorizationMock() {
         },
       ) =>
         viewer.roles.includes(UserRole.admin) ||
-        viewer.roles.includes(UserRole.evaluator) ||
+        viewer.roles.includes(UserRole.directivo) ||
         project.proposerUserId === viewer.id ||
         project.actorAssignments.some(
           (assignment) => assignment.userId === viewer.id,
@@ -131,11 +132,27 @@ function createAuthorizationMock() {
   };
 }
 
+function createEvaluationsMock() {
+  return {
+    assertPhaseEvaluated: jest.fn().mockResolvedValue(undefined),
+    phaseGate: jest.fn().mockResolvedValue({
+      phase: ProjectPhase.semester_1,
+      completed: true,
+      missingEvaluators: [],
+    }),
+  };
+}
+
 function createService(
   prisma: unknown,
   authorization: unknown,
+  evaluations: unknown = createEvaluationsMock(),
 ): ProjectsService {
-  return new ProjectsService(prisma as never, authorization as never);
+  return new ProjectsService(
+    prisma as never,
+    authorization as never,
+    evaluations as never,
+  );
 }
 
 function createAdvancePrismaMock(options?: {
@@ -204,6 +221,7 @@ describe('ProjectsService', () => {
         ProjectsService,
         { provide: PrismaService, useValue: {} },
         { provide: AuthorizationService, useValue: {} },
+        { provide: EvaluationsService, useValue: createEvaluationsMock() },
       ],
     }).compile();
 

@@ -6,6 +6,7 @@
 
 export const USER_ROLES = [
   "admin",
+  "directivo",
   "evaluator",
   "teacher",
   "proposer",
@@ -26,10 +27,16 @@ export function isActorRole(value: string): value is ActorRole {
   return (ACTOR_ROLES as readonly string[]).includes(value);
 }
 
+/** Crear y administrar plantillas de rúbricas: admin y directivo. */
+export function canManageRubrics(roles: readonly string[]): boolean {
+  return roles.includes("admin") || roles.includes("directivo");
+}
+
 /**
  * Roles de proyecto que puede recibir un usuario según sus roles globales.
- * Un docente puede participar como docente o como evaluador; un estudiante,
- * solo como estudiante.
+ * Un docente puede participar como docente o como evaluador; un evaluador de
+ * expo o un directivo, solo como evaluador; un estudiante, solo como
+ * estudiante.
  */
 export function assignableActorRoles(
   globalRoles: readonly string[],
@@ -38,7 +45,10 @@ export function assignableActorRoles(
 
   if (globalRoles.includes("teacher")) {
     roles.push("teacher", "evaluator");
-  } else if (globalRoles.includes("evaluator")) {
+  } else if (
+    globalRoles.includes("evaluator") ||
+    globalRoles.includes("directivo")
+  ) {
     roles.push("evaluator");
   }
 

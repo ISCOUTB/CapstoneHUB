@@ -53,6 +53,8 @@ export function formatRole(role: string): string {
   switch (role) {
     case "admin":
       return "Administrador";
+    case "directivo":
+      return "Directivo";
     case "evaluator":
       return "Evaluador";
     case "teacher":
@@ -64,6 +66,14 @@ export function formatRole(role: string): string {
     default:
       return role;
   }
+}
+
+export function formatGrade(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) {
+    return "Sin nota";
+  }
+
+  return `${value.toFixed(2)} / 5.00`;
 }
 
 export function getInitials(fullName: string): string {

@@ -19,6 +19,7 @@ import {
 import { PrismaService } from '../prisma.service';
 import { AuthorizationService } from '../auth/authorization.service';
 import { AuthenticatedUser } from '../auth/auth.types';
+import { EvaluationsService } from '../evaluations/evaluations.service';
 import { paginationToSkipTake } from '../common/pagination.dto';
 import { ProjectListQueryDto, ProjectSort } from './dto/project-list-query.dto';
 import {
@@ -270,6 +271,7 @@ export class ProjectsService {
   constructor(
     readonly prisma: PrismaService,
     private readonly authorization: AuthorizationService,
+    private readonly evaluations: EvaluationsService,
   ) {}
   async project(
     projectWhereUniqueInput: Prisma.ProjectWhereUniqueInput,
@@ -282,13 +284,25 @@ export class ProjectsService {
       },
       include: projectInclude,
     });
-    return project
-      ? mapProjectDetailResponse(
-          project,
-          this.canViewSensitiveData(project, viewer),
-          viewer,
-        )
-      : null;
+
+    if (!project) {
+      return null;
+    }
+
+    const response = mapProjectDetailResponse(
+      project,
+      this.canViewSensitiveData(project, viewer),
+      viewer,
+    );
+
+    if (response.canViewSensitiveData) {
+      response.evaluationGate = await this.evaluations.phaseGate(
+        project.id,
+        project.phase,
+      );
+    }
+
+    return response;
   }
   async projects(
     params: {
@@ -477,7 +491,7 @@ export class ProjectsService {
   }
   /**
    * Los miembros pueden leer los datos sensibles del proyecto: admins,
-   * evaluadores globales, el proponente y los actores asignados.
+   * directivos, el proponente y los actores asignados.
    */
   private canViewSensitiveData(
     project: ProjectWithRelations,
@@ -688,8 +702,8 @@ export class ProjectsService {
   }
   /**
    * Edita los datos del proyecto y registra una fila de historial por cada
-   * campo que cambió. Solo administradores y evaluadores; un proyecto cerrado
-   * o rechazado es de solo lectura.
+   * campo que cambió. Solo administradores, directivos y actores asignados; un
+   * proyecto cerrado o rechazado es de solo lectura.
    */
   async updateProject(params: {
     user: AuthenticatedUser;
@@ -866,7 +880,7 @@ export class ProjectsService {
     const { user, projectId, nextStatus, description } = params;
     const currentProject = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, phase: true },
     });
     if (!currentProject) {
       throw new NotFoundException(`Project ${projectId} not found`);
@@ -895,6 +909,11 @@ export class ProjectsService {
           `Cannot close the project while minimum milestones are incomplete: ${formatPendingMilestones(pendingMinimums)}`,
         );
       }
+      await this.evaluations.assertPhaseEvaluated(
+        projectId,
+        currentProject.phase,
+        'close',
+      );
     }
     await this.prisma.$transaction(async (transaction) => {
       // Actualización con concurrencia optimista: si el estado cambió desde la
@@ -970,6 +989,12 @@ export class ProjectsService {
         'The project is already in its final phase',
       );
     }
+
+    await this.evaluations.assertPhaseEvaluated(
+      projectId,
+      currentProject.phase,
+      'advance',
+    );
 
     const pendingMinimums = await this.incompleteMinimumMilestones(projectId, [
       currentProject.phase,

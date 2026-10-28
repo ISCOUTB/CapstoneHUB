@@ -7,8 +7,8 @@ import { useAuth } from "../../components/auth-provider";
 
 /**
  * Indica si el espectador puede editar los datos del proyecto. Pueden hacerlo
- * los administradores y los evaluadores globales, los docentes y evaluadores
- * asignados al proyecto, y el proponente mientras el proyecto siga en propuesta
+ * los administradores y los directivos, los docentes y evaluadores asignados al
+ * proyecto, y el proponente mientras el proyecto siga en propuesta
  * o revisión. Nunca en proyectos finalizados o rechazados. Es la comprobación
  * de interfaz; el backend vuelve a validarlo.
  */

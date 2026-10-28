@@ -1,5 +1,6 @@
 import {
   RiAttachmentLine,
+  RiAwardLine,
   RiChat3Line,
   RiFileCheckLine,
   RiFlagLine,
@@ -17,6 +18,8 @@ export type ProjectTab = {
   Icon: ProjectTabIcon;
   /** Solo visible para proponente, actores asignados y revisores. */
   memberOnly: boolean;
+  /** Solo visible para admin, directivo o evaluadores asignados. */
+  evaluationOnly?: boolean;
 };
 
 /**
@@ -62,6 +65,13 @@ export const PROJECT_TABS: ProjectTab[] = [
     memberOnly: true,
   },
   {
+    value: "evaluacion",
+    label: "Evaluación",
+    Icon: RiAwardLine,
+    memberOnly: true,
+    evaluationOnly: true,
+  },
+  {
     value: "anexos",
     label: "Anexos",
     Icon: RiAttachmentLine,
@@ -75,6 +85,13 @@ export const PROJECT_TABS: ProjectTab[] = [
   },
 ];
 
-export function visibleProjectTabs(isMember: boolean): ProjectTab[] {
-  return PROJECT_TABS.filter((tab) => !tab.memberOnly || isMember);
+export function visibleProjectTabs(
+  isMember: boolean,
+  canViewEvaluation = false,
+): ProjectTab[] {
+  return PROJECT_TABS.filter(
+    (tab) =>
+      (!tab.memberOnly || isMember) &&
+      (!tab.evaluationOnly || canViewEvaluation),
+  );
 }

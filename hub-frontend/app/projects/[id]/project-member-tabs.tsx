@@ -6,12 +6,14 @@ import ProjectReportsPanel from "./project-reports-panel";
 import ProjectAttachmentsPanel from "./project-attachments-panel";
 import ProjectStatusHistoryPanel from "./project-status-history-panel";
 import ProjectChangeHistoryPanel from "./project-change-history-panel";
+import ProjectEvaluationTab from "./project-evaluation-tab";
 import { TabsContent } from "@/components/ui/tabs";
 
 type ProjectMemberTabsProps = {
   readonly project: ProjectDetails;
   /** Asignaciones del proyecto, ya normalizadas por la vista. */
   readonly assignments: NonNullable<ProjectDetails["actorAssignments"]>;
+  readonly canViewEvaluation: boolean;
   /**
    * Recarga en segundo plano el detalle del proyecto. Los paneles la llaman tras
    * una mutación para reflejar los cambios sin recargar la página.
@@ -23,6 +25,7 @@ type ProjectMemberTabsProps = {
 export default function ProjectMemberTabs({
   project,
   assignments,
+  canViewEvaluation,
   onProjectChange,
 }: ProjectMemberTabsProps) {
   return (
@@ -63,6 +66,15 @@ export default function ProjectMemberTabs({
           onProjectChange={onProjectChange}
         />
       </TabsContent>
+
+      {canViewEvaluation ? (
+        <TabsContent value="evaluacion" className="mt-6">
+          <ProjectEvaluationTab
+            project={project}
+            onProjectChange={onProjectChange}
+          />
+        </TabsContent>
+      ) : null}
 
       <TabsContent value="anexos" className="mt-6">
         <ProjectAttachmentsPanel

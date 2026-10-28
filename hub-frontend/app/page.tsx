@@ -23,7 +23,7 @@ const FEATURES = [
     icon: RiTeamLine,
     title: "Coordinación entre actores",
     description:
-      "Estudiantes, asesores, evaluadores y coordinadores trabajando sobre la misma información.",
+      "Estudiantes, docentes, directivos y evaluadores trabajando sobre la misma información.",
   },
 ];
 

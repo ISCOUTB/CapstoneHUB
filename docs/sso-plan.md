@@ -97,8 +97,8 @@ The integration is blocked until IT delivers the following. This is the
   - local dev `http://localhost:3001/auth/sso/callback` (Entra allows
     `http://localhost` as an exception to the HTTPS rule)
 - **App roles** defined and assigned to users and/or groups:
-  `admin`, `evaluator`, `teacher`, `proposer`, `student`. Assigning to
-  groups is fine; members still receive the `roles` claim.
+  `admin`, `directivo`, `evaluator`, `teacher`, `proposer`, `student`.
+  Assigning to groups is fine; members still receive the `roles` claim.
 - **Admin consent** for the `openid profile email` scopes.
 - **Token configuration**: emit `email` / `preferred_username` and the
   `roles` claim.
@@ -217,7 +217,8 @@ tokens hit the >5-group overage limit and would require a Microsoft Graph call.
 - Admins can still override roles in the existing admin UI, which manages
   `UserRoleAssignment` and is unchanged.
 - Project roles remain separate: a global `teacher` can be assigned to a project
-  as `teacher` or as `evaluator`, and `student` as `student`.
+  as `teacher` or as `evaluator`; a global `evaluator` or `directivo` can be
+  assigned as `evaluator`; and `student` as `student`.
 
 ## Phases
 

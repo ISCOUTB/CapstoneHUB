@@ -9,7 +9,10 @@ import {
   uploadProjectAttachment,
 } from "../../services/attachments";
 import { ProjectAttachmentItem } from "../../services/schemas";
-import { canDeleteAttachment } from "../../services/project-permissions";
+import {
+  canDeleteAttachment,
+  reviewsAnyProject,
+} from "../../services/project-permissions";
 import { useAuth } from "../../components/auth-provider";
 import AccessNotice from "../../components/access-notice";
 import {
@@ -556,8 +559,9 @@ export default function ProjectAttachmentsPanel({
   }, [currentUser, assignments]);
 
   const isAdmin = currentUser?.roles.includes("admin") ?? false;
+  const isReviewer = currentUser ? reviewsAnyProject(currentUser) : false;
   const canUpload = isProjectMember || isAdmin;
-  const canView = isAuthenticated && (isProjectMember || isAdmin);
+  const canView = isAuthenticated && (isProjectMember || isAdmin || isReviewer);
 
   function canDelete(attachment: ProjectAttachmentItem): boolean {
     if (!currentUser) {

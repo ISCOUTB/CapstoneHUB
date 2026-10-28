@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../components/auth-provider";
-import ModuleHeader from "../components/module-header";
+import PageFrame from "../components/page-frame";
 import AssignedProjects from "./assigned-projects";
 import ChangePasswordForm from "./change-password-form";
 import { Badge } from "@/components/ui/badge";
@@ -47,15 +47,12 @@ export default function ProfilePage() {
   const showKpis = canViewKpis(user.roles);
 
   return (
-    <main className="flex-1 text-foreground">
-      <section className="mx-auto w-full max-w-[96rem] px-4 py-8 sm:px-6 lg:px-8">
-        <ModuleHeader
-          eyebrow="Mi cuenta"
-          title="Mi perfil"
-          accentColor="rgba(16,185,129,0.28)"
-        />
-
-        <Card className="mb-6">
+    <PageFrame
+      eyebrow="Mi cuenta"
+      title="Mi perfil"
+      accentColor="rgba(16,185,129,0.28)"
+    >
+      <Card className="mb-6">
           <CardContent>
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-4">
@@ -114,10 +111,9 @@ export default function ProfilePage() {
           </Card>
         ) : null}
 
-        <ChangePasswordForm />
+      <ChangePasswordForm />
 
-        <AssignedProjects />
-      </section>
-    </main>
+      <AssignedProjects />
+    </PageFrame>
   );
 }

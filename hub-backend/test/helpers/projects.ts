@@ -82,6 +82,45 @@ export async function assignProjectActor(
   return (response.body as { id: number }).id;
 }
 
+/** Envía una evaluación perfecta de la fase actual usando la rúbrica vigente. */
+export async function submitCurrentPhaseEvaluation(
+  app: INestApplication<App>,
+  projectId: number,
+  token: string,
+): Promise<void> {
+  const response = await request(app.getHttpServer())
+    .get(`/projects/${projectId}/evaluations`)
+    .set(bearer(token))
+    .expect(200);
+
+  const phases = (
+    response.body as {
+      project: { phase: string };
+      phases: {
+        phase: string;
+        isCurrent: boolean;
+        rubric: { criteria: { id: number }[] };
+      }[];
+    }
+  ).phases;
+
+  const current = phases.find((phase) => phase.isCurrent);
+  if (!current) {
+    throw new Error('The project does not have a current phase');
+  }
+
+  await request(app.getHttpServer())
+    .put(`/projects/${projectId}/evaluations/${current.phase}`)
+    .set(bearer(token))
+    .send({
+      criteria: current.rubric.criteria.map((criterion) => ({
+        criterionId: criterion.id,
+        score: 5,
+      })),
+    })
+    .expect(200);
+}
+
 /** Fecha ISO en el futuro, para `dueDate` de hitos y entregas. */
 export function futureIsoDate(days = 30): string {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();

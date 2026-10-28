@@ -11,7 +11,8 @@ Ver también: [Arquitectura del backend](./backend_arch.md).
 - `ProjectStatus`: `proposed`, `approved`, `in_progress`, `paused`, `closed`,
   `cancelled`, `rejected`. `under_review` se conserva solo como **legado** para
   los proyectos antiguos, que pueden salir hacia `approved` o `rejected`.
-- `UserRole`: `admin`, `evaluator`, `teacher`, `proposer`, `student`.
+- `UserRole`: `admin`, `directivo`, `evaluator`, `teacher`, `proposer`,
+  `student`.
 - `ActorRole`: `teacher`, `evaluator`, `student`.
 - `ProjectSource`: `external_entity`, `research`, `internal_need`,
   `social_impact`.
@@ -69,7 +70,8 @@ listando quién falta; el bloqueo también aplica al `admin`.
     no privados en `approved`, `in_progress` o `paused`, y por supuesto los que
     propuso y en los que está asignado. `proposed`, el legado `under_review`,
     `cancelled` y `rejected` **nunca** se publican.
-  - `admin` y `evaluator` global ven todos los proyectos.
+  - `admin` y `directivo` ven todos los proyectos. Un `evaluator` sin
+    asignación solo ve los públicos y los que propuso.
 - A los visitantes que solo pueden ver la información pública se les ocultan las
   secciones sensibles (equipo, observaciones, hitos, entregas, anexos e
   historial) tanto en la API como en la interfaz.
@@ -97,8 +99,8 @@ iniciativa de impacto social; el formulario de propuesta es único y flexible.
 Vincula un `User` con un `Project` mediante un `ActorRole` (`teacher`,
 `evaluator` o `student`). Único por `(projectId, userId)`. Para asignarlo, el
 usuario debe tener el rol global que licencia ese rol de proyecto: `student`
-para `student`; `teacher` para `teacher` o `evaluator`; `evaluator` para
-`evaluator`.
+para `student`; `teacher` para `teacher` o `evaluator`; `evaluator` o
+`directivo` para `evaluator`.
 
 ### ProjectObservation
 
@@ -135,6 +137,30 @@ aprobadores exigidos son el proponente (`proposerUserId`, si existe) y cada
 evaluador asignado (`ActorRole.evaluator`); la aprobación se puede retirar antes
 del avance y las filas quedan como registro histórico.
 
+### RubricTemplate y RubricCriterion
+
+Plantilla de rúbrica reutilizable. `name`, `description?`, `area?`, `isDefault`
+(plantilla de sistema “Nota general”), `isActive` y `createdByUserId?`.
+`RubricCriterion` guarda cada criterio con `position`, `title`, `description?` y
+`weightPercent`; los porcentajes deben sumar exactamente 100. La plantilla
+general se inserta en la migración inicial y no se puede editar ni archivar.
+
+### ProjectRubricAssignment
+
+Rúbrica elegida para un proyecto y una fase. Clave única `(projectId, phase)`;
+`rubricTemplateId` apunta a la plantilla elegida. Si no hay fila, la evaluación
+usa la plantilla general por defecto. Se bloquea el cambio cuando la fase ya
+tiene evaluaciones.
+
+### ProjectEvaluation y ProjectEvaluationCriterion
+
+Evaluación semestral de un evaluador. `projectId + phase + evaluatorUserId` es
+único, `totalScore` es la nota ponderada `0.00–5.00`, y `generalComment` es
+opcional. `ProjectEvaluationCriterion` guarda un snapshot de `title`,
+`weightPercent`, `score` y `comment?`, de modo que editar una plantilla no altera
+notas históricas. Cada evaluación se puede corregir mientras el proyecto esté
+`in_progress` y la fase sea la actual.
+
 ### ProjectAttachment
 
 Metadatos de un archivo subido. El binario se almacena en S3/RustFS;
@@ -143,7 +169,8 @@ archivo pertenece a una entrega y se muestra en su pestaña, no en Anexos.
 
 ### ProjectReport
 
-Entrega creada por un docente, evaluador o administrador: `title`, `description`
+Entrega creada por un docente, evaluador asignado, directivo o administrador:
+`title`, `description`
 opcional, `dueDate`, `type` (el tipo de contenido que debe aportar el estudiante:
 `text`, `link` o `file`), `allowedMimeTypes` y
 `maxFiles` (MIME permitidos y máximo de archivos, obligatorios para el tipo
@@ -342,6 +369,58 @@ classDiagram
         +DateTime createdAt
     }
 
+    class RubricTemplate {
+        +Int id
+        +String name
+        +String description
+        +String area
+        +Boolean isDefault
+        +Boolean isActive
+        +Int createdByUserId
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class RubricCriterion {
+        +Int id
+        +Int rubricTemplateId
+        +Int position
+        +String title
+        +String description
+        +Int weightPercent
+    }
+
+    class ProjectRubricAssignment {
+        +Int id
+        +Int projectId
+        +ProjectPhase phase
+        +Int rubricTemplateId
+        +Int assignedByUserId
+        +DateTime assignedAt
+    }
+
+    class ProjectEvaluation {
+        +Int id
+        +Int projectId
+        +ProjectPhase phase
+        +Int evaluatorUserId
+        +Int rubricTemplateId
+        +Decimal totalScore
+        +String generalComment
+        +DateTime submittedAt
+        +DateTime updatedAt
+    }
+
+    class ProjectEvaluationCriterion {
+        +Int id
+        +Int evaluationId
+        +Int position
+        +String title
+        +Int weightPercent
+        +Decimal score
+        +String comment
+    }
+
     %% `under_review` se conserva solo por los datos legados.
     class ProjectStatus {
         <<enumeration>>
@@ -364,6 +443,7 @@ classDiagram
     class UserRole {
         <<enumeration>>
         admin
+        directivo
         evaluator
         teacher
         proposer
@@ -420,9 +500,18 @@ classDiagram
     ProjectReportContent "0..1" --> "0..1" ProjectAttachment : attachment
     ProjectMilestones "1" *-- "0..*" MilestoneReportLink : reportLinks
     ProjectReport "1" *-- "0..*" MilestoneReportLink : milestoneLinks
+    RubricTemplate "1" *-- "1..*" RubricCriterion : criteria
+    RubricTemplate "1" *-- "0..*" ProjectRubricAssignment : assignments
+    Project "1" *-- "0..*" ProjectRubricAssignment : rubricAssignments
+    Project "1" *-- "0..*" ProjectEvaluation : evaluations
+    ProjectEvaluation "1" *-- "1..*" ProjectEvaluationCriterion : criteria
+    RubricTemplate "1" *-- "0..*" ProjectEvaluation : evaluations
+    User "1" *-- "0..*" RubricTemplate : createdRubricTemplates
 
     UserRoleAssignment ..> UserRole
     ProjectActorAssignment ..> ActorRole
+    ProjectRubricAssignment ..> ProjectPhase
+    ProjectEvaluation ..> ProjectPhase
     Project ..> ProjectStatus
     Project ..> ProjectPhase
     ProjectStatusHistory ..> ProjectStatus

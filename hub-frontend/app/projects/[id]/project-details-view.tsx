@@ -5,7 +5,6 @@ import { RiEditLine } from "@remixicon/react";
 import ProjectStatusDialog from "../../components/project-status-dialog";
 import ProjectCategoriesPanel from "./project-categories-panel";
 import ProjectDetailsBadges from "./project-details-badges";
-import ProjectDetailsHeader from "./project-details-header";
 import ProjectDetailsSkeleton from "./project-details-skeleton";
 import ProjectGeneralTab from "./project-general-tab";
 import ProjectMemberTabs from "./project-member-tabs";
@@ -17,26 +16,39 @@ import { visibleProjectTabs } from "./project-tabs-config";
 import { useCanEditProject } from "./use-can-edit-project";
 import { useIsProjectMember } from "./use-is-project-member";
 import { useProjectDetails } from "./use-project-details";
+import { useAuth } from "../../components/auth-provider";
+import { canViewProjectEvaluations } from "../../services/project-permissions";
+import PageFrame from "../../components/page-frame";
 import ServiceUnavailable from "../../components/service-unavailable";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isServiceUnavailableStatus } from "@/lib/http";
 
-function ProjectTabsList({ isMember }: { readonly isMember: boolean }) {
+function ProjectTabsList({
+  isMember,
+  canViewEvaluation,
+}: {
+  readonly isMember: boolean;
+  readonly canViewEvaluation: boolean;
+}) {
   return (
     <TabsList className="w-full sm:w-fit">
-      {visibleProjectTabs(isMember).map(({ value, label, Icon }) => (
-        <TabsTrigger key={value} value={value}>
-          <Icon data-icon="inline-start" />
-          {label}
-        </TabsTrigger>
-      ))}
+      {visibleProjectTabs(isMember, canViewEvaluation).map(
+        ({ value, label, Icon }) => (
+          <TabsTrigger key={value} value={value}>
+            <Icon data-icon="inline-start" />
+            {label}
+          </TabsTrigger>
+        ),
+      )}
     </TabsList>
   );
 }
 
 export default function ProjectDetailsView({ id }: { readonly id: string }) {
+  const { session } = useAuth();
   const { project, loading, status, error, reload, refresh } =
     useProjectDetails(id);
   const isMember = useIsProjectMember(project);
@@ -61,22 +73,41 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
   }
 
   const assignments = project.actorAssignments ?? [];
+  const canViewEvaluation = session
+    ? canViewProjectEvaluations(session.user, assignments)
+    : false;
 
   return (
-    <main className="flex-1 text-foreground">
-      <section className="mx-auto w-full max-w-[96rem] px-4 py-8 sm:px-6 lg:px-8">
-        <ProjectDetailsHeader project={project} isMember={isMember} />
+    <PageFrame
+      eyebrow={`Proyecto #${project.id}`}
+      title={project.name}
+      teamSize={isMember ? assignments.length : undefined}
+    >
+      {!isMember ? (
+        <Alert className="mb-6">
+          <AlertDescription>
+            Estás viendo la información pública de un proyecto. El equipo, las
+            observaciones, los anexos, los hitos y las entregas solo son
+            visibles para el proponente, los actores asignados y los directivos.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
-        <Card>
+      <Card>
           <CardContent>
             <ProjectDetailsBadges project={project} />
 
             <ProjectTabs
               defaultTab="general"
-              validTabs={visibleProjectTabs(isMember).map((tab) => tab.value)}
+              validTabs={visibleProjectTabs(isMember, canViewEvaluation).map(
+                (tab) => tab.value,
+              )}
               className="mt-6 w-full"
             >
-              <ProjectTabsList isMember={isMember} />
+              <ProjectTabsList
+                isMember={isMember}
+                canViewEvaluation={canViewEvaluation}
+              />
 
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <ProjectPhaseActions
@@ -92,6 +123,7 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
                       currentStatus={project.status}
                       assignments={assignments}
                       milestones={project.milestones ?? []}
+                      evaluationGate={project.evaluationGate}
                       onProjectChange={refresh}
                     />
                   ) : null}
@@ -129,13 +161,13 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
                 <ProjectMemberTabs
                   project={project}
                   assignments={assignments}
+                  canViewEvaluation={canViewEvaluation}
                   onProjectChange={refresh}
                 />
               ) : null}
             </ProjectTabs>
-          </CardContent>
-        </Card>
-      </section>
-    </main>
+        </CardContent>
+      </Card>
+    </PageFrame>
   );
 }

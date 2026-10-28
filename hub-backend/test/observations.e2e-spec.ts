@@ -17,18 +17,18 @@ import { ProjectStatus, UserRole } from '../src/generated/prisma/client';
 describe('Observations (e2e)', () => {
   const getApp = useTestApp();
 
-  it('un evaluador global sin asignación agrega y lista observaciones', async () => {
+  it('un directivo sin asignación agrega y lista observaciones', async () => {
     const app = getApp();
     const { accessToken: proposerToken } = await registerUser(
       app,
       uniqueEmail('prop'),
     );
-    const evaluator = await userWithRole(app, UserRole.evaluator);
+    const directivo = await userWithRole(app, UserRole.directivo);
     const { id: projectId } = await createProject(app, proposerToken);
 
     const created = await request(app.getHttpServer())
       .post(`/projects/${projectId}/observations`)
-      .set(bearer(evaluator.accessToken))
+      .set(bearer(directivo.accessToken))
       .send({ content: 'Observación de prueba' })
       .expect(201);
 
@@ -36,7 +36,7 @@ describe('Observations (e2e)', () => {
       'Observación de prueba',
     );
     expect((created.body as { author: { id: number } }).author.id).toBe(
-      evaluator.user.id,
+      directivo.user.id,
     );
 
     const list = await request(app.getHttpServer())
@@ -49,6 +49,19 @@ describe('Observations (e2e)', () => {
         (observation) => observation.id === (created.body as { id: number }).id,
       ),
     ).toBe(true);
+  });
+
+  it('rechaza observar a un evaluador sin asignación', async () => {
+    const app = getApp();
+    const { accessToken } = await registerUser(app, uniqueEmail('prop'));
+    const evaluator = await userWithRole(app, UserRole.evaluator);
+    const { id: projectId } = await createProject(app, accessToken);
+
+    await request(app.getHttpServer())
+      .post(`/projects/${projectId}/observations`)
+      .set(bearer(evaluator.accessToken))
+      .send({ content: 'Intento sin asignación' })
+      .expect(403);
   });
 
   it('un admin sin asignación también puede observar', async () => {

@@ -124,30 +124,37 @@ Isotipo vectorial inline: nítido a cualquier tamaño, colorable con
 
 ## Cabecera
 
-[`app/components/navbar.tsx`](../hub-frontend/app/components/navbar.tsx) son dos
-franjas hermanas, no un solo bloque:
+[`app/components/navbar.tsx`](../hub-frontend/app/components/navbar.tsx) es una
+sola fila `sticky top-0` sobre azul profundo UTB: marca, navegación principal
+(Inicio, Proyectos y Proponer) y widget de perfil. El widget abre un dropdown
+con **Mi perfil** y **Cerrar sesión**. En móvil los enlaces viven en el menú
+desplegable.
 
-1. **Banda institucional** (`<header>`) — logo grande, nombre de la universidad y
-   wordmark. Se va con el scroll.
-2. **Fila de navegación** (`<nav sticky top-0>`) — enlaces y sesión. Queda fija.
+La ruta activa se marca con píldora `bg-utb-blue` y punto blanco. Es el único
+bloque que queda fijo al hacer scroll.
 
-La separación es intencional: la cabecera completa mide ~193 px en escritorio y
-dejarla fija entera se comía una quinta parte de la pantalla. Para que `sticky`
-funcione más allá de la banda, ambas franjas deben ser **hermanas dentro de
-`<body>`**; anidar la fila dentro del `<header>` la dejaría pegada solo mientras
-la banda esté visible.
+## Statusbar y pestañas
 
-La ruta activa se marca con píldora `bg-utb-blue` y punto blanco.
+[`app/components/page-frame.tsx`](../hub-frontend/app/components/page-frame.tsx)
+monta, debajo de la navbar, un **statusbar** plano con categoría y título
+(`Administración / Rúbricas`) y, justo debajo, las **pestañas de acciones de
+usuario** ([`user-action-tabs.tsx`](../hub-frontend/app/components/user-action-tabs.tsx)).
+Las pestañas se calculan con `navigation-links.ts` según los roles y son solo
+atajos: Administración (admin), Rúbricas, Indicadores y Mi perfil. Solo la
+navbar es sticky; el statusbar y las pestañas se van con el scroll. La home,
+login y registro no usan este chrome.
 
 ## Convenciones para pantallas nuevas
 
 ```tsx
-<main className="flex-1 text-foreground">
-  <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-    <ModuleHeader eyebrow="…" title="…" subtitle="…" />
-    {/* contenido */}
-  </section>
-</main>
+<PageFrame
+  eyebrow="Administración"
+  title="Rúbricas"
+  accentColor="rgba(129,140,248,0.38)"
+  maxWidth="max-w-6xl"
+>
+  {/* contenido */}
+</PageFrame>
 ```
 
 - El fondo de plataforma lo pone `<body>` (`bg-muted/40`); no poner

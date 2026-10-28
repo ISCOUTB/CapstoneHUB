@@ -51,7 +51,7 @@ export class AuthorizationService {
   /**
    * Acceso de ESCRITURA: solo administradores, el proponente o un actor
    * asignado al proyecto. A diferencia de la lectura, un revisor global
-   * (evaluator) sin asignación NO puede escribir en proyectos ajenos, y los
+   * (directivo) sin asignación NO puede escribir en proyectos ajenos, y los
    * proyectos públicos no otorgan escritura a extraños.
    */
   async assertCanWriteProjectData(
@@ -92,20 +92,20 @@ export class AuthorizationService {
   }
 
   /**
-   * Los evaluadores globales revisan cualquier proyecto sin asignarse y los
+   * Los directivos revisan cualquier proyecto sin asignarse y los
    * administradores pasan siempre. El resto de roles solo ve proyectos en los
    * que participa (proponente o actor asignado).
    */
   canReviewAnyProject(user: AuthenticatedUser): boolean {
     return (
       user.roles.includes(UserRole.admin) ||
-      user.roles.includes(UserRole.evaluator)
+      user.roles.includes(UserRole.directivo)
     );
   }
 
   /**
    * Los miembros son usuarios con una relación sensible con el proyecto: su
-   * proponente, sus actores asignados o un evaluador global/admin.
+   * proponente, sus actores asignados o un directivo/admin.
    */
   async canViewProject(
     user: AuthenticatedUser,
@@ -179,8 +179,8 @@ export class AuthorizationService {
   }
 
   /**
-   * Comentar/observar está abierto a administradores y evaluadores globales
-   * (aunque no estén asignados) y a cualquier actor asignado al proyecto.
+   * Comentar/observar está abierto a administradores y directivos (aunque no
+   * estén asignados) y a cualquier actor asignado al proyecto.
    */
   async assertCanComment(
     user: AuthenticatedUser,
@@ -190,7 +190,7 @@ export class AuthorizationService {
       return;
     }
 
-    if (user.roles.includes(UserRole.evaluator)) {
+    if (user.roles.includes(UserRole.directivo)) {
       return;
     }
 
@@ -238,12 +238,14 @@ export class AuthorizationService {
   }
 
   /**
-   * El panel de indicadores está disponible para administradores, docentes y
-   * evaluadores.
+   * El panel de indicadores está disponible para administradores, docentes,
+   * evaluadores y directivos. Los evaluadores y docentes solo ven el alcance
+   * de sus proyectos asignados.
    */
   assertCanViewKpis(user: AuthenticatedUser): void {
     const allowed = [
       UserRole.admin,
+      UserRole.directivo,
       UserRole.teacher,
       UserRole.evaluator,
     ] as const;
@@ -253,14 +255,14 @@ export class AuthorizationService {
     }
 
     throw new ForbiddenException(
-      'A teacher, evaluator or admin role is required to view the KPIs',
+      'A teacher, evaluator, directivo or admin role is required to view the KPIs',
     );
   }
 
   /**
    * El panorama por semestre agrega datos de todos los proyectos (incluidos
    * los privados), así que solo lo ven quienes ya pueden consultar cualquier
-   * proyecto: administradores y evaluadores.
+   * proyecto: administradores y directivos.
    */
   assertCanViewAllProjectsStats(user: AuthenticatedUser): void {
     if (this.canReviewAnyProject(user)) {
@@ -268,7 +270,7 @@ export class AuthorizationService {
     }
 
     throw new ForbiddenException(
-      'An evaluator or admin role is required to view the semester statistics',
+      'A directivo or admin role is required to view the semester statistics',
     );
   }
 
@@ -281,6 +283,56 @@ export class AuthorizationService {
     }
 
     await this.assertProjectAssignment(user, projectId, ActorRole.teacher);
+  }
+
+  /**
+   * Crear y administrar plantillas de rúbricas está reservado a directivos y
+   * administradores.
+   */
+  assertCanManageRubrics(user: AuthenticatedUser): void {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.directivo)
+    ) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'A directivo or admin role is required to manage rubrics',
+    );
+  }
+
+  /**
+   * Consultar la pestaña de evaluación: admin y directivo ven cualquier
+   * proyecto; el resto solo si está asignado como evaluador.
+   */
+  async assertCanViewProjectEvaluations(
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<void> {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.directivo)
+    ) {
+      return;
+    }
+
+    await this.assertProjectAssignment(user, projectId, ActorRole.evaluator);
+  }
+
+  /**
+   * Enviar una evaluación: admin o evaluador asignado. Un directivo sin
+   * asignación de evaluador solo puede consultar y asignar la rúbrica.
+   */
+  async assertCanSubmitProjectEvaluation(
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<void> {
+    if (user.roles.includes(UserRole.admin)) {
+      return;
+    }
+
+    await this.assertProjectAssignment(user, projectId, ActorRole.evaluator);
   }
 
   /**
@@ -316,9 +368,9 @@ export class AuthorizationService {
 
   /**
    * Editar los datos del proyecto está disponible para administradores,
-   * evaluadores globales, docentes/evaluadores asignados al proyecto y,
-   * mientras el proyecto siga en propuesta o revisión, para su proponente (sea
-   * cual sea su rol global).
+   * directivos, docentes/evaluadores asignados al proyecto y, mientras el
+   * proyecto siga en propuesta o revisión, para su proponente (sea cual sea su
+   * rol global).
    */
   async assertCanEditProjectDetails(
     user: AuthenticatedUser,
@@ -332,7 +384,7 @@ export class AuthorizationService {
       return;
     }
 
-    if (user.roles.includes(UserRole.evaluator)) {
+    if (user.roles.includes(UserRole.directivo)) {
       return;
     }
 
@@ -364,8 +416,8 @@ export class AuthorizationService {
   }
 
   /**
-   * Asignar actores está disponible para administradores, evaluadores globales
-   * (sin necesidad de asignarse al proyecto) y docentes asignados.
+   * Asignar actores está disponible para administradores, directivos (sin
+   * necesidad de asignarse al proyecto) y docentes asignados.
    */
   async assertCanAssignActors(
     user: AuthenticatedUser,
@@ -375,7 +427,7 @@ export class AuthorizationService {
       return;
     }
 
-    if (user.roles.includes(UserRole.evaluator)) {
+    if (user.roles.includes(UserRole.directivo)) {
       return;
     }
 
@@ -384,7 +436,7 @@ export class AuthorizationService {
 
   /**
    * Gestionar hitos exige administrador o una asignación docente/evaluadora.
-   * El evaluador global sí entra en {@link assertCanManageReports}, pero los
+   * El directivo global sí entra en {@link assertCanManageReports}, pero los
    * hitos quedan reservados a quien participa en el proyecto.
    */
   async assertCanManageMilestone(
@@ -399,8 +451,8 @@ export class AuthorizationService {
   }
 
   /**
-   * Gestionar y revisar entregas está abierto a administradores y evaluadores
-   * globales (aunque no estén asignados) y a docentes/evaluadores asignados.
+   * Gestionar y revisar entregas está abierto a administradores y directivos
+   * (aunque no estén asignados) y a docentes/evaluadores asignados.
    */
   async assertCanManageReports(
     user: AuthenticatedUser,
@@ -410,7 +462,7 @@ export class AuthorizationService {
       return;
     }
 
-    if (user.roles.includes(UserRole.evaluator)) {
+    if (user.roles.includes(UserRole.directivo)) {
       return;
     }
 
@@ -439,9 +491,9 @@ export class AuthorizationService {
 
   /**
    * Las transiciones de propuesta (`proposed → approved/rejected`, el legado
-   * `under_review` y `approved → rejected`) las resuelve un evaluador global
-   * sin asignación o un evaluador asignado al proyecto. El resto de
-   * transiciones exigen una asignación docente.
+   * `under_review` y `approved → rejected`) las resuelve un directivo sin
+   * asignación o un evaluador asignado al proyecto. El resto de transiciones
+   * exigen una asignación docente.
    */
   async assertCanTransitionProject(
     user: AuthenticatedUser,
@@ -460,7 +512,7 @@ export class AuthorizationService {
         nextStatus === ProjectStatus.rejected);
 
     if (evaluatorTransitions) {
-      if (user.roles.includes(UserRole.evaluator)) {
+      if (user.roles.includes(UserRole.directivo)) {
         return;
       }
 

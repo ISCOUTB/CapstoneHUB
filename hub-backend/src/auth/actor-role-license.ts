@@ -7,7 +7,11 @@ import { ActorRole, UserRole } from '../generated/prisma/client';
  */
 export const ACTOR_ROLE_LICENSES: Record<ActorRole, UserRole[]> = {
   [ActorRole.teacher]: [UserRole.teacher],
-  [ActorRole.evaluator]: [UserRole.teacher, UserRole.evaluator],
+  [ActorRole.evaluator]: [
+    UserRole.teacher,
+    UserRole.evaluator,
+    UserRole.directivo,
+  ],
   [ActorRole.student]: [UserRole.student],
 };
 

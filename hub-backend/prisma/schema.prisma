@@ -23,6 +23,7 @@ enum ProjectStatus {
 
 enum UserRole {
   admin
+  directivo
   evaluator
   teacher
   proposer
@@ -90,11 +91,14 @@ model User {
   projectChangeHistories ProjectChangeHistory[]
   authoredObservations   ProjectObservation[]
   uploadedAttachments    ProjectAttachment[]
-  createdReports         ProjectReport[]          @relation("ReportCreatedBy")
-  reviewedReports        ProjectReport[]          @relation("ReportReviewedBy")
-  reportContents         ProjectReportContent[]   @relation("ReportContentCreatedBy")
-  proposedProjects       Project[]                @relation("ProjectProposedBy")
+  createdReports         ProjectReport[]           @relation("ReportCreatedBy")
+  reviewedReports        ProjectReport[]           @relation("ReportReviewedBy")
+  reportContents         ProjectReportContent[]    @relation("ReportContentCreatedBy")
+  proposedProjects       Project[]                 @relation("ProjectProposedBy")
   phaseApprovals         ProjectPhaseApproval[]
+  createdRubricTemplates RubricTemplate[]          @relation("RubricTemplateCreatedBy")
+  rubricAssignments      ProjectRubricAssignment[] @relation("RubricAssignmentAssignedBy")
+  projectEvaluations     ProjectEvaluation[]       @relation("ProjectEvaluationEvaluator")
 
   @@index([fullName], map: "idx_user_full_name")
   @@map("user")
@@ -148,18 +152,20 @@ model Project {
   monetaryResourcesDescription String? @map("monetary_resources_description") @db.Text
   facultyAdvisors      String[]      @default([]) @map("faculty_advisors")
 
-  proposer         User?                    @relation("ProjectProposedBy", fields: [proposerUserId], references: [id], onDelete: SetNull)
-  schools          ProjectSchool[]
-  naturalProposer  ProjectNaturalProposer?
-  actorAssignments ProjectActorAssignment[]
-  observations     ProjectObservation[]
-  statusHistory    ProjectStatusHistory[]
-  milestones       ProjectMilestones[]
-  attachments      ProjectAttachment[]
-  reports          ProjectReport[]
-  deliverables     ProjectDeliverable[]
-  changeHistory    ProjectChangeHistory[]
-  phaseApprovals   ProjectPhaseApproval[]
+  proposer          User?                     @relation("ProjectProposedBy", fields: [proposerUserId], references: [id], onDelete: SetNull)
+  schools           ProjectSchool[]
+  naturalProposer   ProjectNaturalProposer?
+  actorAssignments  ProjectActorAssignment[]
+  observations      ProjectObservation[]
+  statusHistory     ProjectStatusHistory[]
+  milestones        ProjectMilestones[]
+  attachments       ProjectAttachment[]
+  reports           ProjectReport[]
+  deliverables      ProjectDeliverable[]
+  changeHistory     ProjectChangeHistory[]
+  phaseApprovals    ProjectPhaseApproval[]
+  rubricAssignments ProjectRubricAssignment[]
+  evaluations       ProjectEvaluation[]
 
   @@index([status], map: "idx_project_status")
   @@index([startDate], map: "idx_project_start_date")
@@ -310,6 +316,98 @@ model ProjectPhaseApproval {
   @@index([projectId], map: "idx_project_phase_approval_project_id")
   @@index([approverUserId], map: "idx_project_phase_approval_approver_user_id")
   @@map("project_phase_approval")
+}
+
+model RubricTemplate {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(255)
+  description     String?  @db.Text
+  area            String?  @db.VarChar(120)
+  isDefault       Boolean  @default(false) @map("is_default")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdByUserId Int?     @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  createdBy   User?                     @relation("RubricTemplateCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  criteria    RubricCriterion[]
+  assignments ProjectRubricAssignment[]
+  evaluations ProjectEvaluation[]
+
+  @@index([isActive], map: "idx_rubric_template_is_active")
+  @@index([area], map: "idx_rubric_template_area")
+  @@map("rubric_template")
+}
+
+model RubricCriterion {
+  id               Int     @id @default(autoincrement())
+  rubricTemplateId Int     @map("rubric_template_id")
+  position         Int
+  title            String  @db.VarChar(255)
+  description      String? @db.Text
+  weightPercent    Int     @map("weight_percent")
+
+  template RubricTemplate @relation(fields: [rubricTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([rubricTemplateId, position], map: "uk_rubric_criterion_template_position")
+  @@index([rubricTemplateId], map: "idx_rubric_criterion_template_id")
+  @@map("rubric_criterion")
+}
+
+model ProjectRubricAssignment {
+  id               Int          @id @default(autoincrement())
+  projectId        Int          @map("project_id")
+  phase            ProjectPhase
+  rubricTemplateId Int          @map("rubric_template_id")
+  assignedByUserId Int?         @map("assigned_by_user_id")
+  assignedAt       DateTime     @default(now()) @map("assigned_at")
+
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rubricTemplate RubricTemplate @relation(fields: [rubricTemplateId], references: [id], onDelete: Restrict)
+  assignedBy     User?          @relation("RubricAssignmentAssignedBy", fields: [assignedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, phase], map: "uk_project_rubric_assignment_phase")
+  @@index([rubricTemplateId], map: "idx_project_rubric_assignment_template_id")
+  @@map("project_rubric_assignment")
+}
+
+model ProjectEvaluation {
+  id               Int          @id @default(autoincrement())
+  projectId        Int          @map("project_id")
+  phase            ProjectPhase
+  evaluatorUserId  Int          @map("evaluator_user_id")
+  rubricTemplateId Int          @map("rubric_template_id")
+  totalScore       Decimal      @map("total_score") @db.Decimal(3, 2)
+  generalComment   String?      @map("general_comment") @db.Text
+  submittedAt      DateTime     @default(now()) @map("submitted_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  project        Project                      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  evaluator      User                         @relation("ProjectEvaluationEvaluator", fields: [evaluatorUserId], references: [id], onDelete: Cascade)
+  rubricTemplate RubricTemplate               @relation(fields: [rubricTemplateId], references: [id], onDelete: Restrict)
+  criteria       ProjectEvaluationCriterion[]
+
+  @@unique([projectId, phase, evaluatorUserId], map: "uk_project_evaluation")
+  @@index([projectId, phase], map: "idx_project_evaluation_project_phase")
+  @@index([evaluatorUserId], map: "idx_project_evaluation_evaluator_user_id")
+  @@index([rubricTemplateId], map: "idx_project_evaluation_template_id")
+  @@map("project_evaluation")
+}
+
+model ProjectEvaluationCriterion {
+  id            Int     @id @default(autoincrement())
+  evaluationId  Int     @map("evaluation_id")
+  position      Int
+  title         String  @db.VarChar(255)
+  weightPercent Int     @map("weight_percent")
+  score         Decimal @db.Decimal(3, 2)
+  comment       String? @db.Text
+
+  evaluation ProjectEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  @@unique([evaluationId, position], map: "uk_project_evaluation_criterion_position")
+  @@index([evaluationId], map: "idx_project_evaluation_criterion_evaluation_id")
+  @@map("project_evaluation_criterion")
 }
 
 model ProjectAttachment {

@@ -80,9 +80,12 @@ export async function getKpis(): Promise<KpiResponse> {
 
   return kpis;
 }
-const KPI_ROLES = ["admin", "teacher", "evaluator"] as const;
+const KPI_ROLES = ["admin", "directivo", "teacher", "evaluator"] as const;
 
-/** El panel está disponible para docentes, evaluadores y administradores. */
+/**
+ * El panel está disponible para docentes, evaluadores, directivos y
+ * administradores. Docentes y evaluadores solo ven sus proyectos asignados.
+ */
 export function canViewKpis(roles: readonly string[]): boolean {
   return roles.some((role) =>
     (KPI_ROLES as readonly string[]).includes(role),
@@ -124,7 +127,7 @@ export function getSemesterStats(): Promise<SemesterStatsResponse> {
   });
 }
 
-const SEMESTER_STATS_ROLES = ["admin", "evaluator"] as const;
+const SEMESTER_STATS_ROLES = ["admin", "directivo"] as const;
 
 /** Solo quienes pueden ver todos los proyectos acceden al panorama global. */
 export function canViewSemesterStats(roles: readonly string[]): boolean {

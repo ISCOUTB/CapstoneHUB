@@ -39,19 +39,19 @@ describe('Reports (e2e)', () => {
     return (created.body as { id: number }).id;
   }
 
-  it('un evaluador global gestiona y revisa entregas y un estudiante asignado las envía', async () => {
+  it('un directivo gestiona y revisa entregas y un estudiante asignado las envía', async () => {
     const app = getApp();
-    const evaluator = await userWithRole(app, UserRole.evaluator);
+    const directivo = await userWithRole(app, UserRole.directivo);
     const student = await userWithRole(app, UserRole.student);
     const { projectId } = await createProjectWithProposer(app);
 
-    // El evaluador global crea la entrega y asigna al estudiante sin estar
-    // asignado al proyecto.
-    const reportId = await createReport(app, projectId, evaluator.accessToken);
+    // El directivo crea la entrega y asigna al estudiante sin estar asignado al
+    // proyecto.
+    const reportId = await createReport(app, projectId, directivo.accessToken);
     await assignProjectActor(
       app,
       projectId,
-      evaluator.accessToken,
+      directivo.accessToken,
       student.user.id,
       ActorRole.student,
     );
@@ -68,10 +68,10 @@ describe('Reports (e2e)', () => {
       .set(bearer(student.accessToken))
       .expect(201);
 
-    // El evaluador global la revisa sin asignación.
+    // El directivo la revisa sin asignación.
     const reviewed = await request(app.getHttpServer())
       .post(`/projects/${projectId}/reports/${reportId}/review`)
-      .set(bearer(evaluator.accessToken))
+      .set(bearer(directivo.accessToken))
       .send({ decision: 'accepted', comment: 'Cumple con lo solicitado' })
       .expect(201);
 

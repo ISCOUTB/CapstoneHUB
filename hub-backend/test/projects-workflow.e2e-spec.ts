@@ -12,7 +12,10 @@ import {
   ProjectStatus,
   UserRole,
 } from '../src/generated/prisma/client';
-import { createProject } from './helpers/projects';
+import {
+  createProject,
+  submitCurrentPhaseEvaluation,
+} from './helpers/projects';
 import { PrismaService } from '../src/prisma.service';
 
 describe('Projects workflow (e2e)', () => {
@@ -46,7 +49,7 @@ describe('Projects workflow (e2e)', () => {
       'in_progress',
     );
 
-    // Evaluador con rol global, asignado al proyecto.
+    // Evaluador de expo, asignado al proyecto.
     const evaluator = await userWithRole(app, UserRole.evaluator);
     await request(app.getHttpServer())
       .post(`/projects/${projectId}/actors`)
@@ -70,6 +73,14 @@ describe('Projects workflow (e2e)', () => {
       .set(bearer(evaluator.accessToken))
       .expect(201);
 
+    // La evaluación de la fase es obligatoria antes de avanzar.
+    await request(app.getHttpServer())
+      .post(`/projects/${projectId}/phase/advance`)
+      .set(bearer(admin.accessToken))
+      .expect(409);
+
+    await submitCurrentPhaseEvaluation(app, projectId, evaluator.accessToken);
+
     // Ahora sí avanza a semester_2.
     await request(app.getHttpServer())
       .post(`/projects/${projectId}/phase/advance`)
@@ -84,18 +95,18 @@ describe('Projects workflow (e2e)', () => {
     expect((detail.body as { phase: string }).phase).toBe('semester_2');
   });
 
-  it('un evaluador global aprueba la propuesta sin estar asignado', async () => {
+  it('un directivo aprueba la propuesta sin estar asignado', async () => {
     const app = getApp();
     const { accessToken: proposerToken } = await registerUser(
       app,
       uniqueEmail('propietario'),
     );
-    const evaluator = await userWithRole(app, UserRole.evaluator);
+    const directivo = await userWithRole(app, UserRole.directivo);
     const { id: projectId } = await createProject(app, proposerToken);
 
     const approved = await request(app.getHttpServer())
       .patch(`/projects/${projectId}/status`)
-      .set(bearer(evaluator.accessToken))
+      .set(bearer(directivo.accessToken))
       .send({ status: 'approved', description: 'Propuesta viable' })
       .expect(200);
 
@@ -109,7 +120,7 @@ describe('Projects workflow (e2e)', () => {
       app,
       uniqueEmail('propietario'),
     );
-    const evaluator = await userWithRole(app, UserRole.evaluator);
+    const directivo = await userWithRole(app, UserRole.directivo);
     const { id: projectId } = await createProject(app, proposerToken);
 
     // Los datos antiguos conservan el estado legado; se fuerza aquí porque la
@@ -121,11 +132,27 @@ describe('Projects workflow (e2e)', () => {
 
     const approved = await request(app.getHttpServer())
       .patch(`/projects/${projectId}/status`)
-      .set(bearer(evaluator.accessToken))
+      .set(bearer(directivo.accessToken))
       .send({ status: 'approved', description: 'Revisión de proyecto legado' })
       .expect(200);
 
     expect((approved.body as { status: string }).status).toBe('approved');
+  });
+
+  it('un evaluador sin asignación no puede resolver la propuesta', async () => {
+    const app = getApp();
+    const { accessToken: proposerToken } = await registerUser(
+      app,
+      uniqueEmail('propietario'),
+    );
+    const evaluator = await userWithRole(app, UserRole.evaluator);
+    const { id: projectId } = await createProject(app, proposerToken);
+
+    await request(app.getHttpServer())
+      .patch(`/projects/${projectId}/status`)
+      .set(bearer(evaluator.accessToken))
+      .send({ status: 'approved', description: 'Intento sin asignación' })
+      .expect(403);
   });
 
   it('ya no permite entrar al estado under_review', async () => {

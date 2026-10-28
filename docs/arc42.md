@@ -11,7 +11,7 @@ CapstoneHUB es un sistema web de gestión integral para proyectos Capstone que f
 1. **Gestión de Postulaciones**
    - Permitir postulación de proyectos de ingeniería y consultoría
    - Formato flexible para propuestas de empresas, docentes y proyectos sociales
-   - Flujo de evaluación con comité evaluador
+   - Flujo de evaluación con directivos
    - Proceso de asignación de proyectos a estudiantes
 
 2. **Banco de Proyectos**
@@ -54,7 +54,8 @@ CapstoneHUB es un sistema web de gestión integral para proyectos Capstone que f
 |------------|----------|--------------|
 | **Profesores Coordinadores** | Profesora coordinadora del proyecto | Sistema que simplifique la gestión administrativa de proyectos Capstone, con trazabilidad completa del proceso. |
 | **Profesor Técnico** | Profesor de especificaciones técnicas | Infraestructura moderna, escalable y fácil de mantener usando tecnologías específicas (NestJS, NextJS, PostgreSQL, Docker). |
-| **Comité Evaluador** | Profesores evaluadores | Interfaz clara para revisar y evaluar postulaciones de proyectos según criterios establecidos. |
+| **Directivos** | Profesores coordinadores | Interfaz clara para revisar y aprobar postulaciones de proyectos según criterios establecidos. |
+| **Evaluadores de Expo** | Profesores jurados | Registro y consulta de la evaluación de las presentaciones finales de los proyectos. |
 | **Estudiantes** | Alumnos de proyecto Capstone | Plataforma simple para visualizar proyectos disponibles, subir entregas y hacer seguimiento de su progreso. |
 | **Empresas Postulantes** | Organizaciones externas | Proceso de postulación flexible y seguimiento del estado de sus propuestas. |
 | **Docentes Postulantes** | Profesores con proyectos de investigación | Facilidad para proponer proyectos académicos y dar seguimiento. |
@@ -140,7 +141,7 @@ CapstoneHUB es un sistema web de gestión integral para proyectos Capstone que f
 | Interfaz | Actor | Descripción |
 |----------|-------|-------------|
 | **Postulación de Proyectos** | Empresas, Docentes, ONGs | Formulario flexible para proponer proyectos de ingeniería o consultoría |
-| **Evaluación de Propuestas** | Comité Evaluador | Sistema para revisar y aprobar/rechazar postulaciones |
+| **Evaluación de Propuestas** | Directivos | Sistema para revisar y aprobar/rechazar postulaciones |
 | **Asignación de Proyectos** | Profesores Coordinadores | Proceso de matching entre proyectos aprobados y estudiantes |
 | **Gestión de Entregas** | Estudiantes | Portal para subir reportes semanales, hitos y entregables |
 | **Seguimiento de Proyectos** | Profesores, Estudiantes, Empresas, ONGs | Dashboard con estados, avances y próximos hitos |
@@ -272,7 +273,7 @@ CapstoneHUB es un sistema web de gestión integral para proyectos Capstone que f
 2. **Projects Module**: CRUD de proyectos, estados, asignaciones
 3. **Submissions Module**: Entregas, reportes, hitos
 4. **Users Module**: Gestión de usuarios, roles, perfiles
-5. **Evaluation Module**: Comité evaluador, aprobaciones
+5. **Evaluation Module**: Directivos, aprobaciones y evaluación de expo
 6. **Documents Module**: Generación de PDFs
 7. **Notifications Module**: Emails, alertas de deadline
 
@@ -387,7 +388,8 @@ El sistema se divide en cuatro componentes principales desacoplados que se comun
 | **MVP** | Minimum Viable Product - Producto mínimo viable para validación |
 | **SSO** | Single Sign-On - Sistema de autenticación única |
 | **Hito** | Entrega parcial programada en el cronograma del proyecto |
-| **Comité Evaluador** | Grupo de profesores que evalúan y aprueban postulaciones |
+| **Directivo** | Rol global que revisa y aprueba postulaciones y supervisa los proyectos |
+| **Evaluador de Expo** | Rol global que evalúa las presentaciones finales en los proyectos donde se le asigna |
 | **Postulación** | Propuesta de proyecto presentada por empresas, docentes u ONGs |
 | **Asignación** | Proceso de matching entre proyecto aprobado y estudiantes |
 | **RBAC** | Role-Based Access Control - Control de acceso basado en roles |

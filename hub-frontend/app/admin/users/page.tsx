@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../components/auth-provider";
 import { getUsers, AuthUser } from "../../services/auth";
-import ModuleHeader from "../../components/module-header";
+import PageFrame from "../../components/page-frame";
 import CreateUserDialog from "./create-user-dialog";
 import EditUserRolesDialog from "./edit-user-roles-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -86,19 +86,16 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <main className="flex-1 text-foreground">
-      <section className="mx-auto w-full max-w-[96rem] px-4 py-8 sm:px-6 lg:px-8">
-        <ModuleHeader
-          eyebrow="Administración"
-          title="Panel del administrador"
-          accentColor="rgba(129,140,248,0.38)"
-        />
-
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+    <PageFrame
+      eyebrow="Administración"
+      title="Usuarios"
+      accentColor="rgba(129,140,248,0.38)"
+    >
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
         <Card>
           <CardHeader>
@@ -173,9 +170,8 @@ export default function AdminUsersPage() {
                 )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      </section>
-    </main>
+        </CardContent>
+      </Card>
+    </PageFrame>
   );
 }
