@@ -20,10 +20,31 @@ test("inicia sesión y muestra el menú de perfil", async ({ page, request }) =>
   }
 
   await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(500);
+  await expect(page.getByRole("link", { name: "Mi perfil" })).toBeVisible();
 
+  const profileTrigger = page.getByRole("button", {
+    name: "Abrir menú de perfil",
+  });
   const profileMenu = page.locator('[data-slot="dropdown-menu-content"]');
-  await page.getByRole("button", { name: "Abrir menú de perfil" }).click();
+
+  // La navbar termina de hidratar después del primer render; se reintenta el
+  // click hasta que el menú exista, sin esperas fijas.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    if (await profileMenu.isVisible()) {
+      break;
+    }
+
+    await profileTrigger.click();
+    const opened = await profileMenu
+      .waitFor({ state: "visible", timeout: 1000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (opened) {
+      break;
+    }
+  }
+
   await expect(profileMenu).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "Mi perfil" })).toBeVisible();
   await expect(
