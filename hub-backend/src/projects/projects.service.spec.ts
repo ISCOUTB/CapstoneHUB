@@ -772,6 +772,7 @@ describe('ProjectsService', () => {
       description: 'Description',
       context: 'Context',
       startDate: new Date('2026-01-15T00:00:00.000Z'),
+      engineeringArea: 'systems',
     });
 
     const data = projectCreate.mock.calls[0][0].data as {
@@ -792,9 +793,9 @@ describe('ProjectsService', () => {
       }),
     );
     expect(data.milestones.create).toHaveLength(5);
-    expect(data.milestones.create.every((milestone) => milestone.isMinimum)).toBe(
-      true,
-    );
+    expect(
+      data.milestones.create.every((milestone) => milestone.isMinimum),
+    ).toBe(true);
     const milestone = data.milestones.create.find(
       (item) => item.title === DEFAULT_FINAL_MILESTONE_TITLE,
     );
