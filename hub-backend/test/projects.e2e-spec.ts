@@ -152,6 +152,7 @@ describe('Projects (e2e)', () => {
       name: `${marker} Beta`,
       namep: nameB,
       source: 'research',
+      researchGroup: 'Grupo de investigación E2E',
       requiresLegalization: false,
       startDate: '2025-08-01',
       isPrivate: false,
@@ -161,6 +162,9 @@ describe('Projects (e2e)', () => {
       namep: nameC,
       source: 'external_entity',
       sourceDetails: `${marker} detalle externo`,
+      nit: '900123456',
+      externalAdvisorName: 'Asesor Externo E2E',
+      externalAdvisorEmail: uniqueEmail('asesor'),
       requiresLegalization: false,
       isPrivate: true,
     });
