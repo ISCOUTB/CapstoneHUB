@@ -102,7 +102,7 @@ type FormState = {
   researchGroup: string;
   socialOrganization: string;
   socialLocation: string;
-  engineeringAreas: string[];
+  engineeringAreas: DeliverableFormItem[];
   projectScope: string;
   monetaryResources: string;
   monetaryResourcesDescription: string;
@@ -136,7 +136,7 @@ const initialForm: FormState = {
   researchGroup: "",
   socialOrganization: "",
   socialLocation: "",
-  engineeringAreas: [""],
+  engineeringAreas: [{ id: createClientId(), value: "" }],
   projectScope: "",
   monetaryResources: "na",
   monetaryResourcesDescription: "",
@@ -171,6 +171,19 @@ function CharacterCounter({
   );
 }
 
+function isValidEmail(email: string): boolean {
+  const value = email.trim();
+  const atIndex = value.indexOf("@");
+
+  if (atIndex <= 0 || atIndex !== value.lastIndexOf("@") || /\s/.test(value)) {
+    return false;
+  }
+
+  const domain = value.slice(atIndex + 1);
+  const dotIndex = domain.lastIndexOf(".");
+  return dotIndex > 0 && dotIndex < domain.length - 1;
+}
+
 function validateStepOne(form: FormState): string | null {
   if (!form.namep.trim()) {
     return "Ingresa el nombre del responsable.";
@@ -183,11 +196,12 @@ function validateStepOne(form: FormState): string | null {
     return "Describe la entidad externa de la que proviene el proyecto.";
   }
 
-  if (!form.engineeringAreas.some((area) => area.trim())) {
+  if (!form.engineeringAreas.some((area) => area.value.trim())) {
     return "Selecciona al menos un área o ingeniería del proyecto.";
   }
 
-  if (form.engineeringAreas.some((area, index) => area && form.engineeringAreas.indexOf(area) !== index)) {
+  const selectedAreas = form.engineeringAreas.map((area) => area.value).filter(Boolean);
+  if (new Set(selectedAreas).size !== selectedAreas.length) {
     return "No puedes seleccionar la misma área o ingeniería más de una vez.";
   }
 
@@ -202,7 +216,7 @@ function validateStepOne(form: FormState): string | null {
 
   if (
     form.source === "external_entity" &&
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.externalAdvisorEmail.trim())
+    !isValidEmail(form.externalAdvisorEmail)
   ) {
     return "Ingresa un correo válido para el asesor externo.";
   }
@@ -436,30 +450,39 @@ export default function SubmitProjectForm() {
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  function validateSubmissionPrerequisites(): boolean {
     if (!submissionConsentAt) {
       setShowDurationNotice(true);
-      return;
+      return false;
     }
 
     if (currentStep !== steps.length) {
       goToNextStep();
-      return;
+      return false;
     }
 
-    if (!validateCurrentStep()) {
-      return;
-    }
+    if (!validateCurrentStep()) return false;
 
     if (!userEmail.trim()) {
       setStatus("error");
-      setErrorMessage(
-        "No se pudo obtener el correo electrónico de la cuenta.",
-      );
-      return;
+      setErrorMessage("No se pudo obtener el correo electrónico de la cuenta.");
+      return false;
     }
+
+    return true;
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const consentAt = submissionConsentAt;
+
+    if (!consentAt) {
+    setShowDurationNotice(true);
+    return;
+    }
+
+
+    if (!validateSubmissionPrerequisites()) return;
 
     setStatus("saving");
     setErrorMessage(null);
@@ -477,7 +500,7 @@ export default function SubmitProjectForm() {
           form.source === "external_entity"
             ? form.sourceDetails.trim()
             : undefined,
-        engineeringArea: form.engineeringAreas.filter(Boolean).join(","),
+        engineeringArea: form.engineeringAreas.map((area) => area.value).filter(Boolean).join(","),
         externalAdvisorName:
           form.source === "external_entity" ? form.externalAdvisorName.trim() : undefined,
         externalAdvisorEmail:
@@ -512,7 +535,7 @@ export default function SubmitProjectForm() {
         deliverables: form.deliverables
           .map((deliverable) => deliverable.value.trim())
           .filter(Boolean),
-        submissionConsentAt,
+        submissionConsentAt: consentAt,
       });
 
       setStatus("success");
@@ -757,15 +780,17 @@ export default function SubmitProjectForm() {
 
                 <div className="space-y-2">
                   {form.engineeringAreas.map((area, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={area.id} className="flex items-center gap-2">
                       <Select
-                        value={area}
+                        value={area.value}
                         onValueChange={(value) => {
                           if (value !== null) {
                             setForm((prev) => ({
                               ...prev,
-                              engineeringAreas: prev.engineeringAreas.map((currentArea, currentIndex) =>
-                                currentIndex === index ? value : currentArea,
+                              engineeringAreas: prev.engineeringAreas.map((currentArea) =>
+                                currentArea.id === area.id
+                                  ? { ...currentArea, value }
+                                  : currentArea,
                               ),
                             }));
                             setStepError(null);
@@ -774,7 +799,7 @@ export default function SubmitProjectForm() {
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecciona un área o ingeniería">
-                            {engineeringAreaOptions.find((engineering) => engineering.value === area)?.label}
+                            {engineeringAreaOptions.find((engineering) => engineering.value === area.value)?.label}
                           </SelectValue>
                         </SelectTrigger>
 
@@ -783,7 +808,7 @@ export default function SubmitProjectForm() {
                             <SelectItem
                               key={engineering.value}
                               value={engineering.value}
-                              disabled={form.engineeringAreas.includes(engineering.value) && area !== engineering.value}
+                              disabled={form.engineeringAreas.some((item) => item.value === engineering.value) && area.value !== engineering.value}
                             >
                               {engineering.label}
                             </SelectItem>
@@ -799,10 +824,11 @@ export default function SubmitProjectForm() {
                           onClick={() => {
                             setForm((prev) => ({
                               ...prev,
-                              engineeringAreas: prev.engineeringAreas.filter((_, currentIndex) => currentIndex !== index),
+                              engineeringAreas: prev.engineeringAreas.filter((item) => item.id !== area.id),
                             }));
+                            setStepError(null);
                           }}
-                          aria-label="Eliminar área"
+                          aria-label={`Eliminar área ${index + 1}`}
                         >
                           <RiDeleteBinLine />
                         </Button>
@@ -818,7 +844,7 @@ export default function SubmitProjectForm() {
                   onClick={() => {
                     setForm((prev) => ({
                       ...prev,
-                      engineeringAreas: [...prev.engineeringAreas, ""],
+                      engineeringAreas: [...prev.engineeringAreas, { id: createClientId(), value: "" }],
                     }));
                   }}
                 >
