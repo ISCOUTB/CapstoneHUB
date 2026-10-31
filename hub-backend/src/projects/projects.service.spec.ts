@@ -4,6 +4,7 @@ import {
   DEFAULT_FINAL_MILESTONE_TITLE,
   diffProjectUpdate,
   isValidProjectStatusTransition,
+  type ProjectDetailResponse,
   ProjectsService,
 } from './projects.service';
 import { AuthorizationService } from '../auth/authorization.service';
@@ -46,7 +47,7 @@ type ProjectFindManyArgs = {
   where?: { AND: unknown[] };
 };
 
-function createProjectDetail() {
+function createProjectDetail(): ProjectDetailResponse {
   return {
     id: 10,
     name: 'Project',
@@ -66,10 +67,22 @@ function createProjectDetail() {
     source: ProjectSource.external_entity,
     sourceDetails: null,
     facultyAdvisor: null,
+    facultyAdvisors: [],
+    engineeringArea: null,
+    externalAdvisorName: null,
+    externalAdvisorEmail: null,
+    nit: null,
+    researchGroup: null,
+    socialOrganization: null,
+    socialLocation: null,
+    projectScope: null,
+    monetaryResources: null,
+    monetaryResourcesDescription: null,
     teamRequirements: null,
     expectedOutcomes: null,
     isProposer: false,
     phaseApprovals: { nextPhase: ProjectPhase.semester_2, required: [] },
+    evaluationGate: null,
     deliverables: [],
     startDate: new Date(),
     endDate: null,
