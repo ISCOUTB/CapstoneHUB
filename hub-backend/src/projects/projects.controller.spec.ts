@@ -23,4 +23,11 @@ describe('ProjectsController', () => {
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
+
+  it('returns the predefined schools and programs catalog', () => {
+    const catalog = controller.getProjectProgramsCatalog();
+
+    expect(catalog).toHaveLength(3);
+    expect(catalog[0].programs).toHaveLength(12);
+  });
 });
