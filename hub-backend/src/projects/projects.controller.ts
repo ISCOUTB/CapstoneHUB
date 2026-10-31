@@ -34,6 +34,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDTO } from './dto/update-project.dto';
 import { TransitionProjectStatusDTO } from './dto/transition-project-status.dto';
 import { ProjectListQueryDto } from './dto/project-list-query.dto';
+import { PROJECT_PROGRAMS } from './project-programs.constants';
 
 function parseProjectDate(value: string | null): Date | null {
   if (value === null || value.trim().length === 0) {
@@ -61,6 +62,12 @@ function normalizeOptionalText(value: string | null): string | null {
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectService: ProjectsService) {}
+
+  @Public()
+  @Get('catalog/programs')
+  getProjectProgramsCatalog() {
+    return PROJECT_PROGRAMS;
+  }
 
   @Get('mine')
   async getMyProjects(
