@@ -8,8 +8,10 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { ProjectSource } from '../../generated/prisma/client';
+import { ProjectProgramRequirementDto } from './project-program-requirement.dto';
 
 /**
  * Campos editables del proyecto. El proponente (datos de la persona natural)
@@ -110,4 +112,14 @@ export class UpdateProjectDTO {
   @IsString({ each: true })
   @IsOptional()
   deliverables?: string[];
+
+  @ApiPropertyOptional({
+    type: [ProjectProgramRequirementDto],
+    description: 'Reemplaza los programas y cantidades requeridos del proyecto',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProjectProgramRequirementDto)
+  programRequirements?: ProjectProgramRequirementDto[];
 }

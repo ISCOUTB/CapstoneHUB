@@ -155,6 +155,7 @@ model Project {
 
   proposer          User?                     @relation("ProjectProposedBy", fields: [proposerUserId], references: [id], onDelete: SetNull)
   schools           ProjectSchool[]
+  programRequirements ProjectProgramRequirement[]
   naturalProposer   ProjectNaturalProposer?
   actorAssignments  ProjectActorAssignment[]
   interests         ProjectInterest[]
@@ -175,6 +176,20 @@ model Project {
   @@index([isPrivate], map: "idx_project_is_private")
   @@index([proposerUserId], map: "idx_project_proposer_user_id")
   @@map("project")
+}
+
+model ProjectProgramRequirement {
+  id           Int      @id @default(autoincrement())
+  projectId    Int      @map("project_id")
+  programId    String   @map("program_id") @db.VarChar(100)
+  studentCount Int      @map("student_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, programId], map: "uk_project_program_requirement")
+  @@index([programId], map: "idx_project_program_requirement_program_id")
+  @@map("project_program_requirement")
 }
 
 model ProjectSchool {

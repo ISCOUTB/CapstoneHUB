@@ -14,6 +14,10 @@ import {
 } from 'class-validator';
 import { ProjectSource, ProjectStatus } from '../../generated/prisma/client';
 import { PaginationQueryDto } from '../../common/pagination.dto';
+import {
+  PROJECT_PROGRAM_IDS,
+  PROJECT_SCHOOL_IDS,
+} from '../project-programs.constants';
 
 export const PROJECT_SORT_VALUES = [
   'relevance',
@@ -114,6 +118,30 @@ export class ProjectListQueryDto extends PaginationQueryDto {
   @IsEnum(ProjectSource, { each: true })
   @IsOptional()
   source?: ProjectSource[];
+
+  @ApiPropertyOptional({
+    description: 'Identificadores de escuelas (se puede repetir)',
+    enum: PROJECT_SCHOOL_IDS,
+    isArray: true,
+    type: String,
+  })
+  @Transform(({ value }) => toStringArray(value))
+  @IsArray()
+  @IsIn(PROJECT_SCHOOL_IDS, { each: true })
+  @IsOptional()
+  schoolId?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Identificadores de programas (se puede repetir)',
+    enum: PROJECT_PROGRAM_IDS,
+    isArray: true,
+    type: String,
+  })
+  @Transform(({ value }) => toStringArray(value))
+  @IsArray()
+  @IsIn(PROJECT_PROGRAM_IDS, { each: true })
+  @IsOptional()
+  programId?: string[];
 
   @ApiPropertyOptional({ description: 'Requiere proceso de legalización' })
   @Transform(({ value }) => toOptionalBoolean(value))

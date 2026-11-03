@@ -21,6 +21,10 @@ import { PrismaService } from '../prisma.service';
 import { AuthorizationService } from '../auth/authorization.service';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { EvaluationsService } from '../evaluations/evaluations.service';
+import {
+  findProjectProgram,
+  getProjectProgramIdsBySchoolIds,
+} from './project-programs.constants';
 import { paginationToSkipTake } from '../common/pagination.dto';
 import { ProjectListQueryDto, ProjectSort } from './dto/project-list-query.dto';
 import {
@@ -154,8 +158,12 @@ function rethrowProjectCreateError(error: unknown): never {
   }
   throw error;
 }
-/** Campos editables del proyecto, ya normalizados por el controlador. */
+export type ProjectProgramRequirementInput = {
+  programId: string;
+  studentCount: number;
+};
 
+/** Campos editables del proyecto, ya normalizados por el controlador. */
 export type ProjectUpdateFields = {
   name?: string;
   description?: string;
@@ -172,6 +180,7 @@ export type ProjectUpdateFields = {
   teamRequirements?: string | null;
   expectedOutcomes?: string | null;
   deliverables?: string[];
+  programRequirements?: ProjectProgramRequirementInput[];
 };
 /** Valores actuales o resultantes de los campos auditables. */
 
@@ -191,6 +200,7 @@ type ProjectEditableValues = {
   teamRequirements: string | null;
   expectedOutcomes: string | null;
   deliverables: string[];
+  programRequirements: ProjectProgramRequirementInput[];
 };
 /** Campos auditables, en el orden en que se registran en el historial. */
 
@@ -210,6 +220,7 @@ const EDITABLE_PROJECT_FIELDS = [
   'teamRequirements',
   'expectedOutcomes',
   'deliverables',
+  'programRequirements',
 ] as const;
 
 type EditableProjectField = (typeof EDITABLE_PROJECT_FIELDS)[number];
@@ -226,6 +237,9 @@ function serializeProjectChangeValue(
 ): string | null {
   if (value === null || value === undefined) {
     return null;
+  }
+  if (field === 'programRequirements') {
+    return JSON.stringify(value) ?? 'null';
   }
   if (field === 'deliverables') {
     const list = Array.isArray(value) ? value : [];
@@ -439,6 +453,21 @@ export class ProjectsService {
 
     if (query.source?.length) {
       conditions.push({ source: { in: query.source } });
+    }
+
+    if (query.schoolId?.length) {
+      const programIds = getProjectProgramIdsBySchoolIds(query.schoolId);
+      conditions.push({
+        programRequirements: { some: { programId: { in: programIds } } },
+      });
+    }
+
+    if (query.programId?.length) {
+      conditions.push({
+        programRequirements: {
+          some: { programId: { in: query.programId } },
+        },
+      });
     }
 
     if (query.requiresLegalization !== undefined) {
@@ -764,13 +793,17 @@ export class ProjectsService {
   async createProject(
     user: AuthenticatedUser,
     data: Prisma.ProjectCreateInput,
+    programRequirements: ProjectProgramRequirementInput[] = [],
   ): Promise<ProjectDetailResponse> {
     this.authorization.assertCanCreateProject(user);
     try {
-      const project = await this.createProjectRecord({
-        ...data,
-        proposer: { connect: { id: user.id } },
-      });
+      const project = await this.createProjectRecord(
+        {
+          ...data,
+          proposer: { connect: { id: user.id } },
+        },
+        programRequirements,
+      );
       return mapProjectDetailResponse(project, true, user);
     } catch (error) {
       rethrowProjectCreateError(error);
@@ -778,7 +811,10 @@ export class ProjectsService {
   }
   private createProjectRecord(
     data: Prisma.ProjectCreateInput,
+    programRequirements: ProjectProgramRequirementInput[],
   ): Promise<ProjectWithRelations> {
+    const normalizedProgramRequirements =
+      this.validateProgramRequirements(programRequirements);
     const dueDate = defaultFinalMilestoneDueDate(data.startDate);
 
     return this.prisma.$transaction(async (transaction) => {
@@ -880,6 +916,9 @@ export class ProjectsService {
       const project = await transaction.project.create({
         data: {
           ...data,
+          programRequirements: normalizedProgramRequirements.length
+            ? { create: normalizedProgramRequirements }
+            : undefined,
           milestones: { create: milestoneData },
         },
         select: { id: true, milestones: { select: { id: true, title: true } } },
@@ -948,6 +987,10 @@ export class ProjectsService {
           select: { description: true },
           orderBy: { id: 'asc' },
         },
+        programRequirements: {
+          select: { programId: true, studentCount: true },
+          orderBy: { id: 'asc' },
+        },
       },
     });
     if (!current) {
@@ -984,10 +1027,25 @@ export class ProjectsService {
       deliverables: current.deliverables.map(
         (deliverable) => deliverable.description,
       ),
+      programRequirements: current.programRequirements.map((requirement) => ({
+        programId: requirement.programId,
+        studentCount: requirement.studentCount,
+      })),
     };
+    const programRequirements =
+      fields.programRequirements === undefined
+        ? undefined
+        : this.validateProgramRequirements(fields.programRequirements);
+    const fieldsForDiff =
+      programRequirements === undefined
+        ? fields
+        : { ...fields, programRequirements };
     const changeRows = diffProjectUpdate(
       currentValues,
-      this.mergeUpdateFields(currentValues, fields),
+      this.mergeUpdateFields(currentValues, fieldsForDiff),
+    );
+    const shouldReplaceProgramRequirements = changeRows.some(
+      (row) => row.field === 'programRequirements',
     );
     const data = this.buildProjectUpdateData(fields);
     const project = await this.prisma.$transaction(async (transaction) => {
@@ -996,6 +1054,22 @@ export class ProjectsService {
         data,
         include: projectInclude,
       });
+      if (
+        shouldReplaceProgramRequirements &&
+        programRequirements !== undefined
+      ) {
+        await transaction.projectProgramRequirement.deleteMany({
+          where: { projectId },
+        });
+        if (programRequirements.length > 0) {
+          await transaction.projectProgramRequirement.createMany({
+            data: programRequirements.map((requirement) => ({
+              projectId,
+              ...requirement,
+            })),
+          });
+        }
+      }
       if (changeRows.length > 0) {
         await transaction.projectChangeHistory.createMany({
           data: changeRows.map((row) => ({
@@ -1005,6 +1079,12 @@ export class ProjectsService {
             previousValue: row.previousValue,
             newValue: row.newValue,
           })),
+        });
+      }
+      if (shouldReplaceProgramRequirements) {
+        return transaction.project.findUniqueOrThrow({
+          where: { id: projectId },
+          include: projectInclude,
         });
       }
       return updated;
@@ -1050,8 +1130,45 @@ export class ProjectsService {
           ? fields.expectedOutcomes
           : current.expectedOutcomes,
       deliverables: fields.deliverables ?? current.deliverables,
+      programRequirements:
+        fields.programRequirements ?? current.programRequirements,
     };
   }
+
+  private validateProgramRequirements(
+    requirements: ProjectProgramRequirementInput[],
+  ): ProjectProgramRequirementInput[] {
+    const seenProgramIds = new Set<string>();
+
+    return requirements.map((requirement) => {
+      const programId = requirement.programId.trim();
+
+      if (!findProjectProgram(programId)) {
+        throw new BadRequestException(
+          `Unknown project program: ${programId || '(empty)'}`,
+        );
+      }
+
+      if (seenProgramIds.has(programId)) {
+        throw new BadRequestException(
+          `Project program cannot be repeated: ${programId}`,
+        );
+      }
+
+      if (
+        !Number.isInteger(requirement.studentCount) ||
+        requirement.studentCount < 1
+      ) {
+        throw new BadRequestException(
+          `Student count must be a positive integer for program: ${programId}`,
+        );
+      }
+
+      seenProgramIds.add(programId);
+      return { programId, studentCount: requirement.studentCount };
+    });
+  }
+
   private buildProjectUpdateData(
     fields: ProjectUpdateFields,
   ): Prisma.ProjectUpdateInput {

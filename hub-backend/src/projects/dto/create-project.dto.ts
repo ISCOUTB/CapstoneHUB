@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -8,8 +9,10 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
 import { ProjectSource } from '../../generated/prisma/client';
+import { ProjectProgramRequirementDto } from './project-program-requirement.dto';
 
 export class CreateProjectDto {
   @ApiProperty({ description: 'nombre del proyecto' })
@@ -191,4 +194,14 @@ export class CreateProjectDto {
   @IsString({ each: true })
   @MaxLength(100, { each: true })
   facultyAdvisors?: string[];
+
+  @ApiPropertyOptional({
+    type: [ProjectProgramRequirementDto],
+    description: 'Programas y cantidades de estudiantes requeridos',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProjectProgramRequirementDto)
+  programRequirements?: ProjectProgramRequirementDto[];
 }

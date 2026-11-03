@@ -147,6 +147,7 @@ export class ProjectsController {
       monetaryResources,
       monetaryResourcesDescription,
       facultyAdvisors,
+      programRequirements,
     } = projectData;
 
     const parsedStartDate = startDate
@@ -200,51 +201,55 @@ export class ProjectsController {
       .map((deliverable) => deliverable.trim())
       .filter((deliverable) => deliverable.length > 0);
 
-    return this.projectService.createProject(user, {
-      name,
-      description,
-      context,
-      startDate: parsedStartDate,
-      estimatedCost,
-      location,
-      requiresLegalization: requiresLegalization ?? false,
-      isPrivate: isPrivate ?? true,
-      source: source ?? ProjectSource.external_entity,
-      sourceDetails: sourceDetails?.trim() || null,
-      facultyAdvisor:
-        facultyAdvisor?.trim() || facultyAdvisors?.[0]?.trim() || null,
-      facultyAdvisors: (facultyAdvisors ?? [])
-        .map((advisor) => advisor.trim())
-        .filter(Boolean),
-      engineeringArea: engineeringArea?.trim() || null,
-      externalAdvisorName: externalAdvisorName?.trim() || null,
-      externalAdvisorEmail: externalAdvisorEmail?.trim() || null,
-      nit: nit?.trim() || null,
-      researchGroup: researchGroup?.trim() || null,
-      socialOrganization: socialOrganization?.trim() || null,
-      socialLocation: socialLocation?.trim() || null,
-      projectScope: projectScope?.trim() || null,
-      monetaryResources: monetaryResources?.trim() || null,
-      monetaryResourcesDescription:
-        monetaryResourcesDescription?.trim() || null,
-      teamRequirements: teamRequirements?.trim() || null,
-      expectedOutcomes: expectedOutcomes?.trim() || null,
-      submissionConsentAt: parsedSubmissionConsentAt,
-      deliverables: deliverableDescriptions.length
-        ? {
-            create: deliverableDescriptions.map((description) => ({
-              description,
-            })),
-          }
-        : undefined,
-      naturalProposer: {
-        create: {
-          fullName: namep,
-          idNumber: ncedua?.trim() || null,
-          email: correo,
+    return this.projectService.createProject(
+      user,
+      {
+        name,
+        description,
+        context,
+        startDate: parsedStartDate,
+        estimatedCost,
+        location,
+        requiresLegalization: requiresLegalization ?? false,
+        isPrivate: isPrivate ?? true,
+        source: source ?? ProjectSource.external_entity,
+        sourceDetails: sourceDetails?.trim() || null,
+        facultyAdvisor:
+          facultyAdvisor?.trim() || facultyAdvisors?.[0]?.trim() || null,
+        facultyAdvisors: (facultyAdvisors ?? [])
+          .map((advisor) => advisor.trim())
+          .filter(Boolean),
+        engineeringArea: engineeringArea?.trim() || null,
+        externalAdvisorName: externalAdvisorName?.trim() || null,
+        externalAdvisorEmail: externalAdvisorEmail?.trim() || null,
+        nit: nit?.trim() || null,
+        researchGroup: researchGroup?.trim() || null,
+        socialOrganization: socialOrganization?.trim() || null,
+        socialLocation: socialLocation?.trim() || null,
+        projectScope: projectScope?.trim() || null,
+        monetaryResources: monetaryResources?.trim() || null,
+        monetaryResourcesDescription:
+          monetaryResourcesDescription?.trim() || null,
+        teamRequirements: teamRequirements?.trim() || null,
+        expectedOutcomes: expectedOutcomes?.trim() || null,
+        submissionConsentAt: parsedSubmissionConsentAt,
+        deliverables: deliverableDescriptions.length
+          ? {
+              create: deliverableDescriptions.map((description) => ({
+                description,
+              })),
+            }
+          : undefined,
+        naturalProposer: {
+          create: {
+            fullName: namep,
+            idNumber: ncedua?.trim() || null,
+            email: correo,
+          },
         },
       },
-    });
+      programRequirements ?? [],
+    );
   }
 
   @Get(':id/assignable-users')
@@ -377,6 +382,15 @@ export class ProjectsController {
       fields.deliverables = data.deliverables
         .map((deliverable) => deliverable.trim())
         .filter((deliverable) => deliverable.length > 0);
+    }
+
+    if (data.programRequirements !== undefined) {
+      fields.programRequirements = data.programRequirements.map(
+        (requirement) => ({
+          programId: requirement.programId.trim(),
+          studentCount: requirement.studentCount,
+        }),
+      );
     }
 
     if (Object.keys(fields).length === 0) {

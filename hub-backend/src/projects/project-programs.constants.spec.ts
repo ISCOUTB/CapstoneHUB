@@ -1,5 +1,6 @@
 import {
   findProjectProgram,
+  getProjectProgramIdsBySchoolIds,
   PROJECT_PROGRAMS,
   PROJECT_PROGRAMS_FLAT,
 } from './project-programs.constants';
@@ -27,6 +28,17 @@ describe('project programs catalog', () => {
       schoolId: 'ingenieria-arquitectura-diseno',
       schoolName: 'Escuela de Ingeniería, Arquitectura & Diseño',
     });
+  });
+
+  it('returns all programs belonging to the selected schools', () => {
+    expect(getProjectProgramIdsBySchoolIds(['transformacion-digital'])).toEqual(
+      [
+        'ingenieria-sistemas-computacion',
+        'ciencia-datos',
+        'marketing-transformacion-digital',
+        'comunicacion-social',
+      ],
+    );
   });
 
   it('returns undefined for an unknown program', () => {
