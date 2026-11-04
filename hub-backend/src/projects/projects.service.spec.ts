@@ -66,6 +66,7 @@ function createProjectDetail(): ProjectDetailResponse {
     viewerInterest: null,
     source: ProjectSource.external_entity,
     sourceDetails: null,
+    programRequirements: [],
     facultyAdvisor: null,
     facultyAdvisors: [],
     engineeringArea: null,
@@ -1449,6 +1450,7 @@ describe('ProjectsService', () => {
       teamRequirements: null,
       expectedOutcomes: null,
       deliverables: ['One'],
+      programRequirements: [],
     };
 
     it('returns one row per changed field, in field order', () => {
@@ -1514,6 +1516,7 @@ describe('ProjectsService', () => {
         teamRequirements: null,
         expectedOutcomes: null,
         deliverables: [{ description: 'One' }],
+        programRequirements: [],
       };
       const update = jest
         .fn()

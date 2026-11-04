@@ -147,6 +147,7 @@ export class ProjectsController {
       monetaryResources,
       monetaryResourcesDescription,
       facultyAdvisors,
+      programRequirements,
     } = projectData;
 
     const parsedStartDate = startDate
@@ -200,51 +201,55 @@ export class ProjectsController {
       .map((deliverable) => deliverable.trim())
       .filter((deliverable) => deliverable.length > 0);
 
-    return this.projectService.createProject(user, {
-      name,
-      description,
-      context,
-      startDate: parsedStartDate,
-      estimatedCost,
-      location,
-      requiresLegalization: requiresLegalization ?? false,
-      isPrivate: isPrivate ?? true,
-      source: source ?? ProjectSource.external_entity,
-      sourceDetails: sourceDetails?.trim() || null,
-      facultyAdvisor:
-        facultyAdvisor?.trim() || facultyAdvisors?.[0]?.trim() || null,
-      facultyAdvisors: (facultyAdvisors ?? [])
-        .map((advisor) => advisor.trim())
-        .filter(Boolean),
-      engineeringArea: engineeringArea?.trim() || null,
-      externalAdvisorName: externalAdvisorName?.trim() || null,
-      externalAdvisorEmail: externalAdvisorEmail?.trim() || null,
-      nit: nit?.trim() || null,
-      researchGroup: researchGroup?.trim() || null,
-      socialOrganization: socialOrganization?.trim() || null,
-      socialLocation: socialLocation?.trim() || null,
-      projectScope: projectScope?.trim() || null,
-      monetaryResources: monetaryResources?.trim() || null,
-      monetaryResourcesDescription:
-        monetaryResourcesDescription?.trim() || null,
-      teamRequirements: teamRequirements?.trim() || null,
-      expectedOutcomes: expectedOutcomes?.trim() || null,
-      submissionConsentAt: parsedSubmissionConsentAt,
-      deliverables: deliverableDescriptions.length
-        ? {
-            create: deliverableDescriptions.map((description) => ({
-              description,
-            })),
-          }
-        : undefined,
-      naturalProposer: {
-        create: {
-          fullName: namep,
-          idNumber: ncedua?.trim() || null,
-          email: correo,
+    return this.projectService.createProject(
+      user,
+      {
+        name,
+        description,
+        context,
+        startDate: parsedStartDate,
+        estimatedCost,
+        location,
+        requiresLegalization: requiresLegalization ?? false,
+        isPrivate: isPrivate ?? true,
+        source: source ?? ProjectSource.external_entity,
+        sourceDetails: sourceDetails?.trim() || null,
+        facultyAdvisor:
+          facultyAdvisor?.trim() || facultyAdvisors?.[0]?.trim() || null,
+        facultyAdvisors: (facultyAdvisors ?? [])
+          .map((advisor) => advisor.trim())
+          .filter(Boolean),
+        engineeringArea: engineeringArea?.trim() || null,
+        externalAdvisorName: externalAdvisorName?.trim() || null,
+        externalAdvisorEmail: externalAdvisorEmail?.trim() || null,
+        nit: nit?.trim() || null,
+        researchGroup: researchGroup?.trim() || null,
+        socialOrganization: socialOrganization?.trim() || null,
+        socialLocation: socialLocation?.trim() || null,
+        projectScope: projectScope?.trim() || null,
+        monetaryResources: monetaryResources?.trim() || null,
+        monetaryResourcesDescription:
+          monetaryResourcesDescription?.trim() || null,
+        teamRequirements: teamRequirements?.trim() || null,
+        expectedOutcomes: expectedOutcomes?.trim() || null,
+        submissionConsentAt: parsedSubmissionConsentAt,
+        deliverables: deliverableDescriptions.length
+          ? {
+              create: deliverableDescriptions.map((description) => ({
+                description,
+              })),
+            }
+          : undefined,
+        naturalProposer: {
+          create: {
+            fullName: namep,
+            idNumber: ncedua?.trim() || null,
+            email: correo,
+          },
         },
       },
-    });
+      programRequirements ?? [],
+    );
   }
 
   @Get(':id/assignable-users')
@@ -321,6 +326,25 @@ export class ProjectsController {
   ): Promise<ProjectDetailResponse> {
     const fields: ProjectUpdateFields = {};
 
+    this.applyBasicUpdateFields(fields, data);
+    this.applyProjectMetadataFields(fields, data);
+    this.applyAdditionalUpdateFields(fields, data);
+
+    if (Object.keys(fields).length === 0) {
+      throw new BadRequestException('No update fields provided');
+    }
+
+    return this.projectService.updateProject({
+      user,
+      projectId: id,
+      fields,
+    });
+  }
+
+  private applyBasicUpdateFields(
+    fields: ProjectUpdateFields,
+    data: UpdateProjectDTO,
+  ): void {
     if (data.name !== undefined) {
       fields.name = data.name.trim();
     }
@@ -340,7 +364,12 @@ export class ProjectsController {
     if (data.source !== undefined) {
       fields.source = data.source;
     }
+  }
 
+  private applyProjectMetadataFields(
+    fields: ProjectUpdateFields,
+    data: UpdateProjectDTO,
+  ): void {
     if (data.startDate !== undefined) {
       fields.startDate = parseProjectDate(data.startDate);
     }
@@ -360,7 +389,12 @@ export class ProjectsController {
     if (data.isPrivate !== undefined) {
       fields.isPrivate = data.isPrivate;
     }
+  }
 
+  private applyAdditionalUpdateFields(
+    fields: ProjectUpdateFields,
+    data: UpdateProjectDTO,
+  ): void {
     if (data.facultyAdvisor !== undefined) {
       fields.facultyAdvisor = normalizeOptionalText(data.facultyAdvisor);
     }
@@ -379,15 +413,14 @@ export class ProjectsController {
         .filter((deliverable) => deliverable.length > 0);
     }
 
-    if (Object.keys(fields).length === 0) {
-      throw new BadRequestException('No update fields provided');
+    if (data.programRequirements !== undefined) {
+      fields.programRequirements = data.programRequirements.map(
+        (requirement) => ({
+          programId: requirement.programId.trim(),
+          studentCount: requirement.studentCount,
+        }),
+      );
     }
-
-    return this.projectService.updateProject({
-      user,
-      projectId: id,
-      fields,
-    });
   }
 
   @Patch(':id/status')

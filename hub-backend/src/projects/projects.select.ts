@@ -24,6 +24,7 @@ import {
   requiredPhaseApprovers,
 } from './projects.phase';
 import type { EvaluationGateResponse } from '../evaluations/evaluations.service';
+import { findProjectProgram } from './project-programs.constants';
 
 const projectStatusHistorySelect = {
   id: true,
@@ -91,6 +92,7 @@ export const projectInclude = {
   attachments: { where: { reportId: null }, select: attachmentSelect },
   reports: { select: reportSelect },
   deliverables: true,
+  programRequirements: { orderBy: { id: 'asc' } },
   phaseApprovals: {
     select: { phase: true, approverUserId: true, approvedAt: true },
   },
@@ -99,6 +101,16 @@ export const projectInclude = {
 export type ProjectWithRelations = Prisma.ProjectGetPayload<{
   include: typeof projectInclude;
 }>;
+
+export type ProjectProgramRequirementResponse = {
+  id: number;
+  programId: string;
+  programName: string;
+  schoolId: string | null;
+  schoolName: string | null;
+  studentCount: number;
+  createdAt: Date;
+};
 
 export type ProjectProposerResponse = {
   type: 'natural_person';
@@ -118,6 +130,7 @@ export type ProjectListResponse = {
   isPrivate: boolean;
   source: ProjectSource;
   sourceDetails: string | null;
+  programRequirements: ProjectProgramRequirementResponse[];
   proposer: ProjectProposerResponse | null;
   actors: ProjectActorResponse[];
   /** `false` cuando el espectador solo puede ver la vista pública, sin datos sensibles. */
@@ -321,6 +334,22 @@ export type AssignableUserResponse = {
   roles: UserRole[];
 };
 
+function mapProjectProgramRequirement(
+  requirement: ProjectWithRelations['programRequirements'][number],
+): ProjectProgramRequirementResponse {
+  const program = findProjectProgram(requirement.programId);
+
+  return {
+    id: requirement.id,
+    programId: requirement.programId,
+    programName: program?.name ?? requirement.programId,
+    schoolId: program?.schoolId ?? null,
+    schoolName: program?.schoolName ?? null,
+    studentCount: requirement.studentCount,
+    createdAt: requirement.createdAt,
+  };
+}
+
 function mapProjectProposer(
   project: Pick<ProjectWithRelations, 'naturalProposer'>,
   canViewSensitiveData: boolean,
@@ -403,6 +432,9 @@ export function mapProjectListResponse(
     isPrivate: project.isPrivate,
     source: project.source,
     sourceDetails: isPrivatePreview ? null : project.sourceDetails,
+    programRequirements: isPrivatePreview
+      ? []
+      : (project.programRequirements ?? []).map(mapProjectProgramRequirement),
     proposer: isPrivatePreview
       ? null
       : mapProjectProposer(project, canViewSensitiveData),

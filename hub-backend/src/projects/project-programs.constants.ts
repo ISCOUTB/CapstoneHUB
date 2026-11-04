@@ -70,22 +70,54 @@ export const PROJECT_PROGRAMS = [
   },
 ] as const satisfies readonly ProjectSchoolCatalogEntry[];
 
-export const PROJECT_PROGRAMS_FLAT: readonly ProjectProgramWithSchool[] =
-  (() => {
-    const programs: ProjectProgramWithSchool[] = [];
+const projectProgramsFlat: ProjectProgramWithSchool[] = [];
 
-    for (const school of PROJECT_PROGRAMS) {
+for (const school of PROJECT_PROGRAMS) {
+  for (const program of school.programs) {
+    projectProgramsFlat.push({
+      ...program,
+      schoolId: school.id,
+      schoolName: school.name,
+    });
+  }
+}
+
+export const PROJECT_PROGRAMS_FLAT: readonly ProjectProgramWithSchool[] =
+  projectProgramsFlat;
+
+const projectSchoolIds: string[] = [];
+
+for (const school of PROJECT_PROGRAMS) {
+  projectSchoolIds.push(school.id);
+}
+
+export const PROJECT_SCHOOL_IDS: readonly string[] = projectSchoolIds;
+
+const projectProgramIds: string[] = [];
+
+for (const school of PROJECT_PROGRAMS) {
+  for (const program of school.programs) {
+    projectProgramIds.push(program.id);
+  }
+}
+
+export const PROJECT_PROGRAM_IDS: readonly string[] = projectProgramIds;
+
+export function getProjectProgramIdsBySchoolIds(
+  schoolIds: readonly string[],
+): string[] {
+  const programIds: string[] = [];
+
+  for (const school of PROJECT_PROGRAMS) {
+    if (schoolIds.includes(school.id)) {
       for (const program of school.programs) {
-        programs.push({
-          ...program,
-          schoolId: school.id,
-          schoolName: school.name,
-        });
+        programIds.push(program.id);
       }
     }
+  }
 
-    return programs;
-  })();
+  return programIds;
+}
 
 export function findProjectProgram(
   programId: string,
