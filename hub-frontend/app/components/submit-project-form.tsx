@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 
 import { createProject, getProjectProgramsCatalog } from "../services/projects";
@@ -181,53 +181,46 @@ function isValidEmail(email: string): boolean {
   return dotIndex > 0 && dotIndex < domain.length - 1;
 }
 
+function validateExternalSource(form: FormState): string | null {
+  if (!form.sourceDetails.trim()) {
+    return "Describe la entidad externa de la que proviene el proyecto.";
+  }
+  if (!form.externalAdvisorName.trim()) {
+    return "Ingresa el nombre del asesor externo.";
+  }
+  if (!form.externalAdvisorEmail.trim()) {
+    return "Ingresa el correo del asesor externo.";
+  }
+  if (!form.nit.trim()) {
+    return "Ingresa el NIT de la entidad externa.";
+  }
+  if (!isValidEmail(form.externalAdvisorEmail)) {
+    return "Ingresa un correo válido para el asesor externo.";
+  }
+  return null;
+}
+
+function validateSourceSpecificFields(form: FormState): string | null {
+  if (form.source === "external_entity") {
+    return validateExternalSource(form);
+  }
+  if (form.source === "research" && !form.researchGroup.trim()) {
+    return "Ingresa el grupo de investigación.";
+  }
+  if (form.source === "social_impact" && !form.socialLocation.trim()) {
+    return "Ingresa la localización del proyecto.";
+  }
+  return null;
+}
+
 function validateStepOne(form: FormState): string | null {
   if (!form.namep.trim()) {
     return "Ingresa el nombre del responsable.";
   }
-
-  if (
-    form.source === "external_entity" &&
-    !form.sourceDetails.trim()
-  ) {
-    return "Describe la entidad externa de la que proviene el proyecto.";
-  }
-
-  if (form.source === "external_entity" && !form.externalAdvisorName.trim()) {
-    return "Ingresa el nombre del asesor externo.";
-  }
-
-  if (form.source === "external_entity" && !form.externalAdvisorEmail.trim()) {
-    return "Ingresa el correo del asesor externo.";
-  }
-
-  if (form.source === "external_entity" && !form.nit.trim()) {
-    return "Ingresa el NIT de la entidad externa.";
-  }
-
-  if (form.nit && !/^\d{1,12}$/.test(form.nit)) {
+  if (form.nit && !/^\\d{1,12}$/.test(form.nit)) {
     return "El NIT debe contener únicamente números y tener máximo 12 dígitos.";
   }
-
-  if (
-    form.source === "external_entity" &&
-    !isValidEmail(form.externalAdvisorEmail)
-  ) {
-    return "Ingresa un correo válido para el asesor externo.";
-  }
-
-  if (form.source === "research" && !form.researchGroup.trim()) {
-    return "Ingresa el grupo de investigación.";
-  }
-
-  if (
-    form.source === "social_impact" &&
-    !form.socialLocation.trim()
-  ) {
-    return "Ingresa la localización del proyecto.";
-  }
-
-  return null;
+  return validateSourceSpecificFields(form);
 }
 
 function validateStepTwo(form: FormState): string | null {
@@ -319,444 +312,107 @@ function getLegacyEngineeringArea(
   return Array.from(areas).join(",");
 }
 
-export default function SubmitProjectForm() {
-  const { session, isAuthenticated, ready } = useAuth();
-  const router = useRouter();
-  const userEmail = session?.user?.email ?? "";
-
-  const [form, setForm] = useState<FormState>(initialForm);
-  const [programSchools, setProgramSchools] = useState<ProjectProgramSchool[]>([]);
-  const [programCatalogLoading, setProgramCatalogLoading] = useState(true);
-  const [programCatalogError, setProgramCatalogError] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-
-    async function loadProgramCatalog() {
-      setProgramCatalogLoading(true);
-      const result = await getProjectProgramsCatalog();
-      if (!active) return;
-
-      setProgramSchools(result.schools);
-      setProgramCatalogError(result.error ?? null);
-      setProgramCatalogLoading(false);
-    }
-
-    void loadProgramCatalog();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const [currentStep, setCurrentStep] = useState(1);
-  const [status, setStatus] = useState<Status>("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [stepError, setStepError] = useState<string | null>(null);
-
-  const [showDurationNotice, setShowDurationNotice] = useState(true);
-  const [submissionConsentAt, setSubmissionConsentAt] = useState<
-    string | null
-  >(null);
-
-  function handleChange(
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) {
-    const { name, value } = event.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    setStepError(null);
+function getProgramCatalogError(
+  loading: boolean,
+  error: string | null,
+  programCount: number,
+): string | null {
+  if (loading) {
+    return "Espera a que termine de cargar el catálogo de programas.";
   }
-
-  function handleSourceChange(value: string) {
-    const source = value as ProjectSource;
-
-    setForm((prev) => ({
-      ...prev,
-      source,
-      nit: "",
-      sourceDetails:
-        source === "external_entity" ? prev.sourceDetails : "",
-    }));
-
-    setStepError(null);
+  if (error || programCount === 0) {
+    return error ?? "No hay programas académicos disponibles en este momento.";
   }
+  return null;
+}
 
-  function handleFacultyAdvisorChange(id: string, value: string) {
-    setForm((prev) => ({
-      ...prev,
-      facultyAdvisors: prev.facultyAdvisors.map((advisor) =>
-        advisor.id === id ? { ...advisor, value } : advisor,
-      ),
-    }));
+function buildProjectPayload(
+  form: FormState,
+  userEmail: string,
+  consentAt: string,
+) {
+  return {
+    name: form.name.trim(),
+    namep: form.namep.trim(),
+    correo: userEmail.trim(),
+    description: form.description.trim(),
+    context: form.context.trim(),
+    source: form.source,
+    sourceDetails: form.source === "external_entity" ? form.sourceDetails.trim() : undefined,
+    engineeringArea: getLegacyEngineeringArea(form.programRequirements),
+    programRequirements: form.programRequirements.map((requirement) => ({
+      programId: requirement.programId,
+      studentCount: Number(requirement.studentCount),
+    })),
+    externalAdvisorName: form.source === "external_entity" ? form.externalAdvisorName.trim() : undefined,
+    externalAdvisorEmail: form.source === "external_entity" ? form.externalAdvisorEmail.trim() : undefined,
+    nit:
+      form.source === "external_entity" || form.source === "social_impact"
+        ? form.nit.trim() || undefined
+        : undefined,
+    researchGroup: form.source === "research" ? form.researchGroup.trim() : undefined,
+    socialOrganization: form.source === "social_impact" ? form.socialOrganization.trim() : undefined,
+    socialLocation: form.source === "social_impact" ? form.socialLocation.trim() : undefined,
+    projectScope: form.projectScope.trim(),
+    monetaryResources: form.monetaryResources,
+    monetaryResourcesDescription:
+      form.monetaryResources === "yes" ? form.monetaryResourcesDescription.trim() : undefined,
+    facultyAdvisors: form.facultyAdvisors
+      .map((advisor) => advisor.value.trim())
+      .filter(Boolean),
+    requiresLegalization: form.requiresLegalization,
+    isPrivate: form.isPrivate,
+    facultyAdvisor: form.hasFacultyAdvisor ? form.facultyAdvisor.trim() : undefined,
+    teamRequirements: form.teamRequirements.trim(),
+    expectedOutcomes: form.expectedOutcomes.trim() || undefined,
+    deliverables: form.deliverables
+      .map((deliverable) => deliverable.value.trim())
+      .filter(Boolean),
+    submissionConsentAt: consentAt,
+  };
+}
 
-    setStepError(null);
-  }
+type ProjectFormStepsProps = {
+  form: FormState;
+  currentStep: number;
+  userEmail: string;
+  stepError: string | null;
+  programSchools: ProjectProgramSchool[];
+  programCatalogLoading: boolean;
+  programCatalogError: string | null;
+  handleChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleSourceChange: (value: string) => void;
+  handleFacultyAdvisorChange: (id: string, value: string) => void;
+  removeFacultyAdvisor: (id: string) => void;
+  addFacultyAdvisor: () => void;
+  handleDeliverableChange: (id: string, value: string) => void;
+  removeDeliverable: (id: string) => void;
+  addDeliverable: () => void;
+  setForm: Dispatch<SetStateAction<FormState>>;
+  setStepError: (value: string | null) => void;
+};
 
-  function addFacultyAdvisor() {
-    setForm((prev) => ({
-      ...prev,
-      facultyAdvisors: [
-        ...prev.facultyAdvisors,
-        { id: createClientId(), value: "" },
-      ],
-    }));
-  }
-
-  function removeFacultyAdvisor(id: string) {
-    setForm((prev) => {
-      const facultyAdvisors = prev.facultyAdvisors.filter(
-        (advisor) => advisor.id !== id,
-      );
-
-      return {
-        ...prev,
-        facultyAdvisors:
-          facultyAdvisors.length > 0
-            ? facultyAdvisors
-            : [{ id: createClientId(), value: "" }],
-      };
-    });
-  }
-
-  function handleAdvisorChange(value: boolean) {
-    setForm((prev) => ({
-      ...prev,
-      hasFacultyAdvisor: value,
-      facultyAdvisor: value ? prev.facultyAdvisor : "",
-    }));
-
-    setStepError(null);
-  }
-
-  function handleDeliverableChange(id: string, value: string) {
-    setForm((prev) => ({
-      ...prev,
-      deliverables: prev.deliverables.map((deliverable) =>
-        deliverable.id === id
-          ? { ...deliverable, value }
-          : deliverable,
-      ),
-    }));
-
-    setStepError(null);
-  }
-
-  function addDeliverable() {
-    setForm((prev) => ({
-      ...prev,
-      deliverables: [...prev.deliverables, createDeliverable()],
-    }));
-  }
-
-  function removeDeliverable(id: string) {
-    setForm((prev) => {
-      const deliverables = prev.deliverables.filter(
-        (deliverable) => deliverable.id !== id,
-      );
-
-      return {
-        ...prev,
-        deliverables:
-          deliverables.length > 0 ? deliverables : [createDeliverable()],
-      };
-    });
-  }
-
-  function acceptDurationNotice() {
-    const acceptedAt = new Date().toISOString();
-
-    setSubmissionConsentAt(acceptedAt);
-    setShowDurationNotice(false);
-  }
-
-  function validateCurrentStep(): boolean {
-    setStepError(null);
-
-    const validator = stepValidators[currentStep];
-    const validationError = validator ? validator(form) : null;
-
-    if (validationError) {
-      setStepError(validationError);
-      return false;
-    }
-
-    return true;
-  }
-
-  function goToNextStep() {
-    if (!validateCurrentStep()) {
-      return;
-    }
-
-    setCurrentStep((step) => Math.min(step + 1, steps.length));
-  }
-
-  function goToPreviousStep() {
-    setStepError(null);
-    setCurrentStep((step) => Math.max(step - 1, 1));
-  }
-
-  function goToStep(step: number) {
-    if (step < currentStep) {
-      setStepError(null);
-      setCurrentStep(step);
-      return;
-    }
-
-    if (step === currentStep + 1 && validateCurrentStep()) {
-      setCurrentStep(step);
-    }
-  }
-
-  function validateSubmissionPrerequisites(): boolean {
-    if (!submissionConsentAt) {
-      setShowDurationNotice(true);
-      return false;
-    }
-
-    if (currentStep !== steps.length) {
-      goToNextStep();
-      return false;
-    }
-
-    if (!validateCurrentStep()) return false;
-
-    if (!userEmail.trim()) {
-      setStatus("error");
-      setErrorMessage("No se pudo obtener el correo electrónico de la cuenta.");
-      return false;
-    }
-
-    return true;
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const consentAt = submissionConsentAt;
-
-    if (!consentAt) {
-    setShowDurationNotice(true);
-    return;
-    }
-
-
-    if (programCatalogLoading) {
-      setStatus("error");
-      setErrorMessage("Espera a que termine de cargar el catálogo de programas.");
-      return;
-    }
-
-    if (programCatalogError || programSchools.length === 0) {
-      setStatus("error");
-      setErrorMessage(
-        programCatalogError ??
-          "No hay programas académicos disponibles en este momento.",
-      );
-      return;
-    }
-
-    if (!validateSubmissionPrerequisites()) return;
-
-    setStatus("saving");
-    setErrorMessage(null);
-    setStepError(null);
-
-    try {
-      await createProject({
-        name: form.name.trim(),
-        namep: form.namep.trim(),
-        correo: userEmail.trim(),
-        description: form.description.trim(),
-        context: form.context.trim(),
-        source: form.source,
-        sourceDetails:
-          form.source === "external_entity"
-            ? form.sourceDetails.trim()
-            : undefined,
-        engineeringArea: getLegacyEngineeringArea(form.programRequirements),
-        programRequirements: form.programRequirements.map((requirement) => ({
-          programId: requirement.programId,
-          studentCount: Number(requirement.studentCount),
-        })),
-        externalAdvisorName:
-          form.source === "external_entity" ? form.externalAdvisorName.trim() : undefined,
-        externalAdvisorEmail:
-          form.source === "external_entity" ? form.externalAdvisorEmail.trim() : undefined,
-        nit:
-          form.source === "external_entity" || form.source === "social_impact"
-            ? form.nit.trim() || undefined
-            : undefined,
-        researchGroup:
-          form.source === "research" ? form.researchGroup.trim() : undefined,
-        socialOrganization:
-          form.source === "social_impact" ? form.socialOrganization.trim() : undefined,
-
-        socialLocation:
-          form.source === "social_impact" ? form.socialLocation.trim() : undefined,
-        projectScope: form.projectScope.trim(),
-        monetaryResources: form.monetaryResources,
-        monetaryResourcesDescription:
-          form.monetaryResources === "yes"
-            ? form.monetaryResourcesDescription.trim()
-            : undefined,
-        facultyAdvisors: form.facultyAdvisors
-          .map((advisor) => advisor.value.trim())
-          .filter(Boolean),
-        requiresLegalization: form.requiresLegalization,
-        isPrivate: form.isPrivate,
-        facultyAdvisor: form.hasFacultyAdvisor
-          ? form.facultyAdvisor.trim()
-          : undefined,
-        teamRequirements: form.teamRequirements.trim(),
-        expectedOutcomes: form.expectedOutcomes.trim() || undefined,
-        deliverables: form.deliverables
-          .map((deliverable) => deliverable.value.trim())
-          .filter(Boolean),
-        submissionConsentAt: consentAt,
-      });
-
-      setStatus("success");
-      router.replace("/projects?propuestos=1");
-    } catch (error) {
-      setStatus("error");
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "No se pudo crear el proyecto.",
-      );
-    }
-  }
-
-  if (!ready) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Cargando acceso...
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <AccessNotice
-        title="Acceso requerido"
-        message="Inicia sesión para proponer nuevos proyectos."
-      />
-    );
-  }
-
+function ProjectFormSteps({
+  form,
+  currentStep,
+  userEmail,
+  stepError,
+  programSchools,
+  programCatalogLoading,
+  programCatalogError,
+  handleChange,
+  handleSourceChange,
+  handleFacultyAdvisorChange,
+  removeFacultyAdvisor,
+  addFacultyAdvisor,
+  handleDeliverableChange,
+  removeDeliverable,
+  addDeliverable,
+  setForm,
+  setStepError,
+}: ProjectFormStepsProps) {
   return (
     <>
-      <Dialog
-        open={showDurationNotice}
-        onOpenChange={(open) => {
-          if (!open && !submissionConsentAt) {
-            setShowDurationNotice(true);
-          }
-        }}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="sm:max-w-lg"
-        >
-          <DialogHeader>
-            <DialogTitle>
-              Información importante sobre la duración
-            </DialogTitle>
-
-            <DialogDescription>
-              Antes de comenzar debes conocer y aceptar la duración
-              establecida para este tipo de proyectos.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="rounded-lg border bg-muted/40 p-4">
-            <p className="text-sm leading-6">
-              Los proyectos propuestos mediante esta plataforma se
-              ejecutan durante{" "}
-              <strong>
-                8 meses aproximadamente
-              </strong>
-              .
-            </p>
-
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Al seleccionar &quot;Aceptar y continuar&quot;, dejas
-              constancia de que conoces y aceptas esta condición antes
-              de registrar la propuesta.
-            </p>
-          </div>
-
-          <DialogFooter>
-            <Button onClick={acceptDurationNotice}>
-              Aceptar y continuar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <form onSubmit={handleSubmit} noValidate>
-        <FieldGroup>
-          <div className="mb-6">
-            <div className="grid gap-2 md:grid-cols-3">
-              {steps.map((step) => {
-                const isActive = currentStep === step.number;
-                const isCompleted = currentStep > step.number;
-                const stepClassName = isActive
-                  ? "border-primary bg-primary/10"
-                  : isCompleted
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-border bg-muted/30";
-
-                return (
-                  <button
-                    key={step.number}
-                    type="button"
-                    onClick={() => goToStep(step.number)}
-                    disabled={step.number > currentStep + 1}
-                    className={`rounded-lg border p-3 text-left transition-colors ${stepClassName} disabled:cursor-default disabled:opacity-70`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${
-                          isActive || isCompleted
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {step.number}
-                      </span>
-
-                      <span className="font-medium">
-                        {step.title}
-                      </span>
-                    </div>
-
-                    <p className="mt-1 pl-9 text-xs text-muted-foreground">
-                      {step.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 h-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-300"
-                style={{
-                  width: `${(currentStep / steps.length) * 100}%`,
-                }}
-              />
-            </div>
-          </div>
-
           {/* PASO 1 */}
           {currentStep === 1 && (
             <FieldSet>
@@ -1438,6 +1094,413 @@ export default function SubmitProjectForm() {
               </Field>
             </FieldSet>
           )}
+    </>
+  );
+}
+
+export default function SubmitProjectForm() {
+  const { session, isAuthenticated, ready } = useAuth();
+  const router = useRouter();
+  const userEmail = session?.user?.email ?? "";
+
+  const [form, setForm] = useState<FormState>(initialForm);
+  const [programSchools, setProgramSchools] = useState<ProjectProgramSchool[]>([]);
+  const [programCatalogLoading, setProgramCatalogLoading] = useState(true);
+  const [programCatalogError, setProgramCatalogError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+
+    async function loadProgramCatalog() {
+      setProgramCatalogLoading(true);
+      const result = await getProjectProgramsCatalog();
+      if (!active) return;
+
+      setProgramSchools(result.schools);
+      setProgramCatalogError(result.error ?? null);
+      setProgramCatalogLoading(false);
+    }
+
+    void loadProgramCatalog();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [status, setStatus] = useState<Status>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [stepError, setStepError] = useState<string | null>(null);
+
+  const [showDurationNotice, setShowDurationNotice] = useState(true);
+  const [submissionConsentAt, setSubmissionConsentAt] = useState<
+    string | null
+  >(null);
+
+  function handleChange(
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) {
+    const { name, value } = event.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    setStepError(null);
+  }
+
+  function handleSourceChange(value: string) {
+    const source = value as ProjectSource;
+
+    setForm((prev) => ({
+      ...prev,
+      source,
+      nit: "",
+      sourceDetails:
+        source === "external_entity" ? prev.sourceDetails : "",
+    }));
+
+    setStepError(null);
+  }
+
+  function handleFacultyAdvisorChange(id: string, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      facultyAdvisors: prev.facultyAdvisors.map((advisor) =>
+        advisor.id === id ? { ...advisor, value } : advisor,
+      ),
+    }));
+
+    setStepError(null);
+  }
+
+  function addFacultyAdvisor() {
+    setForm((prev) => ({
+      ...prev,
+      facultyAdvisors: [
+        ...prev.facultyAdvisors,
+        { id: createClientId(), value: "" },
+      ],
+    }));
+  }
+
+  function removeFacultyAdvisor(id: string) {
+    setForm((prev) => {
+      const facultyAdvisors = prev.facultyAdvisors.filter(
+        (advisor) => advisor.id !== id,
+      );
+
+      return {
+        ...prev,
+        facultyAdvisors:
+          facultyAdvisors.length > 0
+            ? facultyAdvisors
+            : [{ id: createClientId(), value: "" }],
+      };
+    });
+  }
+
+  function handleAdvisorChange(value: boolean) {
+    setForm((prev) => ({
+      ...prev,
+      hasFacultyAdvisor: value,
+      facultyAdvisor: value ? prev.facultyAdvisor : "",
+    }));
+
+    setStepError(null);
+  }
+
+  function handleDeliverableChange(id: string, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      deliverables: prev.deliverables.map((deliverable) =>
+        deliverable.id === id
+          ? { ...deliverable, value }
+          : deliverable,
+      ),
+    }));
+
+    setStepError(null);
+  }
+
+  function addDeliverable() {
+    setForm((prev) => ({
+      ...prev,
+      deliverables: [...prev.deliverables, createDeliverable()],
+    }));
+  }
+
+  function removeDeliverable(id: string) {
+    setForm((prev) => {
+      const deliverables = prev.deliverables.filter(
+        (deliverable) => deliverable.id !== id,
+      );
+
+      return {
+        ...prev,
+        deliverables:
+          deliverables.length > 0 ? deliverables : [createDeliverable()],
+      };
+    });
+  }
+
+  function acceptDurationNotice() {
+    const acceptedAt = new Date().toISOString();
+
+    setSubmissionConsentAt(acceptedAt);
+    setShowDurationNotice(false);
+  }
+
+  function validateCurrentStep(): boolean {
+    setStepError(null);
+
+    const validator = stepValidators[currentStep];
+    const validationError = validator ? validator(form) : null;
+
+    if (validationError) {
+      setStepError(validationError);
+      return false;
+    }
+
+    return true;
+  }
+
+  function goToNextStep() {
+    if (!validateCurrentStep()) {
+      return;
+    }
+
+    setCurrentStep((step) => Math.min(step + 1, steps.length));
+  }
+
+  function goToPreviousStep() {
+    setStepError(null);
+    setCurrentStep((step) => Math.max(step - 1, 1));
+  }
+
+  function goToStep(step: number) {
+    if (step < currentStep) {
+      setStepError(null);
+      setCurrentStep(step);
+      return;
+    }
+
+    if (step === currentStep + 1 && validateCurrentStep()) {
+      setCurrentStep(step);
+    }
+  }
+
+  function validateSubmissionPrerequisites(): boolean {
+    if (!submissionConsentAt) {
+      setShowDurationNotice(true);
+      return false;
+    }
+
+    if (currentStep !== steps.length) {
+      goToNextStep();
+      return false;
+    }
+
+    if (!validateCurrentStep()) return false;
+
+    if (!userEmail.trim()) {
+      setStatus("error");
+      setErrorMessage("No se pudo obtener el correo electrónico de la cuenta.");
+      return false;
+    }
+
+    return true;
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const consentAt = submissionConsentAt;
+
+    if (!consentAt) {
+    setShowDurationNotice(true);
+    return;
+    }
+
+
+    const catalogError = getProgramCatalogError(
+      programCatalogLoading,
+      programCatalogError,
+      programSchools.length,
+    );
+
+    if (catalogError) {
+      setStatus("error");
+      setErrorMessage(catalogError);
+      return;
+    }
+
+    if (!validateSubmissionPrerequisites()) return;
+
+    setStatus("saving");
+    setErrorMessage(null);
+    setStepError(null);
+
+    try {
+      await createProject(buildProjectPayload(form, userEmail, consentAt));
+
+      setStatus("success");
+      router.replace("/projects?propuestos=1");
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo crear el proyecto.",
+      );
+    }
+  }
+
+  if (!ready) {
+    return (
+      <Card>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Cargando acceso...
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AccessNotice
+        title="Acceso requerido"
+        message="Inicia sesión para proponer nuevos proyectos."
+      />
+    );
+  }
+
+  return (
+    <>
+      <Dialog
+        open={showDurationNotice}
+        onOpenChange={(open) => {
+          if (!open && !submissionConsentAt) {
+            setShowDurationNotice(true);
+          }
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          className="sm:max-w-lg"
+        >
+          <DialogHeader>
+            <DialogTitle>
+              Información importante sobre la duración
+            </DialogTitle>
+
+            <DialogDescription>
+              Antes de comenzar debes conocer y aceptar la duración
+              establecida para este tipo de proyectos.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border bg-muted/40 p-4">
+            <p className="text-sm leading-6">
+              Los proyectos propuestos mediante esta plataforma se
+              ejecutan durante{" "}
+              <strong>
+                8 meses aproximadamente
+              </strong>
+              .
+            </p>
+
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              Al seleccionar &quot;Aceptar y continuar&quot;, dejas
+              constancia de que conoces y aceptas esta condición antes
+              de registrar la propuesta.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={acceptDurationNotice}>
+              Aceptar y continuar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <form onSubmit={handleSubmit} noValidate>
+        <FieldGroup>
+          <div className="mb-6">
+            <div className="grid gap-2 md:grid-cols-3">
+              {steps.map((step) => {
+                const isActive = currentStep === step.number;
+                const isCompleted = currentStep > step.number;
+                const stepClassName = isActive
+                  ? "border-primary bg-primary/10"
+                  : isCompleted
+                    ? "border-primary/40 bg-primary/5"
+                    : "border-border bg-muted/30";
+
+                return (
+                  <button
+                    key={step.number}
+                    type="button"
+                    onClick={() => goToStep(step.number)}
+                    disabled={step.number > currentStep + 1}
+                    className={`rounded-lg border p-3 text-left transition-colors ${stepClassName} disabled:cursor-default disabled:opacity-70`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${
+                          isActive || isCompleted
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {step.number}
+                      </span>
+
+                      <span className="font-medium">
+                        {step.title}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 pl-9 text-xs text-muted-foreground">
+                      {step.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 h-1 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-300"
+                style={{
+                  width: `${(currentStep / steps.length) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          <ProjectFormSteps
+            form={form}
+            currentStep={currentStep}
+            userEmail={userEmail}
+            stepError={stepError}
+            programSchools={programSchools}
+            programCatalogLoading={programCatalogLoading}
+            programCatalogError={programCatalogError}
+            handleChange={handleChange}
+            handleSourceChange={handleSourceChange}
+            handleFacultyAdvisorChange={handleFacultyAdvisorChange}
+            removeFacultyAdvisor={removeFacultyAdvisor}
+            addFacultyAdvisor={addFacultyAdvisor}
+            handleDeliverableChange={handleDeliverableChange}
+            removeDeliverable={removeDeliverable}
+            addDeliverable={addDeliverable}
+            setForm={setForm}
+            setStepError={setStepError}
+          />
 
           {stepError && (
             <Alert variant="destructive">

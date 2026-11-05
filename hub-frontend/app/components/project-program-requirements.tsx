@@ -1,7 +1,7 @@
+
 "use client";
 
 import { RiAddLine, RiDeleteBinLine } from "@remixicon/react";
-
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -15,20 +15,20 @@ import {
 import type { ProjectProgramSchool } from "../services/schemas";
 
 type ProgramRequirementItem = {
-  id: string;
-  programId: string;
-  studentCount: string;
-  programName?: string;
-  schoolName?: string;
+  readonly id: string;
+  readonly programId: string;
+  readonly studentCount: string;
+  readonly programName?: string;
+  readonly schoolName?: string;
 };
 
 type ProjectProgramRequirementsProps = {
-  items: ProgramRequirementItem[];
-  schools: ProjectProgramSchool[];
-  idPrefix: string;
-  disabled?: boolean;
-  invalid?: boolean;
-  onProgramChange: (
+  readonly items: readonly ProgramRequirementItem[];
+  readonly schools: readonly ProjectProgramSchool[];
+  readonly idPrefix: string;
+  readonly disabled?: boolean;
+  readonly invalid?: boolean;
+  readonly onProgramChange: (
     id: string,
     program: {
       programId: string;
@@ -36,9 +36,9 @@ type ProjectProgramRequirementsProps = {
       schoolName: string;
     },
   ) => void;
-  onStudentCountChange: (id: string, value: string) => void;
-  onRemove: (id: string) => void;
-  onAdd: () => void;
+  readonly onStudentCountChange: (id: string, value: string) => void;
+  readonly onRemove: (id: string) => void;
+  readonly onAdd: () => void;
 };
 
 export default function ProjectProgramRequirements({
@@ -63,6 +63,14 @@ export default function ProjectProgramRequirements({
             })),
           )
           .find((program) => program.id === item.programId);
+
+        let selectedProgramLabel: string | undefined;
+
+        if (selectedProgram) {
+          selectedProgramLabel = `${selectedProgram.name} — ${selectedProgram.schoolName}`;
+        } else if (item.programName) {
+          selectedProgramLabel = `${item.programName} — ${item.schoolName ?? ""}`;
+        }
 
         const invalidCount =
           invalid &&
@@ -111,11 +119,7 @@ export default function ProjectProgramRequirements({
                   aria-invalid={Boolean(invalid && !item.programId)}
                 >
                   <SelectValue placeholder="Selecciona un programa">
-                    {selectedProgram
-                      ? `${selectedProgram.name} — ${selectedProgram.schoolName}`
-                      : item.programName
-                        ? `${item.programName} — ${item.schoolName ?? ""}`
-                        : undefined}
+                    {selectedProgramLabel}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
