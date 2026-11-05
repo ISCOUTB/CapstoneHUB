@@ -51,6 +51,42 @@ function getBaseSections(project: ProjectDetails): ProjectSection[] {
   ];
 }
 
+function getProgramRequirementsSection(
+  project: ProjectDetails,
+): ProjectSection | null {
+  const requirements = project.programRequirements ?? [];
+  if (requirements.length === 0) return null;
+
+  return {
+    title: "Programas académicos requeridos",
+    content: (
+      <ul className="space-y-3">
+        {requirements.map((requirement) => (
+          <li
+            key={requirement.id}
+            className="rounded-xl border border-border/70 bg-muted/20 p-3"
+          >
+            <p className="font-medium text-foreground">
+              {requirement.programName}
+            </p>
+            {requirement.schoolName ? (
+              <p className="text-xs text-muted-foreground">
+                {requirement.schoolName}
+              </p>
+            ) : null}
+            <p className="mt-1">
+              {requirement.studentCount}{" "}
+              {requirement.studentCount === 1
+                ? "estudiante requerido"
+                : "estudiantes requeridos"}
+            </p>
+          </li>
+        ))}
+      </ul>
+    ),
+  };
+}
+
 function getEngineeringAreaSection(project: ProjectDetails): ProjectSection | null {
   if (!project.engineeringArea) return null;
   const labels: Record<string, string> = {
@@ -143,13 +179,20 @@ function getDatesAndCostSection(project: ProjectDetails): ProjectSection | null 
 
 function getOptionalSections(project: ProjectDetails): ProjectSection[] {
   const sections: ProjectSection[] = [];
-  const engineering = getEngineeringAreaSection(project);
+  const programRequirements = getProgramRequirementsSection(project);
+  const engineering =
+    programRequirements === null ? getEngineeringAreaSection(project) : null;
   const advisor = getAdvisorSection(project);
   const externalContact = getExternalContactSection(project);
   const socialImpact = getSocialImpactSection(project);
   const monetaryResources = getMonetaryResourcesSection(project);
   const datesAndCost = getDatesAndCostSection(project);
 
+  if (programRequirements) sections.push(programRequirements);
+  sections.push({
+    title: "Equipo requerido",
+    content: <p className="whitespace-pre-line">{project.teamRequirements?.trim() || "N/A"}</p>,
+  });
   if (engineering) sections.push(engineering);
   if (project.projectScope) sections.push({ title: "Alcance del proyecto", content: <p className="whitespace-pre-line">{project.projectScope}</p> });
   if (advisor) sections.push(advisor);
@@ -157,7 +200,6 @@ function getOptionalSections(project: ProjectDetails): ProjectSection[] {
   if (project.researchGroup) sections.push({ title: "Grupo de investigación", content: <p>{project.researchGroup}</p> });
   if (socialImpact) sections.push(socialImpact);
   if (monetaryResources) sections.push(monetaryResources);
-  if (project.teamRequirements) sections.push({ title: "Equipo requerido", content: <p className="whitespace-pre-line">{project.teamRequirements}</p> });
   if (project.deliverables && project.deliverables.length > 0) {
     sections.push({ title: "Entregables", content: <ul className="list-disc space-y-1 pl-5">{project.deliverables.map((item) => <li key={item.id}>{item.description}</li>)}</ul> });
   }

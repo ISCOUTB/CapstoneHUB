@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 
-import { createProject } from "../services/projects";
-import { type ProjectSource } from "../services/schemas";
+import { createProject, getProjectProgramsCatalog } from "../services/projects";
+import { type ProjectProgramSchool, type ProjectSource } from "../services/schemas";
 import { useAuth } from "./auth-provider";
 import AccessNotice from "./access-notice";
+import ProjectProgramRequirements from "./project-program-requirements";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,16 +59,6 @@ const projectSources: ReadonlyArray<{
   { value: "social_impact", label: "Impacto social" },
 ];
 
-const engineeringAreaOptions = [
-  { value: "systems", label: "Ingeniería de Sistemas y Computación" },
-  { value: "industrial", label: "Ingeniería Industrial" },
-  { value: "civil", label: "Ingeniería Civil" },
-  { value: "electrical", label: "Ingeniería Eléctrica y Electrónica" },
-  { value: "mechanical", label: "Ingeniería Mecánica" },
-  { value: "environmental", label: "Ingeniería Ambiental" },
-  { value: "other", label: "Otra área o ingeniería" },
-] as const;
-
 
 const steps = [
   {
@@ -82,14 +73,20 @@ const steps = [
   },
   {
     number: 3,
-    title: "Equipo y condiciones",
-    description: "Estudiantes y expectativas",
+    title: "Estudiantes y expectativas",
+    description: "Programas y conocimientos requeridos",
   },
 ] as const;
 
 type DeliverableFormItem = {
   id: string;
   value: string;
+};
+
+type ProgramRequirementFormItem = {
+  id: string;
+  programId: string;
+  studentCount: string;
 };
 
 type FormState = {
@@ -102,7 +99,7 @@ type FormState = {
   researchGroup: string;
   socialOrganization: string;
   socialLocation: string;
-  engineeringAreas: DeliverableFormItem[];
+  programRequirements: ProgramRequirementFormItem[];
   projectScope: string;
   monetaryResources: string;
   monetaryResourcesDescription: string;
@@ -136,7 +133,7 @@ const initialForm: FormState = {
   researchGroup: "",
   socialOrganization: "",
   socialLocation: "",
-  engineeringAreas: [{ id: createClientId(), value: "" }],
+  programRequirements: [],
   projectScope: "",
   monetaryResources: "na",
   monetaryResourcesDescription: "",
@@ -184,55 +181,46 @@ function isValidEmail(email: string): boolean {
   return dotIndex > 0 && dotIndex < domain.length - 1;
 }
 
+function validateExternalSource(form: FormState): string | null {
+  if (!form.sourceDetails.trim()) {
+    return "Describe la entidad externa de la que proviene el proyecto.";
+  }
+  if (!form.externalAdvisorName.trim()) {
+    return "Ingresa el nombre del asesor externo.";
+  }
+  if (!form.externalAdvisorEmail.trim()) {
+    return "Ingresa el correo del asesor externo.";
+  }
+  if (!form.nit.trim()) {
+    return "Ingresa el NIT de la entidad externa.";
+  }
+  if (!isValidEmail(form.externalAdvisorEmail)) {
+    return "Ingresa un correo válido para el asesor externo.";
+  }
+  return null;
+}
+
+function validateSourceSpecificFields(form: FormState): string | null {
+  if (form.source === "external_entity") {
+    return validateExternalSource(form);
+  }
+  if (form.source === "research" && !form.researchGroup.trim()) {
+    return "Ingresa el grupo de investigación.";
+  }
+  if (form.source === "social_impact" && !form.socialLocation.trim()) {
+    return "Ingresa la localización del proyecto.";
+  }
+  return null;
+}
+
 function validateStepOne(form: FormState): string | null {
   if (!form.namep.trim()) {
     return "Ingresa el nombre del responsable.";
   }
-
-  if (
-    form.source === "external_entity" &&
-    !form.sourceDetails.trim()
-  ) {
-    return "Describe la entidad externa de la que proviene el proyecto.";
+  if (form.nit && !/^\\d{1,12}$/.test(form.nit)) {
+    return "El NIT debe contener únicamente números y tener máximo 12 dígitos.";
   }
-
-  if (!form.engineeringAreas.some((area) => area.value.trim())) {
-    return "Selecciona al menos un área o ingeniería del proyecto.";
-  }
-
-  const selectedAreas = form.engineeringAreas.map((area) => area.value).filter(Boolean);
-  if (new Set(selectedAreas).size !== selectedAreas.length) {
-    return "No puedes seleccionar la misma área o ingeniería más de una vez.";
-  }
-
-  if (
-    form.source === "external_entity" &&
-    (!form.externalAdvisorName.trim() ||
-      !form.externalAdvisorEmail.trim() ||
-      !form.nit.trim())
-  ) {
-    return "Ingresa el nombre, correo y NIT de la entidad o asesor externo.";
-  }
-
-  if (
-    form.source === "external_entity" &&
-    !isValidEmail(form.externalAdvisorEmail)
-  ) {
-    return "Ingresa un correo válido para el asesor externo.";
-  }
-
-  if (form.source === "research" && !form.researchGroup.trim()) {
-    return "Ingresa el grupo de investigación.";
-  }
-
-  if (
-    form.source === "social_impact" &&
-    !form.socialLocation.trim()
-  ) {
-    return "Ingresa la localización del proyecto.";
-  }
-
-  return null;
+  return validateSourceSpecificFields(form);
 }
 
 function validateStepTwo(form: FormState): string | null {
@@ -260,8 +248,28 @@ function validateStepThree(form: FormState): string | null {
     return "Ingresa el nombre o contacto UTB del asesor.";
   }
 
-  if (!form.teamRequirements.trim()) {
-    return "Describe el tipo de estudiantes o perfiles requeridos.";
+  if (form.programRequirements.length === 0) {
+    return "Selecciona al menos un programa académico.";
+  }
+
+  if (form.programRequirements.length > 4) {
+    return "Puedes seleccionar un máximo de cuatro programas académicos.";
+  }
+
+  const selectedPrograms = form.programRequirements.map((item) => item.programId);
+  if (selectedPrograms.some((programId) => !programId)) {
+    return "Selecciona un programa para cada requisito agregado.";
+  }
+
+  if (new Set(selectedPrograms).size !== selectedPrograms.length) {
+    return "No puedes seleccionar el mismo programa más de una vez.";
+  }
+
+  if (form.programRequirements.some((item) => {
+    const count = Number(item.studentCount);
+    return item.studentCount.trim() === "" || !Number.isInteger(count) || count < 1;
+  })) {
+    return "Indica una cantidad de estudiantes válida (un número entero mayor que cero) para cada programa.";
   }
 
   if (
@@ -280,12 +288,1062 @@ const stepValidators: Record<number, StepValidator> = {
   3: validateStepThree,
 };
 
+const legacyAreaByProgram: Record<string, string> = {
+  "ingenieria-sistemas-computacion": "systems",
+  "ingenieria-industrial": "industrial",
+  "ingenieria-civil": "civil",
+  "ingenieria-electrica": "electrical",
+  "ingenieria-electronica": "electrical",
+  "ingenieria-mecatronica": "electrical",
+  "ingenieria-biomedica": "electrical",
+  "ingenieria-mecanica": "mechanical",
+  "ingenieria-naval": "mechanical",
+  "ingenieria-ambiental": "environmental",
+};
+
+function getLegacyEngineeringArea(
+  requirements: ProgramRequirementFormItem[],
+): string {
+  const areas = new Set(
+    requirements.map(
+      (requirement) => legacyAreaByProgram[requirement.programId] ?? "other",
+    ),
+  );
+  return Array.from(areas).join(",");
+}
+
+function getProgramCatalogError(
+  loading: boolean,
+  error: string | null,
+  programCount: number,
+): string | null {
+  if (loading) {
+    return "Espera a que termine de cargar el catálogo de programas.";
+  }
+  if (error || programCount === 0) {
+    return error ?? "No hay programas académicos disponibles en este momento.";
+  }
+  return null;
+}
+
+function buildProjectPayload(
+  form: FormState,
+  userEmail: string,
+  consentAt: string,
+) {
+  return {
+    name: form.name.trim(),
+    namep: form.namep.trim(),
+    correo: userEmail.trim(),
+    description: form.description.trim(),
+    context: form.context.trim(),
+    source: form.source,
+    sourceDetails: form.source === "external_entity" ? form.sourceDetails.trim() : undefined,
+    engineeringArea: getLegacyEngineeringArea(form.programRequirements),
+    programRequirements: form.programRequirements.map((requirement) => ({
+      programId: requirement.programId,
+      studentCount: Number(requirement.studentCount),
+    })),
+    externalAdvisorName: form.source === "external_entity" ? form.externalAdvisorName.trim() : undefined,
+    externalAdvisorEmail: form.source === "external_entity" ? form.externalAdvisorEmail.trim() : undefined,
+    nit:
+      form.source === "external_entity" || form.source === "social_impact"
+        ? form.nit.trim() || undefined
+        : undefined,
+    researchGroup: form.source === "research" ? form.researchGroup.trim() : undefined,
+    socialOrganization: form.source === "social_impact" ? form.socialOrganization.trim() : undefined,
+    socialLocation: form.source === "social_impact" ? form.socialLocation.trim() : undefined,
+    projectScope: form.projectScope.trim(),
+    monetaryResources: form.monetaryResources,
+    monetaryResourcesDescription:
+      form.monetaryResources === "yes" ? form.monetaryResourcesDescription.trim() : undefined,
+    facultyAdvisors: form.facultyAdvisors
+      .map((advisor) => advisor.value.trim())
+      .filter(Boolean),
+    requiresLegalization: form.requiresLegalization,
+    isPrivate: form.isPrivate,
+    facultyAdvisor: form.hasFacultyAdvisor ? form.facultyAdvisor.trim() : undefined,
+    teamRequirements: form.teamRequirements.trim(),
+    expectedOutcomes: form.expectedOutcomes.trim() || undefined,
+    deliverables: form.deliverables
+      .map((deliverable) => deliverable.value.trim())
+      .filter(Boolean),
+    submissionConsentAt: consentAt,
+  };
+}
+
+type ProjectFormStepsProps = {
+  readonly form: FormState;
+  readonly currentStep: number;
+  readonly userEmail: string;
+  readonly stepError: string | null;
+  readonly programSchools: ProjectProgramSchool[];
+  readonly programCatalogLoading: boolean;
+  readonly programCatalogError: string | null;
+  readonly handleChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  readonly handleSourceChange: (value: string) => void;
+  readonly handleFacultyAdvisorChange: (id: string, value: string) => void;
+  readonly removeFacultyAdvisor: (id: string) => void;
+  readonly addFacultyAdvisor: () => void;
+  readonly handleDeliverableChange: (id: string, value: string) => void;
+  readonly removeDeliverable: (id: string) => void;
+  readonly addDeliverable: () => void;
+  readonly setForm: Dispatch<SetStateAction<FormState>>;
+  readonly setStepError: (value: string | null) => void;
+};
+
+type ProjectFormStepOneProps = Pick<
+  ProjectFormStepsProps,
+  | "form"
+  | "userEmail"
+  | "stepError"
+  | "handleChange"
+  | "handleSourceChange"
+  | "setForm"
+  | "setStepError"
+>;
+
+type ProjectFormStepTwoProps = Pick<ProjectFormStepsProps, "form" | "handleChange">;
+
+type ProjectFormStepThreeProps = Pick<
+  ProjectFormStepsProps,
+  | "form"
+  | "stepError"
+  | "programSchools"
+  | "programCatalogLoading"
+  | "programCatalogError"
+  | "handleChange"
+  | "handleFacultyAdvisorChange"
+  | "removeFacultyAdvisor"
+  | "addFacultyAdvisor"
+  | "handleDeliverableChange"
+  | "removeDeliverable"
+  | "addDeliverable"
+  | "setForm"
+  | "setStepError"
+>;
+
+
+type ProjectSourceSelectorProps = Pick<ProjectFormStepOneProps, "form" | "handleSourceChange">;
+
+function ProjectSourceSelector({ form, handleSourceChange }: ProjectSourceSelectorProps) {
+  return (
+              <Field>
+                <FieldLabel>
+                  Fuente del proyecto
+                </FieldLabel>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {projectSources.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleSourceChange(option.value)}
+                      aria-pressed={form.source === option.value}
+                      className={`flex flex-col items-start gap-1 rounded-lg border p-2 text-left transition-colors ${
+                        form.source === option.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 font-medium text-foreground">
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border text-xs ${
+                            form.source === option.value
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-input"
+                          }`}
+                        >
+                          {form.source === option.value ? "✓" : ""}
+                        </span>
+                        {option.label}
+                      </span>
+
+                      <span className="text-xs leading-snug text-muted-foreground">
+                        {{
+                          external_entity: "Propuesta presentada por una empresa u organización externa a la UTB.",
+                          research: "Propuesta vinculada a un grupo o proyecto de investigación.",
+                          internal_need: "Propuesta que responde a una necesidad de una dependencia o área interna de la UTB.",
+                          social_impact: "Propuesta orientada a resolver una necesidad de una comunidad u organización social.",
+                        }[option.value]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </Field>
+  );
+}
+
+type ProjectSourceFieldsProps = Pick<
+  ProjectFormStepOneProps,
+  "form" | "stepError" | "handleChange" | "setForm" | "setStepError"
+>;
+
+function updateNit(
+  event: ChangeEvent<HTMLInputElement>,
+  setForm: Dispatch<SetStateAction<FormState>>,
+  setStepError: (value: string | null) => void,
+) {
+  const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
+  setForm((previous) => ({ ...previous, nit: numericValue }));
+  setStepError(null);
+}
+
+function getInvalidFieldClassName(isInvalid: boolean): string {
+  return isInvalid
+    ? "border-destructive focus-visible:ring-destructive"
+    : "";
+}
+
+function ProjectExternalEntityFields({
+  form,
+  stepError,
+  handleChange,
+  setForm,
+  setStepError,
+}: ProjectSourceFieldsProps) {
+  const sourceDetailsInvalid = Boolean(stepError && !form.sourceDetails.trim());
+  const nitInvalid = Boolean(
+    (stepError && !form.nit.trim()) ||
+      (form.nit && !/^\d{1,12}$/.test(form.nit)),
+  );
+  const advisorNameInvalid = Boolean(
+    stepError && !form.externalAdvisorName.trim(),
+  );
+  const advisorEmailInvalid = Boolean(
+    (stepError && !form.externalAdvisorEmail.trim()) ||
+      (form.externalAdvisorEmail && !isValidEmail(form.externalAdvisorEmail)),
+  );
+
+  return (
+    <>
+      <Field>
+        <FieldLabel htmlFor="sourceDetails">
+          ¿De qué entidad externa proviene?
+        </FieldLabel>
+        <Textarea
+          id="sourceDetails"
+          name="sourceDetails"
+          value={form.sourceDetails}
+          onChange={handleChange}
+          maxLength={MAX_TEXT_LENGTH}
+          rows={3}
+          placeholder="Indica el nombre de la empresa, organización o entidad y una breve descripción."
+          required
+          aria-invalid={sourceDetailsInvalid}
+          className={getInvalidFieldClassName(sourceDetailsInvalid)}
+        />
+        <CharacterCounter
+          value={form.sourceDetails}
+          maxLength={MAX_TEXT_LENGTH}
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="nit">NIT de la empresa o entidad</FieldLabel>
+        <Input
+          id="nit"
+          name="nit"
+          value={form.nit}
+          onChange={(event) => updateNit(event, setForm, setStepError)}
+          inputMode="numeric"
+          maxLength={12}
+          placeholder="NIT de la entidad externa"
+          aria-invalid={nitInvalid}
+          className={getInvalidFieldClassName(nitInvalid)}
+          required
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="externalAdvisorName">
+          Nombre del asesor externo
+        </FieldLabel>
+        <Input
+          id="externalAdvisorName"
+          name="externalAdvisorName"
+          value={form.externalAdvisorName}
+          onChange={handleChange}
+          maxLength={MAX_NAME_LENGTH}
+          required
+          aria-invalid={advisorNameInvalid}
+          className={getInvalidFieldClassName(advisorNameInvalid)}
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="externalAdvisorEmail">
+          Correo del asesor externo
+        </FieldLabel>
+        <Input
+          type="email"
+          id="externalAdvisorEmail"
+          name="externalAdvisorEmail"
+          value={form.externalAdvisorEmail}
+          onChange={handleChange}
+          maxLength={MAX_TEXT_LENGTH}
+          placeholder="asesor@empresa.com"
+          required
+          aria-invalid={advisorEmailInvalid}
+          className={getInvalidFieldClassName(advisorEmailInvalid)}
+        />
+      </Field>
+    </>
+  );
+}
+
+function ProjectResearchFields({
+  form,
+  stepError,
+  handleChange,
+}: ProjectSourceFieldsProps) {
+  const researchGroupInvalid = Boolean(
+    stepError && !form.researchGroup.trim(),
+  );
+
+  return (
+    <Field>
+      <FieldLabel htmlFor="researchGroup">
+        Grupo de investigación
+      </FieldLabel>
+      <Input
+        id="researchGroup"
+        name="researchGroup"
+        value={form.researchGroup}
+        onChange={handleChange}
+        maxLength={MAX_TEXT_LENGTH}
+        placeholder="Nombre del grupo de investigación"
+        required
+        aria-invalid={researchGroupInvalid}
+        className={getInvalidFieldClassName(researchGroupInvalid)}
+      />
+    </Field>
+  );
+}
+
+function ProjectSocialImpactFields({
+  form,
+  stepError,
+  handleChange,
+  setForm,
+  setStepError,
+}: ProjectSourceFieldsProps) {
+  const nitInvalid = Boolean(
+    form.nit && !/^\d{1,12}$/.test(form.nit),
+  );
+  const socialLocationInvalid = Boolean(
+    stepError && !form.socialLocation.trim(),
+  );
+
+  return (
+    <>
+      <Field>
+        <FieldLabel htmlFor="socialOrganization">
+          Junta de Acción Comunal
+        </FieldLabel>
+        <Input
+          id="socialOrganization"
+          name="socialOrganization"
+          value={form.socialOrganization}
+          onChange={handleChange}
+          maxLength={MAX_NAME_LENGTH}
+          placeholder="Nombre de la Junta de Acción Comunal"
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="nit">
+          NIT de la organización (opcional)
+        </FieldLabel>
+        <Input
+          id="nit"
+          name="nit"
+          value={form.nit}
+          onChange={(event) => updateNit(event, setForm, setStepError)}
+          inputMode="numeric"
+          maxLength={12}
+          placeholder="NIT de la Junta de Acción Comunal, si aplica"
+          aria-invalid={nitInvalid}
+          className={getInvalidFieldClassName(nitInvalid)}
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="socialLocation">
+          Localización
+        </FieldLabel>
+        <Input
+          id="socialLocation"
+          name="socialLocation"
+          value={form.socialLocation}
+          onChange={handleChange}
+          maxLength={MAX_TEXT_LENGTH}
+          placeholder="Barrio, municipio o dirección de referencia"
+          required
+          aria-invalid={socialLocationInvalid}
+          className={getInvalidFieldClassName(socialLocationInvalid)}
+        />
+      </Field>
+    </>
+  );
+}
+
+function ProjectSourceFields({
+  form,
+  stepError,
+  handleChange,
+  setForm,
+  setStepError,
+}: ProjectSourceFieldsProps) {
+  return (
+    <div className="space-y-4">
+      {form.source === "external_entity" && (
+        <ProjectExternalEntityFields
+          form={form}
+          stepError={stepError}
+          handleChange={handleChange}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
+
+      {form.source === "research" && (
+        <ProjectResearchFields
+          form={form}
+          stepError={stepError}
+          handleChange={handleChange}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
+
+      {form.source === "social_impact" && (
+        <ProjectSocialImpactFields
+          form={form}
+          stepError={stepError}
+          handleChange={handleChange}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProjectFormStepOne({
+  form,
+  userEmail,
+  stepError,
+  handleChange,
+  handleSourceChange,
+  setForm,
+  setStepError,
+}: ProjectFormStepOneProps) {
+  return (
+<FieldSet>
+              <FieldLegend>
+                Información del proponente y origen
+              </FieldLegend>
+
+              <Field>
+                <FieldLabel htmlFor="namep">
+                  Nombre del responsable
+                </FieldLabel>
+
+                <Input
+                  id="namep"
+                  name="namep"
+                  value={form.namep}
+                  onChange={handleChange}
+                  maxLength={MAX_NAME_LENGTH}
+                  required
+                  aria-invalid={Boolean(stepError && !form.namep.trim())}
+                  className={stepError && !form.namep.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+
+                <CharacterCounter
+                  value={form.namep}
+                  maxLength={MAX_NAME_LENGTH}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="correo">
+                  Correo electrónico
+                </FieldLabel>
+
+                <Input
+                  type="email"
+                  id="correo"
+                  value={userEmail}
+                  readOnly
+                  aria-readonly="true"
+                  maxLength={MAX_TEXT_LENGTH}
+                />
+
+                <FieldDescription>
+                  Este correo se obtiene automáticamente de la cuenta con la que
+                  iniciaste sesión.
+                </FieldDescription>
+
+                <CharacterCounter
+                  value={userEmail}
+                  maxLength={MAX_TEXT_LENGTH}
+                />
+              </Field>
+
+              <ProjectSourceSelector
+                form={form}
+                handleSourceChange={handleSourceChange}
+              />
+
+              <ProjectSourceFields
+                form={form}
+                stepError={stepError}
+                handleChange={handleChange}
+                setForm={setForm}
+                setStepError={setStepError}
+              />
+            </FieldSet>
+  );
+}
+
+function ProjectFormStepTwo({ form, handleChange }: ProjectFormStepTwoProps) {
+  return (
+<FieldSet>
+              <FieldLegend>
+                Descripción y propósito del proyecto
+              </FieldLegend>
+
+              <Field>
+                <FieldLabel htmlFor="name">
+                  Nombre del proyecto
+                </FieldLabel>
+
+                <Input
+                  id="name"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  maxLength={MAX_NAME_LENGTH}
+                  required
+                />
+
+                <CharacterCounter
+                  value={form.name}
+                  maxLength={MAX_NAME_LENGTH}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="description">
+                  ¿Qué se propone realizar?
+                </FieldLabel>
+
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  maxLength={MAX_TEXT_LENGTH}
+                  rows={4}
+                  placeholder="Describe de forma concreta qué se desarrollará en el proyecto."
+                  required
+                />
+
+                <CharacterCounter
+                  value={form.description}
+                  maxLength={MAX_TEXT_LENGTH}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="context">
+                  Problema y justificación
+                </FieldLabel>
+
+                <Textarea
+                  id="context"
+                  name="context"
+                  value={form.context}
+                  onChange={handleChange}
+                  maxLength={MAX_TEXT_LENGTH}
+                  rows={4}
+                  placeholder="Explica qué problema se busca solucionar y por qué el proyecto es necesario."
+                  required
+                />
+
+                <CharacterCounter
+                  value={form.context}
+                  maxLength={MAX_TEXT_LENGTH}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="projectScope">Alcance específico del proyecto</FieldLabel>
+                <Textarea
+                  id="projectScope"
+                  name="projectScope"
+                  value={form.projectScope}
+                  onChange={handleChange}
+                  maxLength={MAX_TEXT_LENGTH}
+                  rows={4}
+                  placeholder="Delimita qué se necesita desarrollar, qué incluye la propuesta y cuáles son sus límites."
+                  required
+                />
+              </Field>
+
+              <div className="rounded-lg border bg-muted/40 p-4">
+                <p className="font-medium">Duración estimada</p>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Los proyectos se ejecutan durante{" "}
+                  <strong>
+                    8 meses aproximadamente
+                  </strong>
+                  .
+                </p>
+              </div>
+            </FieldSet>
+  );
+}
+
+function ProjectFormStepThree({
+  form,
+  stepError,
+  programSchools,
+  programCatalogLoading,
+  programCatalogError,
+  handleChange,
+  handleFacultyAdvisorChange,
+  removeFacultyAdvisor,
+  addFacultyAdvisor,
+  handleDeliverableChange,
+  removeDeliverable,
+  addDeliverable,
+  setForm,
+  setStepError,
+}: ProjectFormStepThreeProps) {
+  return (
+<FieldSet>
+              <FieldLegend>
+                Equipo, resultados y condiciones
+              </FieldLegend>
+
+              <Field>
+                <FieldLabel>Profesores de contacto</FieldLabel>
+
+                <FieldDescription>
+                  Puedes agregar uno o varios profesores de contacto para la propuesta.
+                </FieldDescription>
+
+                <div className="flex flex-col gap-2">
+                  {form.facultyAdvisors.map((advisor, index) => (
+                    <div key={advisor.id} className="flex items-center gap-2">
+                      <Input
+                        value={advisor.value}
+                        onChange={(event) =>
+                          handleFacultyAdvisorChange(advisor.id, event.target.value)
+                        }
+                        maxLength={MAX_TEXT_LENGTH}
+                        placeholder={`Profesor de contacto ${index + 1}`}
+                      />
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFacultyAdvisor(advisor.id)}
+                        aria-label="Eliminar profesor de contacto"
+                      >
+                        <RiDeleteBinLine />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-fit"
+                  onClick={addFacultyAdvisor}
+                >
+                  <RiAddLine data-icon="inline-start" />
+                  Agregar profesor
+                </Button>
+              </Field>
+              <Field>
+                <FieldLabel>Programas académicos requeridos</FieldLabel>
+                <FieldDescription>
+                  Selecciona hasta cuatro programas e indica cuántos estudiantes necesitas de cada uno.
+                </FieldDescription>
+
+                {programCatalogLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Cargando programas académicos...
+                  </p>
+                ) : null}
+
+                {programCatalogError ? (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      No se pudo cargar el catálogo de programas: {programCatalogError}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+
+                <ProjectProgramRequirements
+                  items={form.programRequirements}
+                  schools={programSchools}
+                  idPrefix="submit"
+                  disabled={programCatalogLoading || Boolean(programCatalogError)}
+                  invalid={Boolean(stepError)}
+                  onProgramChange={(id, program) => {
+                    setForm((previous) => ({
+                      ...previous,
+                      programRequirements: previous.programRequirements.map(
+                        (item) =>
+                          item.id === id
+                            ? { ...item, programId: program.programId }
+                            : item,
+                      ),
+                    }));
+                    setStepError(null);
+                  }}
+                  onStudentCountChange={(id, value) => {
+                    setForm((previous) => ({
+                      ...previous,
+                      programRequirements: previous.programRequirements.map(
+                        (item) =>
+                          item.id === id
+                            ? { ...item, studentCount: value }
+                            : item,
+                      ),
+                    }));
+                    setStepError(null);
+                  }}
+                  onRemove={(id) => {
+                    setForm((previous) => ({
+                      ...previous,
+                      programRequirements: previous.programRequirements.filter(
+                        (item) => item.id !== id,
+                      ),
+                    }));
+                    setStepError(null);
+                  }}
+                  onAdd={() => {
+                    setForm((previous) => ({
+                      ...previous,
+                      programRequirements: [
+                        ...previous.programRequirements,
+                        {
+                          id: createClientId(),
+                          programId: "",
+                          studentCount: "1",
+                        },
+                      ],
+                    }));
+                    setStepError(null);
+                  }}
+                />
+
+                <FieldDescription>
+                  {form.programRequirements.length}/4 programas seleccionados. Cada programa se asocia automáticamente con su escuela.
+                </FieldDescription>
+              </Field>
+
+
+              <Field>
+                <FieldLabel htmlFor="teamRequirements">
+                  Conocimientos requeridos (opcional)
+                </FieldLabel>
+
+                <FieldDescription>
+                  Puedes indicar conocimientos, habilidades o perfiles deseados para orientar a los estudiantes interesados.
+                </FieldDescription>
+
+                <Textarea
+                  id="teamRequirements"
+                  name="teamRequirements"
+                  value={form.teamRequirements}
+                  onChange={handleChange}
+                  maxLength={MAX_TEXT_LENGTH}
+                  rows={4}
+                  placeholder="Ejemplo: conocimientos en desarrollo web, bases de datos o diseño de interfaces."
+                />
+
+                <CharacterCounter
+                  value={form.teamRequirements}
+                  maxLength={MAX_TEXT_LENGTH}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel>Entregables esperados</FieldLabel>
+
+                <FieldDescription>
+                  Indica los productos, documentos, resultados o componentes que
+                  deberán entregarse al finalizar el proyecto.
+                </FieldDescription>
+
+                <div className="flex flex-col gap-2">
+                  {form.deliverables.map((deliverable, index) => (
+                    <div
+                      key={deliverable.id}
+                      className="flex items-center gap-2"
+                    >
+                      <Input
+                        value={deliverable.value}
+                        onChange={(event) =>
+                          handleDeliverableChange(
+                            deliverable.id,
+                            event.target.value,
+                          )
+                        }
+                        maxLength={MAX_TEXT_LENGTH}
+                        placeholder={`Entregable ${index + 1}`}
+                      />
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          removeDeliverable(deliverable.id)
+                        }
+                        aria-label="Eliminar entregable"
+                      >
+                        <RiDeleteBinLine />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-fit"
+                  onClick={addDeliverable}
+                >
+                  <RiAddLine data-icon="inline-start" />
+                  Agregar entregable
+                </Button>
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="expectedOutcomes">
+                  Resultados esperados
+                </FieldLabel>
+
+                <Textarea
+                  id="expectedOutcomes"
+                  name="expectedOutcomes"
+                  value={form.expectedOutcomes}
+                  onChange={handleChange}
+                  maxLength={MAX_TEXT_LENGTH}
+                  rows={3}
+                  placeholder="Describe qué se espera obtener al finalizar el proyecto."
+                />
+
+                <CharacterCounter
+                  value={form.expectedOutcomes}
+                  maxLength={MAX_TEXT_LENGTH}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="monetaryResources">
+                  ¿Se tienen contemplados recursos monetarios disponibles?
+                </FieldLabel>
+
+                <Select
+                  value={form.monetaryResources}
+                  onValueChange={(value) => {
+                    if (value !== null) {
+                      setForm((prev) => ({
+                        ...prev,
+                        monetaryResources: value,
+                        monetaryResourcesDescription:
+                          value === "yes" ? prev.monetaryResourcesDescription : "",
+                      }));
+                    }
+                  }}
+                >
+                  <SelectTrigger id="monetaryResources" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Sí</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="na">N/A</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              {form.monetaryResources === "yes" && (
+                <Field>
+                  <FieldLabel htmlFor="monetaryResourcesDescription">
+                    Descripción de los recursos monetarios
+                  </FieldLabel>
+                  <Textarea
+                    id="monetaryResourcesDescription"
+                    name="monetaryResourcesDescription"
+                    value={form.monetaryResourcesDescription}
+                    onChange={handleChange}
+                    maxLength={MAX_TEXT_LENGTH}
+                    rows={3}
+                    placeholder="Describe el tipo de recursos disponibles y para qué se utilizarán."
+                    required
+                  />
+                </Field>
+              )}
+
+              <Field orientation="horizontal">
+                <Checkbox
+                  id="requiresLegalization"
+                  checked={form.requiresLegalization}
+                  onCheckedChange={(checked) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      requiresLegalization: checked === true,
+                    }))
+                  }
+                />
+
+                <FieldContent>
+                  <FieldLabel
+                    htmlFor="requiresLegalization"
+                    className="font-normal"
+                  >
+                    Requiere proceso de legalización
+                  </FieldLabel>
+
+                  <FieldDescription>
+                    Marca esta opción si se requieren convenios,
+                    contratos u otros trámites legales.
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+
+              <Field orientation="horizontal">
+                <Checkbox
+                  id="isPrivate"
+                  checked={form.isPrivate}
+                  onCheckedChange={(checked) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      isPrivate: checked === true,
+                    }))
+                  }
+                />
+
+                <FieldContent>
+                  <FieldLabel
+                    htmlFor="isPrivate"
+                    className="font-normal"
+                  >
+                    Proyecto privado
+                  </FieldLabel>
+
+                  <FieldDescription>
+                    Si está marcado, el proyecto permanecerá privado
+                    según las reglas de visibilidad de la plataforma.
+                  </FieldDescription>
+                </FieldContent>
+              </Field>
+            </FieldSet>
+  );
+}
+
+function ProjectFormSteps({
+  form,
+  currentStep,
+  userEmail,
+  stepError,
+  programSchools,
+  programCatalogLoading,
+  programCatalogError,
+  handleChange,
+  handleSourceChange,
+  handleFacultyAdvisorChange,
+  removeFacultyAdvisor,
+  addFacultyAdvisor,
+  handleDeliverableChange,
+  removeDeliverable,
+  addDeliverable,
+  setForm,
+  setStepError,
+}: ProjectFormStepsProps) {
+  return (
+    <>
+      {currentStep === 1 && (
+        <ProjectFormStepOne
+          form={form}
+          userEmail={userEmail}
+          stepError={stepError}
+          handleChange={handleChange}
+          handleSourceChange={handleSourceChange}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
+      {currentStep === 2 && (
+        <ProjectFormStepTwo form={form} handleChange={handleChange} />
+      )}
+      {currentStep === 3 && (
+        <ProjectFormStepThree
+          form={form}
+          stepError={stepError}
+          programSchools={programSchools}
+          programCatalogLoading={programCatalogLoading}
+          programCatalogError={programCatalogError}
+          handleChange={handleChange}
+          handleFacultyAdvisorChange={handleFacultyAdvisorChange}
+          removeFacultyAdvisor={removeFacultyAdvisor}
+          addFacultyAdvisor={addFacultyAdvisor}
+          handleDeliverableChange={handleDeliverableChange}
+          removeDeliverable={removeDeliverable}
+          addDeliverable={addDeliverable}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
+    </>
+  );
+}
+
 export default function SubmitProjectForm() {
   const { session, isAuthenticated, ready } = useAuth();
   const router = useRouter();
   const userEmail = session?.user?.email ?? "";
 
   const [form, setForm] = useState<FormState>(initialForm);
+  const [programSchools, setProgramSchools] = useState<ProjectProgramSchool[]>([]);
+  const [programCatalogLoading, setProgramCatalogLoading] = useState(true);
+  const [programCatalogError, setProgramCatalogError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+
+    async function loadProgramCatalog() {
+      setProgramCatalogLoading(true);
+      const result = await getProjectProgramsCatalog();
+      if (!active) return;
+
+      setProgramSchools(result.schools);
+      setProgramCatalogError(result.error ?? null);
+      setProgramCatalogLoading(false);
+    }
+
+    void loadProgramCatalog();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -482,6 +1540,18 @@ export default function SubmitProjectForm() {
     }
 
 
+    const catalogError = getProgramCatalogError(
+      programCatalogLoading,
+      programCatalogError,
+      programSchools.length,
+    );
+
+    if (catalogError) {
+      setStatus("error");
+      setErrorMessage(catalogError);
+      return;
+    }
+
     if (!validateSubmissionPrerequisites()) return;
 
     setStatus("saving");
@@ -489,54 +1559,7 @@ export default function SubmitProjectForm() {
     setStepError(null);
 
     try {
-      await createProject({
-        name: form.name.trim(),
-        namep: form.namep.trim(),
-        correo: userEmail.trim(),
-        description: form.description.trim(),
-        context: form.context.trim(),
-        source: form.source,
-        sourceDetails:
-          form.source === "external_entity"
-            ? form.sourceDetails.trim()
-            : undefined,
-        engineeringArea: form.engineeringAreas.map((area) => area.value).filter(Boolean).join(","),
-        externalAdvisorName:
-          form.source === "external_entity" ? form.externalAdvisorName.trim() : undefined,
-        externalAdvisorEmail:
-          form.source === "external_entity" ? form.externalAdvisorEmail.trim() : undefined,
-        nit:
-          form.source === "external_entity" || form.source === "social_impact"
-            ? form.nit.trim() || undefined
-            : undefined,
-        researchGroup:
-          form.source === "research" ? form.researchGroup.trim() : undefined,
-        socialOrganization:
-          form.source === "social_impact" ? form.socialOrganization.trim() : undefined,
-
-        socialLocation:
-          form.source === "social_impact" ? form.socialLocation.trim() : undefined,
-        projectScope: form.projectScope.trim(),
-        monetaryResources: form.monetaryResources,
-        monetaryResourcesDescription:
-          form.monetaryResources === "yes"
-            ? form.monetaryResourcesDescription.trim()
-            : undefined,
-        facultyAdvisors: form.facultyAdvisors
-          .map((advisor) => advisor.value.trim())
-          .filter(Boolean),
-        requiresLegalization: form.requiresLegalization,
-        isPrivate: form.isPrivate,
-        facultyAdvisor: form.hasFacultyAdvisor
-          ? form.facultyAdvisor.trim()
-          : undefined,
-        teamRequirements: form.teamRequirements.trim(),
-        expectedOutcomes: form.expectedOutcomes.trim() || undefined,
-        deliverables: form.deliverables
-          .map((deliverable) => deliverable.value.trim())
-          .filter(Boolean),
-        submissionConsentAt: consentAt,
-      });
+      await createProject(buildProjectPayload(form, userEmail, consentAt));
 
       setStatus("success");
       router.replace("/projects?propuestos=1");
@@ -676,668 +1699,25 @@ export default function SubmitProjectForm() {
             </div>
           </div>
 
-          {/* PASO 1 */}
-          {currentStep === 1 && (
-            <FieldSet>
-              <FieldLegend>
-                Información del proponente y origen
-              </FieldLegend>
-
-              <Field>
-                <FieldLabel htmlFor="namep">
-                  Nombre del responsable
-                </FieldLabel>
-
-                <Input
-                  id="namep"
-                  name="namep"
-                  value={form.namep}
-                  onChange={handleChange}
-                  maxLength={MAX_NAME_LENGTH}
-                  required
-                />
-
-                <CharacterCounter
-                  value={form.namep}
-                  maxLength={MAX_NAME_LENGTH}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="correo">
-                  Correo electrónico
-                </FieldLabel>
-
-                <Input
-                  type="email"
-                  id="correo"
-                  value={userEmail}
-                  readOnly
-                  aria-readonly="true"
-                  maxLength={MAX_TEXT_LENGTH}
-                />
-
-                <FieldDescription>
-                  Este correo se obtiene automáticamente de la cuenta con la que
-                  iniciaste sesión.
-                </FieldDescription>
-
-                <CharacterCounter
-                  value={userEmail}
-                  maxLength={MAX_TEXT_LENGTH}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel>
-                  Fuente del proyecto
-                </FieldLabel>
-
-                <div className="grid grid-cols-2 gap-2">
-                  {projectSources.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => handleSourceChange(option.value)}
-                      aria-pressed={form.source === option.value}
-                      className={`flex flex-col items-start gap-1 rounded-lg border p-2 text-left transition-colors ${
-                        form.source === option.value
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:bg-muted/50"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2 font-medium text-foreground">
-                        <span
-                          aria-hidden="true"
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border text-xs ${
-                            form.source === option.value
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-input"
-                          }`}
-                        >
-                          {form.source === option.value ? "✓" : ""}
-                        </span>
-                        {option.label}
-                      </span>
-
-                      <span className="text-xs leading-snug text-muted-foreground">
-                        {{
-                          external_entity: "Propuesta presentada por una empresa u organización externa a la UTB.",
-                          research: "Propuesta vinculada a un grupo o proyecto de investigación.",
-                          internal_need: "Propuesta que responde a una necesidad de una dependencia o área interna de la UTB.",
-                          social_impact: "Propuesta orientada a resolver una necesidad de una comunidad u organización social.",
-                        }[option.value]}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </Field>
-
-              <Field>
-                <FieldLabel>
-                  Área o ingeniería del proyecto
-                </FieldLabel>
-
-                <div className="space-y-2">
-                  {form.engineeringAreas.map((area, index) => (
-                    <div key={area.id} className="flex items-center gap-2">
-                      <Select
-                        value={area.value}
-                        onValueChange={(value) => {
-                          if (value !== null) {
-                            setForm((prev) => ({
-                              ...prev,
-                              engineeringAreas: prev.engineeringAreas.map((currentArea) =>
-                                currentArea.id === area.id
-                                  ? { ...currentArea, value }
-                                  : currentArea,
-                              ),
-                            }));
-                            setStepError(null);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecciona un área o ingeniería">
-                            {engineeringAreaOptions.find((engineering) => engineering.value === area.value)?.label}
-                          </SelectValue>
-                        </SelectTrigger>
-
-                        <SelectContent>
-                          {engineeringAreaOptions.map((engineering) => (
-                            <SelectItem
-                              key={engineering.value}
-                              value={engineering.value}
-                              disabled={form.engineeringAreas.some((item) => item.value === engineering.value) && area.value !== engineering.value}
-                            >
-                              {engineering.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      {form.engineeringAreas.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            setForm((prev) => ({
-                              ...prev,
-                              engineeringAreas: prev.engineeringAreas.filter((item) => item.id !== area.id),
-                            }));
-                            setStepError(null);
-                          }}
-                          aria-label={`Eliminar área ${index + 1}`}
-                        >
-                          <RiDeleteBinLine />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-fit"
-                  onClick={() => {
-                    setForm((prev) => ({
-                      ...prev,
-                      engineeringAreas: [...prev.engineeringAreas, { id: createClientId(), value: "" }],
-                    }));
-                  }}
-                >
-                  <RiAddLine />
-                  Agregar otra área
-                </Button>
-
-                <FieldDescription>
-                  Selecciona todas las áreas relacionadas con la propuesta. Cada área puede definir hitos mínimos adicionales.
-                </FieldDescription>
-              </Field>
-
-              <div className="space-y-4">
-              {form.source === "external_entity" && (
-                <Field>
-                  <FieldLabel htmlFor="sourceDetails">
-                    ¿De qué entidad externa proviene?
-                  </FieldLabel>
-
-                  <Textarea
-                    id="sourceDetails"
-                    name="sourceDetails"
-                    value={form.sourceDetails}
-                    onChange={handleChange}
-                    maxLength={MAX_TEXT_LENGTH}
-                    rows={3}
-                    placeholder="Indica el nombre de la empresa, organización o entidad y una breve descripción."
-                    required
-                  />
-
-                  <CharacterCounter
-                    value={form.sourceDetails}
-                    maxLength={MAX_TEXT_LENGTH}
-                  />
-                </Field>
-              )}
-
-              {form.source === "external_entity" && (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="nit">NIT de la empresa o entidad</FieldLabel>
-                    <Input
-                      id="nit"
-                      name="nit"
-                      value={form.nit}
-                      onChange={handleChange}
-                      maxLength={30}
-                      placeholder="NIT de la entidad externa"
-                      required
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="externalAdvisorName">Nombre del asesor externo</FieldLabel>
-                    <Input
-                      id="externalAdvisorName"
-                      name="externalAdvisorName"
-                      value={form.externalAdvisorName}
-                      onChange={handleChange}
-                      maxLength={MAX_NAME_LENGTH}
-                      required
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="externalAdvisorEmail">Correo del asesor externo</FieldLabel>
-                    <Input
-                      type="email"
-                      id="externalAdvisorEmail"
-                      name="externalAdvisorEmail"
-                      value={form.externalAdvisorEmail}
-                      onChange={handleChange}
-                      maxLength={MAX_TEXT_LENGTH}
-                      placeholder="asesor@empresa.com"
-                      required
-                    />
-                  </Field>
-                </>
-              )}
-
-              {form.source === "research" && (
-                <Field>
-                  <FieldLabel htmlFor="researchGroup">Grupo de investigación</FieldLabel>
-                  <Input
-                    id="researchGroup"
-                    name="researchGroup"
-                    value={form.researchGroup}
-                    onChange={handleChange}
-                    maxLength={MAX_TEXT_LENGTH}
-                    placeholder="Nombre del grupo de investigación"
-                    required
-                  />
-                </Field>
-              )}
-
-              {form.source === "social_impact" && (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="socialOrganization">Junta de Acción Comunal</FieldLabel>
-                    <Input
-                      id="socialOrganization"
-                      name="socialOrganization"
-                      value={form.socialOrganization}
-                      onChange={handleChange}
-                      maxLength={MAX_NAME_LENGTH}
-                      placeholder="Nombre de la Junta de Acción Comunal"
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="nit">NIT de la organización (opcional)</FieldLabel>
-                    <Input
-                      id="nit"
-                      name="nit"
-                      value={form.nit}
-                      onChange={handleChange}
-                      maxLength={30}
-                      placeholder="NIT de la Junta de Acción Comunal, si aplica"
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="socialLocation">Localización</FieldLabel>
-                    <Input
-                      id="socialLocation"
-                      name="socialLocation"
-                      value={form.socialLocation}
-                      onChange={handleChange}
-                      maxLength={MAX_TEXT_LENGTH}
-                      placeholder="Barrio, municipio o dirección de referencia"
-                      required
-                    />
-                  </Field>
-                </>
-              )}
-              </div>
-            </FieldSet>
-          )}
-
-          {/* PASO 2 */}
-          {currentStep === 2 && (
-            <FieldSet>
-              <FieldLegend>
-                Descripción y propósito del proyecto
-              </FieldLegend>
-
-              <Field>
-                <FieldLabel htmlFor="name">
-                  Nombre del proyecto
-                </FieldLabel>
-
-                <Input
-                  id="name"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  maxLength={MAX_NAME_LENGTH}
-                  required
-                />
-
-                <CharacterCounter
-                  value={form.name}
-                  maxLength={MAX_NAME_LENGTH}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="description">
-                  ¿Qué se propone realizar?
-                </FieldLabel>
-
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  maxLength={MAX_TEXT_LENGTH}
-                  rows={4}
-                  placeholder="Describe de forma concreta qué se desarrollará en el proyecto."
-                  required
-                />
-
-                <CharacterCounter
-                  value={form.description}
-                  maxLength={MAX_TEXT_LENGTH}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="context">
-                  Problema y justificación
-                </FieldLabel>
-
-                <Textarea
-                  id="context"
-                  name="context"
-                  value={form.context}
-                  onChange={handleChange}
-                  maxLength={MAX_TEXT_LENGTH}
-                  rows={4}
-                  placeholder="Explica qué problema se busca solucionar y por qué el proyecto es necesario."
-                  required
-                />
-
-                <CharacterCounter
-                  value={form.context}
-                  maxLength={MAX_TEXT_LENGTH}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="projectScope">Alcance específico del proyecto</FieldLabel>
-                <Textarea
-                  id="projectScope"
-                  name="projectScope"
-                  value={form.projectScope}
-                  onChange={handleChange}
-                  maxLength={MAX_TEXT_LENGTH}
-                  rows={4}
-                  placeholder="Delimita qué se necesita desarrollar, qué incluye la propuesta y cuáles son sus límites."
-                  required
-                />
-              </Field>
-
-              <div className="rounded-lg border bg-muted/40 p-4">
-                <p className="font-medium">Duración estimada</p>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Los proyectos se ejecutan durante{" "}
-                  <strong>
-                    8 meses aproximadamente
-                  </strong>
-                  .
-                </p>
-              </div>
-            </FieldSet>
-          )}
-
-          {/* PASO 3 */}
-          {currentStep === 3 && (
-            <FieldSet>
-              <FieldLegend>
-                Equipo, resultados y condiciones
-              </FieldLegend>
-
-              <Field>
-                <FieldLabel>Profesores de contacto</FieldLabel>
-
-                <FieldDescription>
-                  Puedes agregar uno o varios profesores de contacto para la propuesta.
-                </FieldDescription>
-
-                <div className="flex flex-col gap-2">
-                  {form.facultyAdvisors.map((advisor, index) => (
-                    <div key={advisor.id} className="flex items-center gap-2">
-                      <Input
-                        value={advisor.value}
-                        onChange={(event) =>
-                          handleFacultyAdvisorChange(advisor.id, event.target.value)
-                        }
-                        maxLength={MAX_TEXT_LENGTH}
-                        placeholder={`Profesor de contacto ${index + 1}`}
-                      />
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeFacultyAdvisor(advisor.id)}
-                        aria-label="Eliminar profesor de contacto"
-                      >
-                        <RiDeleteBinLine />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 w-fit"
-                  onClick={addFacultyAdvisor}
-                >
-                  <RiAddLine data-icon="inline-start" />
-                  Agregar profesor
-                </Button>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="teamRequirements">
-                  Estudiantes requeridos
-                </FieldLabel>
-
-                <FieldDescription>
-                  El proyecto requiere un mínimo de{" "}
-                  <strong>3 estudiantes</strong>. Indica qué tipo de
-                  estudiantes, carreras, conocimientos o perfiles se
-                  necesitan.
-                </FieldDescription>
-
-                <Textarea
-                  id="teamRequirements"
-                  name="teamRequirements"
-                  value={form.teamRequirements}
-                  onChange={handleChange}
-                  maxLength={MAX_TEXT_LENGTH}
-                  rows={4}
-                  placeholder="Ejemplo: mínimo 3 estudiantes de Ingeniería de Sistemas con conocimientos en desarrollo web."
-                  required
-                />
-
-                <CharacterCounter
-                  value={form.teamRequirements}
-                  maxLength={MAX_TEXT_LENGTH}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel>Entregables esperados</FieldLabel>
-
-                <FieldDescription>
-                  Indica los productos, documentos, resultados o componentes que
-                  deberán entregarse al finalizar el proyecto.
-                </FieldDescription>
-
-                <div className="flex flex-col gap-2">
-                  {form.deliverables.map((deliverable, index) => (
-                    <div
-                      key={deliverable.id}
-                      className="flex items-center gap-2"
-                    >
-                      <Input
-                        value={deliverable.value}
-                        onChange={(event) =>
-                          handleDeliverableChange(
-                            deliverable.id,
-                            event.target.value,
-                          )
-                        }
-                        maxLength={MAX_TEXT_LENGTH}
-                        placeholder={`Entregable ${index + 1}`}
-                      />
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          removeDeliverable(deliverable.id)
-                        }
-                        aria-label="Eliminar entregable"
-                      >
-                        <RiDeleteBinLine />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 w-fit"
-                  onClick={addDeliverable}
-                >
-                  <RiAddLine data-icon="inline-start" />
-                  Agregar entregable
-                </Button>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="expectedOutcomes">
-                  Resultados esperados
-                </FieldLabel>
-
-                <Textarea
-                  id="expectedOutcomes"
-                  name="expectedOutcomes"
-                  value={form.expectedOutcomes}
-                  onChange={handleChange}
-                  maxLength={MAX_TEXT_LENGTH}
-                  rows={3}
-                  placeholder="Describe qué se espera obtener al finalizar el proyecto."
-                />
-
-                <CharacterCounter
-                  value={form.expectedOutcomes}
-                  maxLength={MAX_TEXT_LENGTH}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="monetaryResources">
-                  ¿Se tienen contemplados recursos monetarios disponibles?
-                </FieldLabel>
-
-                <Select
-                  value={form.monetaryResources}
-                  onValueChange={(value) => {
-                    if (value !== null) {
-                      setForm((prev) => ({
-                        ...prev,
-                        monetaryResources: value,
-                        monetaryResourcesDescription:
-                          value === "yes" ? prev.monetaryResourcesDescription : "",
-                      }));
-                    }
-                  }}
-                >
-                  <SelectTrigger id="monetaryResources" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="yes">Sí</SelectItem>
-                    <SelectItem value="no">No</SelectItem>
-                    <SelectItem value="na">N/A</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              {form.monetaryResources === "yes" && (
-                <Field>
-                  <FieldLabel htmlFor="monetaryResourcesDescription">
-                    Descripción de los recursos monetarios
-                  </FieldLabel>
-                  <Textarea
-                    id="monetaryResourcesDescription"
-                    name="monetaryResourcesDescription"
-                    value={form.monetaryResourcesDescription}
-                    onChange={handleChange}
-                    maxLength={MAX_TEXT_LENGTH}
-                    rows={3}
-                    placeholder="Describe el tipo de recursos disponibles y para qué se utilizarán."
-                    required
-                  />
-                </Field>
-              )}
-
-              <Field orientation="horizontal">
-                <Checkbox
-                  id="requiresLegalization"
-                  checked={form.requiresLegalization}
-                  onCheckedChange={(checked) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      requiresLegalization: checked === true,
-                    }))
-                  }
-                />
-
-                <FieldContent>
-                  <FieldLabel
-                    htmlFor="requiresLegalization"
-                    className="font-normal"
-                  >
-                    Requiere proceso de legalización
-                  </FieldLabel>
-
-                  <FieldDescription>
-                    Marca esta opción si se requieren convenios,
-                    contratos u otros trámites legales.
-                  </FieldDescription>
-                </FieldContent>
-              </Field>
-
-              <Field orientation="horizontal">
-                <Checkbox
-                  id="isPrivate"
-                  checked={form.isPrivate}
-                  onCheckedChange={(checked) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      isPrivate: checked === true,
-                    }))
-                  }
-                />
-
-                <FieldContent>
-                  <FieldLabel
-                    htmlFor="isPrivate"
-                    className="font-normal"
-                  >
-                    Proyecto privado
-                  </FieldLabel>
-
-                  <FieldDescription>
-                    Si está marcado, el proyecto permanecerá privado
-                    según las reglas de visibilidad de la plataforma.
-                  </FieldDescription>
-                </FieldContent>
-              </Field>
-            </FieldSet>
-          )}
+          <ProjectFormSteps
+            form={form}
+            currentStep={currentStep}
+            userEmail={userEmail}
+            stepError={stepError}
+            programSchools={programSchools}
+            programCatalogLoading={programCatalogLoading}
+            programCatalogError={programCatalogError}
+            handleChange={handleChange}
+            handleSourceChange={handleSourceChange}
+            handleFacultyAdvisorChange={handleFacultyAdvisorChange}
+            removeFacultyAdvisor={removeFacultyAdvisor}
+            addFacultyAdvisor={addFacultyAdvisor}
+            handleDeliverableChange={handleDeliverableChange}
+            removeDeliverable={removeDeliverable}
+            addDeliverable={addDeliverable}
+            setForm={setForm}
+            setStepError={setStepError}
+          />
 
           {stepError && (
             <Alert variant="destructive">
