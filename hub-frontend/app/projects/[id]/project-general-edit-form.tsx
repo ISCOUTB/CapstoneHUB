@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import ProjectProgramRequirements from "../../components/project-program-requirements";
 
 const projectSources: ReadonlyArray<{
   value: ProjectSource;
@@ -487,131 +488,26 @@ export default function ProjectGeneralEditForm({
               </p>
             ) : null}
 
-            {form.programRequirements.map((requirement, index) => {
-              const selectedProgram = programSchools
-                .flatMap((school) =>
-                  school.programs.map((program) => ({
-                    ...program,
-                    schoolName: school.name,
-                  })),
-                )
-                .find((program) => program.id === requirement.programId);
-
-              return (
-                <div
-                  key={requirement.id}
-                  className="grid gap-3 rounded-xl border p-3 sm:grid-cols-[minmax(0,1fr)_9rem_auto] sm:items-end"
-                >
-                  <Field>
-                    <FieldLabel htmlFor={`edit-program-${requirement.id}`}>
-                      Programa {index + 1}
-                    </FieldLabel>
-                    <Select
-                      value={requirement.programId}
-                      onValueChange={(value) => {
-                        if (value === null) return;
-                        const program = programSchools
-                          .flatMap((school) =>
-                            school.programs.map((item) => ({
-                              ...item,
-                              schoolName: school.name,
-                            })),
-                          )
-                          .find((item) => item.id === value);
-                        updateProgramRequirement(requirement.id, {
-                          programId: value,
-                          programName: program?.name ?? value,
-                          schoolName: program?.schoolName ?? "",
-                        });
-                      }}
-                      disabled={saving || programCatalogLoading || Boolean(programCatalogError)}
-                    >
-                      <SelectTrigger
-                        id={`edit-program-${requirement.id}`}
-                        className="w-full"
-                      >
-                        <SelectValue placeholder="Selecciona un programa">
-                          {selectedProgram
-                            ? `${selectedProgram.name} — ${selectedProgram.schoolName}`
-                            : requirement.programName
-                              ? `${requirement.programName} — ${requirement.schoolName}`
-                              : undefined}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {programSchools.map((school) =>
-                          school.programs.map((program) => {
-                            const selectedElsewhere =
-                              form.programRequirements.some(
-                                (item) =>
-                                  item.programId === program.id &&
-                                  item.id !== requirement.id,
-                              );
-                            return (
-                              <SelectItem
-                                key={program.id}
-                                value={program.id}
-                                disabled={selectedElsewhere}
-                              >
-                                {program.name} — {school.name}
-                              </SelectItem>
-                            );
-                          }),
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor={`edit-students-${requirement.id}`}>
-                      Estudiantes
-                    </FieldLabel>
-                    <Input
-                      id={`edit-students-${requirement.id}`}
-                      type="number"
-                      min={1}
-                      step={1}
-                      inputMode="numeric"
-                      value={requirement.studentCount}
-                      onChange={(event) =>
-                        updateProgramRequirement(requirement.id, {
-                          studentCount: event.target.value,
-                        })
-                      }
-                      disabled={saving}
-                    />
-                  </Field>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() => removeProgramRequirement(requirement.id)}
-                    aria-label={`Eliminar programa ${index + 1}`}
-                    disabled={saving}
-                  >
-                    <RiDeleteBinLine />
-                  </Button>
-                </div>
-              );
-            })}
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-fit"
-              onClick={addProgramRequirement}
-              disabled={
-                saving ||
-                programCatalogLoading ||
-                Boolean(programCatalogError) ||
-                form.programRequirements.length >= 4
+            <ProjectProgramRequirements
+              items={form.programRequirements}
+              schools={programSchools}
+              idPrefix="edit"
+              disabled={saving || programCatalogLoading || Boolean(programCatalogError)}
+              onProgramChange={(id, program) =>
+                updateProgramRequirement(id, {
+                  programId: program.programId,
+                  programName: program.programName,
+                  schoolName: program.schoolName,
+                })
               }
-            >
-              <RiAddLine data-icon="inline-start" />
-              Agregar programa
-            </Button>
+              onStudentCountChange={(id, value) =>
+                updateProgramRequirement(id, {
+                  studentCount: value,
+                })
+              }
+              onRemove={removeProgramRequirement}
+              onAdd={addProgramRequirement}
+            />
 
             <FieldDescription>
               {form.programRequirements.length}/4 programas asociados. Si el proyecto todavía no tiene programas, puedes agregarlos sin afectar sus demás datos.

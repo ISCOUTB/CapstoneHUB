@@ -7,6 +7,7 @@ import { createProject, getProjectProgramsCatalog } from "../services/projects";
 import { type ProjectProgramSchool, type ProjectSource } from "../services/schemas";
 import { useAuth } from "./auth-provider";
 import AccessNotice from "./access-notice";
+import ProjectProgramRequirements from "./project-program-requirements";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -1175,136 +1176,46 @@ export default function SubmitProjectForm() {
                   </Alert>
                 ) : null}
 
-                <div className="space-y-3">
-                  {form.programRequirements.map((requirement, index) => {
-                    const selectedProgram = programSchools
-                      .flatMap((school) =>
-                        school.programs.map((program) => ({
-                          ...program,
-                          schoolName: school.name,
-                        })),
-                      )
-                      .find((program) => program.id === requirement.programId);
-
-                    return (
-                      <div
-                        key={requirement.id}
-                        className="grid gap-3 rounded-xl border p-3 sm:grid-cols-[minmax(0,1fr)_9rem_auto] sm:items-end"
-                      >
-                        <Field>
-                          <FieldLabel htmlFor={`program-${requirement.id}`}>
-                            Programa {index + 1}
-                          </FieldLabel>
-                          <Select
-                            value={requirement.programId}
-                            onValueChange={(value) => {
-                              if (value === null) return;
-                              setForm((previous) => ({
-                                ...previous,
-                                programRequirements: previous.programRequirements.map(
-                                  (current) =>
-                                    current.id === requirement.id
-                                      ? { ...current, programId: value }
-                                      : current,
-                                ),
-                              }));
-                              setStepError(null);
-                            }}
-                            disabled={programCatalogLoading || Boolean(programCatalogError)}
-                          >
-                            <SelectTrigger
-                              id={`program-${requirement.id}`}
-                              className={`w-full ${stepError && !requirement.programId ? "border-destructive focus:ring-destructive" : ""}`}
-                              aria-invalid={Boolean(stepError && !requirement.programId)}
-                            >
-                              <SelectValue placeholder="Selecciona un programa">
-                                {selectedProgram
-                                  ? `${selectedProgram.name} — ${selectedProgram.schoolName}`
-                                  : undefined}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {programSchools.map((school) =>
-                                school.programs.map((program) => {
-                                  const selectedElsewhere =
-                                    form.programRequirements.some(
-                                      (item) =>
-                                        item.programId === program.id &&
-                                        item.id !== requirement.id,
-                                    );
-                                  return (
-                                    <SelectItem
-                                      key={program.id}
-                                      value={program.id}
-                                      disabled={selectedElsewhere}
-                                    >
-                                      {program.name} — {school.name}
-                                    </SelectItem>
-                                  );
-                                }),
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </Field>
-
-                        <Field>
-                          <FieldLabel htmlFor={`student-count-${requirement.id}`}>
-                            Estudiantes
-                          </FieldLabel>
-                          <Input
-                            id={`student-count-${requirement.id}`}
-                            type="number"
-                            min={1}
-                            step={1}
-                            inputMode="numeric"
-                            value={requirement.studentCount}
-                            aria-invalid={Boolean(stepError && (!requirement.studentCount.trim() || !Number.isInteger(Number(requirement.studentCount)) || Number(requirement.studentCount) < 1))}
-                            className={stepError && (!requirement.studentCount.trim() || !Number.isInteger(Number(requirement.studentCount)) || Number(requirement.studentCount) < 1) ? "border-destructive focus-visible:ring-destructive" : ""}
-                            onChange={(event) => {
-                              setForm((previous) => ({
-                                ...previous,
-                                programRequirements: previous.programRequirements.map(
-                                  (current) =>
-                                    current.id === requirement.id
-                                      ? {
-                                          ...current,
-                                          studentCount: event.target.value,
-                                        }
-                                      : current,
-                                ),
-                              }));
-                              setStepError(null);
-                            }}
-                          />
-                        </Field>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            setForm((previous) => ({
-                              ...previous,
-                              programRequirements: previous.programRequirements.filter(
-                                (item) => item.id !== requirement.id,
-                              ),
-                            }));
-                            setStepError(null);
-                          }}
-                          aria-label={`Eliminar programa ${index + 1}`}
-                        >
-                          <RiDeleteBinLine />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-fit"
-                  onClick={() => {
+                <ProjectProgramRequirements
+                  items={form.programRequirements}
+                  schools={programSchools}
+                  idPrefix="submit"
+                  disabled={programCatalogLoading || Boolean(programCatalogError)}
+                  invalid={Boolean(stepError)}
+                  onProgramChange={(id, program) => {
+                    setForm((previous) => ({
+                      ...previous,
+                      programRequirements: previous.programRequirements.map(
+                        (item) =>
+                          item.id === id
+                            ? { ...item, programId: program.programId }
+                            : item,
+                      ),
+                    }));
+                    setStepError(null);
+                  }}
+                  onStudentCountChange={(id, value) => {
+                    setForm((previous) => ({
+                      ...previous,
+                      programRequirements: previous.programRequirements.map(
+                        (item) =>
+                          item.id === id
+                            ? { ...item, studentCount: value }
+                            : item,
+                      ),
+                    }));
+                    setStepError(null);
+                  }}
+                  onRemove={(id) => {
+                    setForm((previous) => ({
+                      ...previous,
+                      programRequirements: previous.programRequirements.filter(
+                        (item) => item.id !== id,
+                      ),
+                    }));
+                    setStepError(null);
+                  }}
+                  onAdd={() => {
                     setForm((previous) => ({
                       ...previous,
                       programRequirements: [
@@ -1318,15 +1229,7 @@ export default function SubmitProjectForm() {
                     }));
                     setStepError(null);
                   }}
-                  disabled={
-                    programCatalogLoading ||
-                    Boolean(programCatalogError) ||
-                    form.programRequirements.length >= 4
-                  }
-                >
-                  <RiAddLine data-icon="inline-start" />
-                  Agregar programa
-                </Button>
+                />
 
                 <FieldDescription>
                   {form.programRequirements.length}/4 programas seleccionados. Cada programa se asocia automáticamente con su escuela.
