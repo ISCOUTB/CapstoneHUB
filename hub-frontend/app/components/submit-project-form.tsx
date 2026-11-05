@@ -373,49 +373,67 @@ function buildProjectPayload(
 }
 
 type ProjectFormStepsProps = {
-  form: FormState;
-  currentStep: number;
-  userEmail: string;
-  stepError: string | null;
-  programSchools: ProjectProgramSchool[];
-  programCatalogLoading: boolean;
-  programCatalogError: string | null;
-  handleChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleSourceChange: (value: string) => void;
-  handleFacultyAdvisorChange: (id: string, value: string) => void;
-  removeFacultyAdvisor: (id: string) => void;
-  addFacultyAdvisor: () => void;
-  handleDeliverableChange: (id: string, value: string) => void;
-  removeDeliverable: (id: string) => void;
-  addDeliverable: () => void;
-  setForm: Dispatch<SetStateAction<FormState>>;
-  setStepError: (value: string | null) => void;
+  readonly form: FormState;
+  readonly currentStep: number;
+  readonly userEmail: string;
+  readonly stepError: string | null;
+  readonly programSchools: ProjectProgramSchool[];
+  readonly programCatalogLoading: boolean;
+  readonly programCatalogError: string | null;
+  readonly handleChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  readonly handleSourceChange: (value: string) => void;
+  readonly handleFacultyAdvisorChange: (id: string, value: string) => void;
+  readonly removeFacultyAdvisor: (id: string) => void;
+  readonly addFacultyAdvisor: () => void;
+  readonly handleDeliverableChange: (id: string, value: string) => void;
+  readonly removeDeliverable: (id: string) => void;
+  readonly addDeliverable: () => void;
+  readonly setForm: Dispatch<SetStateAction<FormState>>;
+  readonly setStepError: (value: string | null) => void;
 };
 
-function ProjectFormSteps({
+type ProjectFormStepOneProps = Pick<
+  ProjectFormStepsProps,
+  | "form"
+  | "userEmail"
+  | "stepError"
+  | "handleChange"
+  | "handleSourceChange"
+  | "setForm"
+  | "setStepError"
+>;
+
+type ProjectFormStepTwoProps = Pick<ProjectFormStepsProps, "form" | "handleChange">;
+
+type ProjectFormStepThreeProps = Pick<
+  ProjectFormStepsProps,
+  | "form"
+  | "stepError"
+  | "programSchools"
+  | "programCatalogLoading"
+  | "programCatalogError"
+  | "handleChange"
+  | "handleFacultyAdvisorChange"
+  | "removeFacultyAdvisor"
+  | "addFacultyAdvisor"
+  | "handleDeliverableChange"
+  | "removeDeliverable"
+  | "addDeliverable"
+  | "setForm"
+  | "setStepError"
+>;
+
+function ProjectFormStepOne({
   form,
-  currentStep,
   userEmail,
   stepError,
-  programSchools,
-  programCatalogLoading,
-  programCatalogError,
   handleChange,
   handleSourceChange,
-  handleFacultyAdvisorChange,
-  removeFacultyAdvisor,
-  addFacultyAdvisor,
-  handleDeliverableChange,
-  removeDeliverable,
-  addDeliverable,
   setForm,
   setStepError,
-}: ProjectFormStepsProps) {
+}: ProjectFormStepOneProps) {
   return (
-    <>
-          {/* PASO 1 */}
-          {currentStep === 1 && (
-            <FieldSet>
+<FieldSet>
               <FieldLegend>
                 Información del proponente y origen
               </FieldLegend>
@@ -661,11 +679,12 @@ function ProjectFormSteps({
               )}
               </div>
             </FieldSet>
-          )}
+  );
+}
 
-          {/* PASO 2 */}
-          {currentStep === 2 && (
-            <FieldSet>
+function ProjectFormStepTwo({ form, handleChange }: ProjectFormStepTwoProps) {
+  return (
+<FieldSet>
               <FieldLegend>
                 Descripción y propósito del proyecto
               </FieldLegend>
@@ -760,11 +779,27 @@ function ProjectFormSteps({
                 </p>
               </div>
             </FieldSet>
-          )}
+  );
+}
 
-          {/* PASO 3 */}
-          {currentStep === 3 && (
-            <FieldSet>
+function ProjectFormStepThree({
+  form,
+  stepError,
+  programSchools,
+  programCatalogLoading,
+  programCatalogError,
+  handleChange,
+  handleFacultyAdvisorChange,
+  removeFacultyAdvisor,
+  addFacultyAdvisor,
+  handleDeliverableChange,
+  removeDeliverable,
+  addDeliverable,
+  setForm,
+  setStepError,
+}: ProjectFormStepThreeProps) {
+  return (
+<FieldSet>
               <FieldLegend>
                 Equipo, resultados y condiciones
               </FieldLegend>
@@ -1093,7 +1128,62 @@ function ProjectFormSteps({
                 </FieldContent>
               </Field>
             </FieldSet>
-          )}
+  );
+}
+
+function ProjectFormSteps({
+  form,
+  currentStep,
+  userEmail,
+  stepError,
+  programSchools,
+  programCatalogLoading,
+  programCatalogError,
+  handleChange,
+  handleSourceChange,
+  handleFacultyAdvisorChange,
+  removeFacultyAdvisor,
+  addFacultyAdvisor,
+  handleDeliverableChange,
+  removeDeliverable,
+  addDeliverable,
+  setForm,
+  setStepError,
+}: ProjectFormStepsProps) {
+  return (
+    <>
+      {currentStep === 1 && (
+        <ProjectFormStepOne
+          form={form}
+          userEmail={userEmail}
+          stepError={stepError}
+          handleChange={handleChange}
+          handleSourceChange={handleSourceChange}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
+      {currentStep === 2 && (
+        <ProjectFormStepTwo form={form} handleChange={handleChange} />
+      )}
+      {currentStep === 3 && (
+        <ProjectFormStepThree
+          form={form}
+          stepError={stepError}
+          programSchools={programSchools}
+          programCatalogLoading={programCatalogLoading}
+          programCatalogError={programCatalogError}
+          handleChange={handleChange}
+          handleFacultyAdvisorChange={handleFacultyAdvisorChange}
+          removeFacultyAdvisor={removeFacultyAdvisor}
+          addFacultyAdvisor={addFacultyAdvisor}
+          handleDeliverableChange={handleDeliverableChange}
+          removeDeliverable={removeDeliverable}
+          addDeliverable={addDeliverable}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
     </>
   );
 }
