@@ -423,68 +423,11 @@ type ProjectFormStepThreeProps = Pick<
   | "setStepError"
 >;
 
-function ProjectFormStepOne({
-  form,
-  userEmail,
-  stepError,
-  handleChange,
-  handleSourceChange,
-  setForm,
-  setStepError,
-}: ProjectFormStepOneProps) {
+
+type ProjectSourceSelectorProps = Pick<ProjectFormStepOneProps, "form" | "handleSourceChange">;
+
+function ProjectSourceSelector({ form, handleSourceChange }: ProjectSourceSelectorProps) {
   return (
-<FieldSet>
-              <FieldLegend>
-                Información del proponente y origen
-              </FieldLegend>
-
-              <Field>
-                <FieldLabel htmlFor="namep">
-                  Nombre del responsable
-                </FieldLabel>
-
-                <Input
-                  id="namep"
-                  name="namep"
-                  value={form.namep}
-                  onChange={handleChange}
-                  maxLength={MAX_NAME_LENGTH}
-                  required
-                  aria-invalid={Boolean(stepError && !form.namep.trim())}
-                  className={stepError && !form.namep.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
-                />
-
-                <CharacterCounter
-                  value={form.namep}
-                  maxLength={MAX_NAME_LENGTH}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="correo">
-                  Correo electrónico
-                </FieldLabel>
-
-                <Input
-                  type="email"
-                  id="correo"
-                  value={userEmail}
-                  readOnly
-                  aria-readonly="true"
-                  maxLength={MAX_TEXT_LENGTH}
-                />
-
-                <FieldDescription>
-                  Este correo se obtiene automáticamente de la cuenta con la que
-                  iniciaste sesión.
-                </FieldDescription>
-
-                <CharacterCounter
-                  value={userEmail}
-                  maxLength={MAX_TEXT_LENGTH}
-                />
-              </Field>
-
               <Field>
                 <FieldLabel>
                   Fuente del proyecto
@@ -529,7 +472,22 @@ function ProjectFormStepOne({
                   ))}
                 </div>
               </Field>
+  );
+}
 
+type ProjectSourceFieldsProps = Pick<
+  ProjectFormStepOneProps,
+  "form" | "stepError" | "handleChange" | "setForm" | "setStepError"
+>;
+
+function ProjectSourceFields({
+  form,
+  stepError,
+  handleChange,
+  setForm,
+  setStepError,
+}: ProjectSourceFieldsProps) {
+  return (
               <div className="space-y-4">
               {form.source === "external_entity" && (
                 <Field>
@@ -678,6 +636,83 @@ function ProjectFormStepOne({
                 </>
               )}
               </div>
+  );
+}
+
+function ProjectFormStepOne({
+  form,
+  userEmail,
+  stepError,
+  handleChange,
+  handleSourceChange,
+  setForm,
+  setStepError,
+}: ProjectFormStepOneProps) {
+  return (
+<FieldSet>
+              <FieldLegend>
+                Información del proponente y origen
+              </FieldLegend>
+
+              <Field>
+                <FieldLabel htmlFor="namep">
+                  Nombre del responsable
+                </FieldLabel>
+
+                <Input
+                  id="namep"
+                  name="namep"
+                  value={form.namep}
+                  onChange={handleChange}
+                  maxLength={MAX_NAME_LENGTH}
+                  required
+                  aria-invalid={Boolean(stepError && !form.namep.trim())}
+                  className={stepError && !form.namep.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+
+                <CharacterCounter
+                  value={form.namep}
+                  maxLength={MAX_NAME_LENGTH}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="correo">
+                  Correo electrónico
+                </FieldLabel>
+
+                <Input
+                  type="email"
+                  id="correo"
+                  value={userEmail}
+                  readOnly
+                  aria-readonly="true"
+                  maxLength={MAX_TEXT_LENGTH}
+                />
+
+                <FieldDescription>
+                  Este correo se obtiene automáticamente de la cuenta con la que
+                  iniciaste sesión.
+                </FieldDescription>
+
+                <CharacterCounter
+                  value={userEmail}
+                  maxLength={MAX_TEXT_LENGTH}
+                />
+              </Field>
+
+              <ProjectSourceSelector
+                form={form}
+                handleSourceChange={handleSourceChange}
+              />
+
+              <ProjectSourceFields
+                form={form}
+                stepError={stepError}
+                handleChange={handleChange}
+                setForm={setForm}
+                setStepError={setStepError}
+              />
             </FieldSet>
   );
 }
