@@ -217,7 +217,7 @@ function validateStepOne(form: FormState): string | null {
   if (!form.namep.trim()) {
     return "Ingresa el nombre del responsable.";
   }
-  if (form.nit && !/^\\d{1,12}$/.test(form.nit)) {
+  if (form.nit && !/^\d{1,12}$/.test(form.nit)) {
     return "El NIT debe contener únicamente números y tener máximo 12 dígitos.";
   }
   return validateSourceSpecificFields(form);
