@@ -480,6 +480,16 @@ type ProjectSourceFieldsProps = Pick<
   "form" | "stepError" | "handleChange" | "setForm" | "setStepError"
 >;
 
+function updateNit(
+  event: ChangeEvent<HTMLInputElement>,
+  setForm: Dispatch<SetStateAction<FormState>>,
+  setStepError: (value: string | null) => void,
+) {
+  const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
+  setForm((previous) => ({ ...previous, nit: numericValue }));
+  setStepError(null);
+}
+
 function getInvalidFieldClassName(isInvalid: boolean): string {
   return isInvalid
     ? "border-destructive focus-visible:ring-destructive"
@@ -505,12 +515,6 @@ function ProjectExternalEntityFields({
     (stepError && !form.externalAdvisorEmail.trim()) ||
       (form.externalAdvisorEmail && !isValidEmail(form.externalAdvisorEmail)),
   );
-
-  function handleNitChange(event: ChangeEvent<HTMLInputElement>) {
-    const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
-    setForm((previous) => ({ ...previous, nit: numericValue }));
-    setStepError(null);
-  }
 
   return (
     <>
@@ -542,7 +546,7 @@ function ProjectExternalEntityFields({
           id="nit"
           name="nit"
           value={form.nit}
-          onChange={handleNitChange}
+          onChange={(event) => updateNit(event, setForm, setStepError)}
           inputMode="numeric"
           maxLength={12}
           placeholder="NIT de la entidad externa"
@@ -632,12 +636,6 @@ function ProjectSocialImpactFields({
     stepError && !form.socialLocation.trim(),
   );
 
-  function handleNitChange(event: ChangeEvent<HTMLInputElement>) {
-    const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
-    setForm((previous) => ({ ...previous, nit: numericValue }));
-    setStepError(null);
-  }
-
   return (
     <>
       <Field>
@@ -662,7 +660,7 @@ function ProjectSocialImpactFields({
           id="nit"
           name="nit"
           value={form.nit}
-          onChange={handleNitChange}
+          onChange={(event) => updateNit(event, setForm, setStepError)}
           inputMode="numeric"
           maxLength={12}
           placeholder="NIT de la Junta de Acción Comunal, si aplica"
