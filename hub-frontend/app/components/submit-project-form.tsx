@@ -480,6 +480,217 @@ type ProjectSourceFieldsProps = Pick<
   "form" | "stepError" | "handleChange" | "setForm" | "setStepError"
 >;
 
+function getInvalidFieldClassName(isInvalid: boolean): string {
+  return isInvalid
+    ? "border-destructive focus-visible:ring-destructive"
+    : "";
+}
+
+function ProjectExternalEntityFields({
+  form,
+  stepError,
+  handleChange,
+  setForm,
+  setStepError,
+}: ProjectSourceFieldsProps) {
+  const sourceDetailsInvalid = Boolean(stepError && !form.sourceDetails.trim());
+  const nitInvalid = Boolean(
+    (stepError && !form.nit.trim()) ||
+      (form.nit && !/^\d{1,12}$/.test(form.nit)),
+  );
+  const advisorNameInvalid = Boolean(
+    stepError && !form.externalAdvisorName.trim(),
+  );
+  const advisorEmailInvalid = Boolean(
+    (stepError && !form.externalAdvisorEmail.trim()) ||
+      (form.externalAdvisorEmail && !isValidEmail(form.externalAdvisorEmail)),
+  );
+
+  function handleNitChange(event: ChangeEvent<HTMLInputElement>) {
+    const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
+    setForm((previous) => ({ ...previous, nit: numericValue }));
+    setStepError(null);
+  }
+
+  return (
+    <>
+      <Field>
+        <FieldLabel htmlFor="sourceDetails">
+          ¿De qué entidad externa proviene?
+        </FieldLabel>
+        <Textarea
+          id="sourceDetails"
+          name="sourceDetails"
+          value={form.sourceDetails}
+          onChange={handleChange}
+          maxLength={MAX_TEXT_LENGTH}
+          rows={3}
+          placeholder="Indica el nombre de la empresa, organización o entidad y una breve descripción."
+          required
+          aria-invalid={sourceDetailsInvalid}
+          className={getInvalidFieldClassName(sourceDetailsInvalid)}
+        />
+        <CharacterCounter
+          value={form.sourceDetails}
+          maxLength={MAX_TEXT_LENGTH}
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="nit">NIT de la empresa o entidad</FieldLabel>
+        <Input
+          id="nit"
+          name="nit"
+          value={form.nit}
+          onChange={handleNitChange}
+          inputMode="numeric"
+          maxLength={12}
+          placeholder="NIT de la entidad externa"
+          aria-invalid={nitInvalid}
+          className={getInvalidFieldClassName(nitInvalid)}
+          required
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="externalAdvisorName">
+          Nombre del asesor externo
+        </FieldLabel>
+        <Input
+          id="externalAdvisorName"
+          name="externalAdvisorName"
+          value={form.externalAdvisorName}
+          onChange={handleChange}
+          maxLength={MAX_NAME_LENGTH}
+          required
+          aria-invalid={advisorNameInvalid}
+          className={getInvalidFieldClassName(advisorNameInvalid)}
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="externalAdvisorEmail">
+          Correo del asesor externo
+        </FieldLabel>
+        <Input
+          type="email"
+          id="externalAdvisorEmail"
+          name="externalAdvisorEmail"
+          value={form.externalAdvisorEmail}
+          onChange={handleChange}
+          maxLength={MAX_TEXT_LENGTH}
+          placeholder="asesor@empresa.com"
+          required
+          aria-invalid={advisorEmailInvalid}
+          className={getInvalidFieldClassName(advisorEmailInvalid)}
+        />
+      </Field>
+    </>
+  );
+}
+
+function ProjectResearchFields({
+  form,
+  stepError,
+  handleChange,
+}: ProjectSourceFieldsProps) {
+  const researchGroupInvalid = Boolean(
+    stepError && !form.researchGroup.trim(),
+  );
+
+  return (
+    <Field>
+      <FieldLabel htmlFor="researchGroup">
+        Grupo de investigación
+      </FieldLabel>
+      <Input
+        id="researchGroup"
+        name="researchGroup"
+        value={form.researchGroup}
+        onChange={handleChange}
+        maxLength={MAX_TEXT_LENGTH}
+        placeholder="Nombre del grupo de investigación"
+        required
+        aria-invalid={researchGroupInvalid}
+        className={getInvalidFieldClassName(researchGroupInvalid)}
+      />
+    </Field>
+  );
+}
+
+function ProjectSocialImpactFields({
+  form,
+  stepError,
+  handleChange,
+  setForm,
+  setStepError,
+}: ProjectSourceFieldsProps) {
+  const nitInvalid = Boolean(
+    form.nit && !/^\d{1,12}$/.test(form.nit),
+  );
+  const socialLocationInvalid = Boolean(
+    stepError && !form.socialLocation.trim(),
+  );
+
+  function handleNitChange(event: ChangeEvent<HTMLInputElement>) {
+    const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
+    setForm((previous) => ({ ...previous, nit: numericValue }));
+    setStepError(null);
+  }
+
+  return (
+    <>
+      <Field>
+        <FieldLabel htmlFor="socialOrganization">
+          Junta de Acción Comunal
+        </FieldLabel>
+        <Input
+          id="socialOrganization"
+          name="socialOrganization"
+          value={form.socialOrganization}
+          onChange={handleChange}
+          maxLength={MAX_NAME_LENGTH}
+          placeholder="Nombre de la Junta de Acción Comunal"
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="nit">
+          NIT de la organización (opcional)
+        </FieldLabel>
+        <Input
+          id="nit"
+          name="nit"
+          value={form.nit}
+          onChange={handleNitChange}
+          inputMode="numeric"
+          maxLength={12}
+          placeholder="NIT de la Junta de Acción Comunal, si aplica"
+          aria-invalid={nitInvalid}
+          className={getInvalidFieldClassName(nitInvalid)}
+        />
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="socialLocation">
+          Localización
+        </FieldLabel>
+        <Input
+          id="socialLocation"
+          name="socialLocation"
+          value={form.socialLocation}
+          onChange={handleChange}
+          maxLength={MAX_TEXT_LENGTH}
+          placeholder="Barrio, municipio o dirección de referencia"
+          required
+          aria-invalid={socialLocationInvalid}
+          className={getInvalidFieldClassName(socialLocationInvalid)}
+        />
+      </Field>
+    </>
+  );
+}
+
 function ProjectSourceFields({
   form,
   stepError,
@@ -488,154 +699,37 @@ function ProjectSourceFields({
   setStepError,
 }: ProjectSourceFieldsProps) {
   return (
-              <div className="space-y-4">
-              {form.source === "external_entity" && (
-                <Field>
-                  <FieldLabel htmlFor="sourceDetails">
-                    ¿De qué entidad externa proviene?
-                  </FieldLabel>
+    <div className="space-y-4">
+      {form.source === "external_entity" && (
+        <ProjectExternalEntityFields
+          form={form}
+          stepError={stepError}
+          handleChange={handleChange}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
 
-                  <Textarea
-                    id="sourceDetails"
-                    name="sourceDetails"
-                    value={form.sourceDetails}
-                    onChange={handleChange}
-                    maxLength={MAX_TEXT_LENGTH}
-                    rows={3}
-                    placeholder="Indica el nombre de la empresa, organización o entidad y una breve descripción."
-                    required
-                    aria-invalid={Boolean(stepError && !form.sourceDetails.trim())}
-                    className={stepError && !form.sourceDetails.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
-                  />
+      {form.source === "research" && (
+        <ProjectResearchFields
+          form={form}
+          stepError={stepError}
+          handleChange={handleChange}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
 
-                  <CharacterCounter
-                    value={form.sourceDetails}
-                    maxLength={MAX_TEXT_LENGTH}
-                  />
-                </Field>
-              )}
-
-              {form.source === "external_entity" && (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="nit">NIT de la empresa o entidad</FieldLabel>
-                    <Input
-                      id="nit"
-                      name="nit"
-                      value={form.nit}
-                      onChange={(event) => {
-                        const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
-                        setForm((previous) => ({ ...previous, nit: numericValue }));
-                        setStepError(null);
-                      }}
-                      inputMode="numeric"
-                      maxLength={12}
-                      placeholder="NIT de la entidad externa"
-                      aria-invalid={Boolean((stepError && form.source === "external_entity" && !form.nit.trim()) || (form.nit && !/^\d{1,12}$/.test(form.nit)))}
-                      className={(stepError && form.source === "external_entity" && !form.nit.trim()) || (form.nit && !/^\d{1,12}$/.test(form.nit)) ? "border-destructive focus-visible:ring-destructive" : ""}
-                      required
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="externalAdvisorName">Nombre del asesor externo</FieldLabel>
-                    <Input
-                      id="externalAdvisorName"
-                      name="externalAdvisorName"
-                      value={form.externalAdvisorName}
-                      onChange={handleChange}
-                      maxLength={MAX_NAME_LENGTH}
-                      required
-                      aria-invalid={Boolean(stepError && !form.externalAdvisorName.trim())}
-                      className={stepError && !form.externalAdvisorName.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="externalAdvisorEmail">Correo del asesor externo</FieldLabel>
-                    <Input
-                      type="email"
-                      id="externalAdvisorEmail"
-                      name="externalAdvisorEmail"
-                      value={form.externalAdvisorEmail}
-                      onChange={handleChange}
-                      maxLength={MAX_TEXT_LENGTH}
-                      placeholder="asesor@empresa.com"
-                      required
-                      aria-invalid={Boolean((stepError && form.source === "external_entity" && !form.externalAdvisorEmail.trim()) || (form.externalAdvisorEmail && !isValidEmail(form.externalAdvisorEmail)))}
-                      className={(stepError && form.source === "external_entity" && !form.externalAdvisorEmail.trim()) || (form.externalAdvisorEmail && !isValidEmail(form.externalAdvisorEmail)) ? "border-destructive focus-visible:ring-destructive" : ""}
-                    />
-                  </Field>
-                </>
-              )}
-
-              {form.source === "research" && (
-                <Field>
-                  <FieldLabel htmlFor="researchGroup">Grupo de investigación</FieldLabel>
-                  <Input
-                    id="researchGroup"
-                    name="researchGroup"
-                    value={form.researchGroup}
-                    onChange={handleChange}
-                    maxLength={MAX_TEXT_LENGTH}
-                    placeholder="Nombre del grupo de investigación"
-                    required
-                    aria-invalid={Boolean(stepError && form.source === "research" && !form.researchGroup.trim())}
-                    className={stepError && form.source === "research" && !form.researchGroup.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
-                  />
-                </Field>
-              )}
-
-              {form.source === "social_impact" && (
-                <>
-                  <Field>
-                    <FieldLabel htmlFor="socialOrganization">Junta de Acción Comunal</FieldLabel>
-                    <Input
-                      id="socialOrganization"
-                      name="socialOrganization"
-                      value={form.socialOrganization}
-                      onChange={handleChange}
-                      maxLength={MAX_NAME_LENGTH}
-                      placeholder="Nombre de la Junta de Acción Comunal"
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="nit">NIT de la organización (opcional)</FieldLabel>
-                    <Input
-                      id="nit"
-                      name="nit"
-                      value={form.nit}
-                      onChange={(event) => {
-                        const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
-                        setForm((previous) => ({ ...previous, nit: numericValue }));
-                        setStepError(null);
-                      }}
-                      inputMode="numeric"
-                      maxLength={12}
-                      placeholder="NIT de la Junta de Acción Comunal, si aplica"
-                      aria-invalid={Boolean(form.nit && !/^\d{1,12}$/.test(form.nit))}
-                      className={form.nit && !/^\d{1,12}$/.test(form.nit) ? "border-destructive focus-visible:ring-destructive" : ""}
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel htmlFor="socialLocation">Localización</FieldLabel>
-                    <Input
-                      id="socialLocation"
-                      name="socialLocation"
-                      value={form.socialLocation}
-                      onChange={handleChange}
-                      maxLength={MAX_TEXT_LENGTH}
-                      placeholder="Barrio, municipio o dirección de referencia"
-                      required
-                      aria-invalid={Boolean(stepError && form.source === "social_impact" && !form.socialLocation.trim())}
-                      className={stepError && form.source === "social_impact" && !form.socialLocation.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
-                    />
-                  </Field>
-                </>
-              )}
-              </div>
+      {form.source === "social_impact" && (
+        <ProjectSocialImpactFields
+          form={form}
+          stepError={stepError}
+          handleChange={handleChange}
+          setForm={setForm}
+          setStepError={setStepError}
+        />
+      )}
+    </div>
   );
 }
 
