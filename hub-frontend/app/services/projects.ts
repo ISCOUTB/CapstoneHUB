@@ -7,6 +7,7 @@ import {
   MyProject,
   MyProjectInterest,
   UpdateProjectPayload,
+  ProjectProgramSchool,
 } from "./schemas";
 import { getApiUrl } from "@/lib/api";
 import {
@@ -30,6 +31,7 @@ export type CreateProjectPayload = {
   source?: ProjectSource;
   sourceDetails?: string;
   engineeringArea?: string;
+  programRequirements: { programId: string; studentCount: number }[];
   externalAdvisorName?: string;
   externalAdvisorEmail?: string;
   nit?: string;
@@ -114,6 +116,39 @@ function buildProjectsQuery(query: ProjectListQuery): string {
   }
 
   return params.toString();
+}
+
+
+
+export async function getProjectProgramsCatalog(): Promise<{
+  schools: ProjectProgramSchool[];
+  error?: string;
+}> {
+  try {
+    const response = await fetch(getApiUrl("/api/projects/catalog/programs"), {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return {
+        schools: [],
+        error: await apiErrorMessage(response),
+      };
+    }
+
+    const data = (await response.json()) as ProjectProgramSchool[];
+    return {
+      schools: Array.isArray(data) ? data : [],
+    };
+  } catch (error) {
+    return {
+      schools: [],
+      error:
+        error instanceof Error
+          ? error.message
+          : "No se pudo cargar el catálogo de programas.",
+    };
+  }
 }
 
 export async function getProjects(

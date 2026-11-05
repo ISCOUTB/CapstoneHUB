@@ -1138,6 +1138,12 @@ export class ProjectsService {
   private validateProgramRequirements(
     requirements: ProjectProgramRequirementInput[],
   ): ProjectProgramRequirementInput[] {
+    if (requirements.length > 4) {
+      throw new BadRequestException(
+        'A project cannot require more than four academic programs',
+      );
+    }
+
     const seenProgramIds = new Set<string>();
 
     return requirements.map((requirement) => {

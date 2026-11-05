@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { createProject } from "../services/projects";
-import { type ProjectSource } from "../services/schemas";
+import { createProject, getProjectProgramsCatalog } from "../services/projects";
+import { type ProjectProgramSchool, type ProjectSource } from "../services/schemas";
 import { useAuth } from "./auth-provider";
 import AccessNotice from "./access-notice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -58,16 +58,6 @@ const projectSources: ReadonlyArray<{
   { value: "social_impact", label: "Impacto social" },
 ];
 
-const engineeringAreaOptions = [
-  { value: "systems", label: "Ingeniería de Sistemas y Computación" },
-  { value: "industrial", label: "Ingeniería Industrial" },
-  { value: "civil", label: "Ingeniería Civil" },
-  { value: "electrical", label: "Ingeniería Eléctrica y Electrónica" },
-  { value: "mechanical", label: "Ingeniería Mecánica" },
-  { value: "environmental", label: "Ingeniería Ambiental" },
-  { value: "other", label: "Otra área o ingeniería" },
-] as const;
-
 
 const steps = [
   {
@@ -82,14 +72,20 @@ const steps = [
   },
   {
     number: 3,
-    title: "Equipo y condiciones",
-    description: "Estudiantes y expectativas",
+    title: "Estudiantes y expectativas",
+    description: "Programas y conocimientos requeridos",
   },
 ] as const;
 
 type DeliverableFormItem = {
   id: string;
   value: string;
+};
+
+type ProgramRequirementFormItem = {
+  id: string;
+  programId: string;
+  studentCount: string;
 };
 
 type FormState = {
@@ -102,7 +98,7 @@ type FormState = {
   researchGroup: string;
   socialOrganization: string;
   socialLocation: string;
-  engineeringAreas: DeliverableFormItem[];
+  programRequirements: ProgramRequirementFormItem[];
   projectScope: string;
   monetaryResources: string;
   monetaryResourcesDescription: string;
@@ -136,7 +132,7 @@ const initialForm: FormState = {
   researchGroup: "",
   socialOrganization: "",
   socialLocation: "",
-  engineeringAreas: [{ id: createClientId(), value: "" }],
+  programRequirements: [],
   projectScope: "",
   monetaryResources: "na",
   monetaryResourcesDescription: "",
@@ -196,22 +192,20 @@ function validateStepOne(form: FormState): string | null {
     return "Describe la entidad externa de la que proviene el proyecto.";
   }
 
-  if (!form.engineeringAreas.some((area) => area.value.trim())) {
-    return "Selecciona al menos un área o ingeniería del proyecto.";
+  if (form.source === "external_entity" && !form.externalAdvisorName.trim()) {
+    return "Ingresa el nombre del asesor externo.";
   }
 
-  const selectedAreas = form.engineeringAreas.map((area) => area.value).filter(Boolean);
-  if (new Set(selectedAreas).size !== selectedAreas.length) {
-    return "No puedes seleccionar la misma área o ingeniería más de una vez.";
+  if (form.source === "external_entity" && !form.externalAdvisorEmail.trim()) {
+    return "Ingresa el correo del asesor externo.";
   }
 
-  if (
-    form.source === "external_entity" &&
-    (!form.externalAdvisorName.trim() ||
-      !form.externalAdvisorEmail.trim() ||
-      !form.nit.trim())
-  ) {
-    return "Ingresa el nombre, correo y NIT de la entidad o asesor externo.";
+  if (form.source === "external_entity" && !form.nit.trim()) {
+    return "Ingresa el NIT de la entidad externa.";
+  }
+
+  if (form.nit && !/^\d{1,12}$/.test(form.nit)) {
+    return "El NIT debe contener únicamente números y tener máximo 12 dígitos.";
   }
 
   if (
@@ -260,8 +254,28 @@ function validateStepThree(form: FormState): string | null {
     return "Ingresa el nombre o contacto UTB del asesor.";
   }
 
-  if (!form.teamRequirements.trim()) {
-    return "Describe el tipo de estudiantes o perfiles requeridos.";
+  if (form.programRequirements.length === 0) {
+    return "Selecciona al menos un programa académico.";
+  }
+
+  if (form.programRequirements.length > 4) {
+    return "Puedes seleccionar un máximo de cuatro programas académicos.";
+  }
+
+  const selectedPrograms = form.programRequirements.map((item) => item.programId);
+  if (selectedPrograms.some((programId) => !programId)) {
+    return "Selecciona un programa para cada requisito agregado.";
+  }
+
+  if (new Set(selectedPrograms).size !== selectedPrograms.length) {
+    return "No puedes seleccionar el mismo programa más de una vez.";
+  }
+
+  if (form.programRequirements.some((item) => {
+    const count = Number(item.studentCount);
+    return item.studentCount.trim() === "" || !Number.isInteger(count) || count < 1;
+  })) {
+    return "Indica una cantidad de estudiantes válida (un número entero mayor que cero) para cada programa.";
   }
 
   if (
@@ -280,12 +294,59 @@ const stepValidators: Record<number, StepValidator> = {
   3: validateStepThree,
 };
 
+const legacyAreaByProgram: Record<string, string> = {
+  "ingenieria-sistemas-computacion": "systems",
+  "ingenieria-industrial": "industrial",
+  "ingenieria-civil": "civil",
+  "ingenieria-electrica": "electrical",
+  "ingenieria-electronica": "electrical",
+  "ingenieria-mecatronica": "electrical",
+  "ingenieria-biomedica": "electrical",
+  "ingenieria-mecanica": "mechanical",
+  "ingenieria-naval": "mechanical",
+  "ingenieria-ambiental": "environmental",
+};
+
+function getLegacyEngineeringArea(
+  requirements: ProgramRequirementFormItem[],
+): string {
+  const areas = new Set(
+    requirements.map(
+      (requirement) => legacyAreaByProgram[requirement.programId] ?? "other",
+    ),
+  );
+  return Array.from(areas).join(",");
+}
+
 export default function SubmitProjectForm() {
   const { session, isAuthenticated, ready } = useAuth();
   const router = useRouter();
   const userEmail = session?.user?.email ?? "";
 
   const [form, setForm] = useState<FormState>(initialForm);
+  const [programSchools, setProgramSchools] = useState<ProjectProgramSchool[]>([]);
+  const [programCatalogLoading, setProgramCatalogLoading] = useState(true);
+  const [programCatalogError, setProgramCatalogError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+
+    async function loadProgramCatalog() {
+      setProgramCatalogLoading(true);
+      const result = await getProjectProgramsCatalog();
+      if (!active) return;
+
+      setProgramSchools(result.schools);
+      setProgramCatalogError(result.error ?? null);
+      setProgramCatalogLoading(false);
+    }
+
+    void loadProgramCatalog();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -482,6 +543,21 @@ export default function SubmitProjectForm() {
     }
 
 
+    if (programCatalogLoading) {
+      setStatus("error");
+      setErrorMessage("Espera a que termine de cargar el catálogo de programas.");
+      return;
+    }
+
+    if (programCatalogError || programSchools.length === 0) {
+      setStatus("error");
+      setErrorMessage(
+        programCatalogError ??
+          "No hay programas académicos disponibles en este momento.",
+      );
+      return;
+    }
+
     if (!validateSubmissionPrerequisites()) return;
 
     setStatus("saving");
@@ -500,7 +576,11 @@ export default function SubmitProjectForm() {
           form.source === "external_entity"
             ? form.sourceDetails.trim()
             : undefined,
-        engineeringArea: form.engineeringAreas.map((area) => area.value).filter(Boolean).join(","),
+        engineeringArea: getLegacyEngineeringArea(form.programRequirements),
+        programRequirements: form.programRequirements.map((requirement) => ({
+          programId: requirement.programId,
+          studentCount: Number(requirement.studentCount),
+        })),
         externalAdvisorName:
           form.source === "external_entity" ? form.externalAdvisorName.trim() : undefined,
         externalAdvisorEmail:
@@ -695,6 +775,8 @@ export default function SubmitProjectForm() {
                   onChange={handleChange}
                   maxLength={MAX_NAME_LENGTH}
                   required
+                  aria-invalid={Boolean(stepError && !form.namep.trim())}
+                  className={stepError && !form.namep.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
 
                 <CharacterCounter
@@ -773,90 +855,6 @@ export default function SubmitProjectForm() {
                 </div>
               </Field>
 
-              <Field>
-                <FieldLabel>
-                  Área o ingeniería del proyecto
-                </FieldLabel>
-
-                <div className="space-y-2">
-                  {form.engineeringAreas.map((area, index) => (
-                    <div key={area.id} className="flex items-center gap-2">
-                      <Select
-                        value={area.value}
-                        onValueChange={(value) => {
-                          if (value !== null) {
-                            setForm((prev) => ({
-                              ...prev,
-                              engineeringAreas: prev.engineeringAreas.map((currentArea) =>
-                                currentArea.id === area.id
-                                  ? { ...currentArea, value }
-                                  : currentArea,
-                              ),
-                            }));
-                            setStepError(null);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecciona un área o ingeniería">
-                            {engineeringAreaOptions.find((engineering) => engineering.value === area.value)?.label}
-                          </SelectValue>
-                        </SelectTrigger>
-
-                        <SelectContent>
-                          {engineeringAreaOptions.map((engineering) => (
-                            <SelectItem
-                              key={engineering.value}
-                              value={engineering.value}
-                              disabled={form.engineeringAreas.some((item) => item.value === engineering.value) && area.value !== engineering.value}
-                            >
-                              {engineering.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      {form.engineeringAreas.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            setForm((prev) => ({
-                              ...prev,
-                              engineeringAreas: prev.engineeringAreas.filter((item) => item.id !== area.id),
-                            }));
-                            setStepError(null);
-                          }}
-                          aria-label={`Eliminar área ${index + 1}`}
-                        >
-                          <RiDeleteBinLine />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-fit"
-                  onClick={() => {
-                    setForm((prev) => ({
-                      ...prev,
-                      engineeringAreas: [...prev.engineeringAreas, { id: createClientId(), value: "" }],
-                    }));
-                  }}
-                >
-                  <RiAddLine />
-                  Agregar otra área
-                </Button>
-
-                <FieldDescription>
-                  Selecciona todas las áreas relacionadas con la propuesta. Cada área puede definir hitos mínimos adicionales.
-                </FieldDescription>
-              </Field>
-
               <div className="space-y-4">
               {form.source === "external_entity" && (
                 <Field>
@@ -873,6 +871,8 @@ export default function SubmitProjectForm() {
                     rows={3}
                     placeholder="Indica el nombre de la empresa, organización o entidad y una breve descripción."
                     required
+                    aria-invalid={Boolean(stepError && !form.sourceDetails.trim())}
+                    className={stepError && !form.sourceDetails.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
 
                   <CharacterCounter
@@ -890,9 +890,16 @@ export default function SubmitProjectForm() {
                       id="nit"
                       name="nit"
                       value={form.nit}
-                      onChange={handleChange}
-                      maxLength={30}
+                      onChange={(event) => {
+                        const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
+                        setForm((previous) => ({ ...previous, nit: numericValue }));
+                        setStepError(null);
+                      }}
+                      inputMode="numeric"
+                      maxLength={12}
                       placeholder="NIT de la entidad externa"
+                      aria-invalid={Boolean((stepError && form.source === "external_entity" && !form.nit.trim()) || (form.nit && !/^\d{1,12}$/.test(form.nit)))}
+                      className={(stepError && form.source === "external_entity" && !form.nit.trim()) || (form.nit && !/^\d{1,12}$/.test(form.nit)) ? "border-destructive focus-visible:ring-destructive" : ""}
                       required
                     />
                   </Field>
@@ -906,6 +913,8 @@ export default function SubmitProjectForm() {
                       onChange={handleChange}
                       maxLength={MAX_NAME_LENGTH}
                       required
+                      aria-invalid={Boolean(stepError && !form.externalAdvisorName.trim())}
+                      className={stepError && !form.externalAdvisorName.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
                   </Field>
 
@@ -920,6 +929,8 @@ export default function SubmitProjectForm() {
                       maxLength={MAX_TEXT_LENGTH}
                       placeholder="asesor@empresa.com"
                       required
+                      aria-invalid={Boolean((stepError && form.source === "external_entity" && !form.externalAdvisorEmail.trim()) || (form.externalAdvisorEmail && !isValidEmail(form.externalAdvisorEmail)))}
+                      className={(stepError && form.source === "external_entity" && !form.externalAdvisorEmail.trim()) || (form.externalAdvisorEmail && !isValidEmail(form.externalAdvisorEmail)) ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
                   </Field>
                 </>
@@ -936,6 +947,8 @@ export default function SubmitProjectForm() {
                     maxLength={MAX_TEXT_LENGTH}
                     placeholder="Nombre del grupo de investigación"
                     required
+                    aria-invalid={Boolean(stepError && form.source === "research" && !form.researchGroup.trim())}
+                    className={stepError && form.source === "research" && !form.researchGroup.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
                 </Field>
               )}
@@ -960,9 +973,16 @@ export default function SubmitProjectForm() {
                       id="nit"
                       name="nit"
                       value={form.nit}
-                      onChange={handleChange}
-                      maxLength={30}
+                      onChange={(event) => {
+                        const numericValue = event.target.value.replace(/\D/g, "").slice(0, 12);
+                        setForm((previous) => ({ ...previous, nit: numericValue }));
+                        setStepError(null);
+                      }}
+                      inputMode="numeric"
+                      maxLength={12}
                       placeholder="NIT de la Junta de Acción Comunal, si aplica"
+                      aria-invalid={Boolean(form.nit && !/^\d{1,12}$/.test(form.nit))}
+                      className={form.nit && !/^\d{1,12}$/.test(form.nit) ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
                   </Field>
 
@@ -976,6 +996,8 @@ export default function SubmitProjectForm() {
                       maxLength={MAX_TEXT_LENGTH}
                       placeholder="Barrio, municipio o dirección de referencia"
                       required
+                      aria-invalid={Boolean(stepError && form.source === "social_impact" && !form.socialLocation.trim())}
+                      className={stepError && form.source === "social_impact" && !form.socialLocation.trim() ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
                   </Field>
                 </>
@@ -1134,15 +1156,191 @@ export default function SubmitProjectForm() {
                 </Button>
               </Field>
               <Field>
+                <FieldLabel>Programas académicos requeridos</FieldLabel>
+                <FieldDescription>
+                  Selecciona hasta cuatro programas e indica cuántos estudiantes necesitas de cada uno.
+                </FieldDescription>
+
+                {programCatalogLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Cargando programas académicos...
+                  </p>
+                ) : null}
+
+                {programCatalogError ? (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      No se pudo cargar el catálogo de programas: {programCatalogError}
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+
+                <div className="space-y-3">
+                  {form.programRequirements.map((requirement, index) => {
+                    const selectedProgram = programSchools
+                      .flatMap((school) =>
+                        school.programs.map((program) => ({
+                          ...program,
+                          schoolName: school.name,
+                        })),
+                      )
+                      .find((program) => program.id === requirement.programId);
+
+                    return (
+                      <div
+                        key={requirement.id}
+                        className="grid gap-3 rounded-xl border p-3 sm:grid-cols-[minmax(0,1fr)_9rem_auto] sm:items-end"
+                      >
+                        <Field>
+                          <FieldLabel htmlFor={`program-${requirement.id}`}>
+                            Programa {index + 1}
+                          </FieldLabel>
+                          <Select
+                            value={requirement.programId}
+                            onValueChange={(value) => {
+                              if (value === null) return;
+                              setForm((previous) => ({
+                                ...previous,
+                                programRequirements: previous.programRequirements.map(
+                                  (current) =>
+                                    current.id === requirement.id
+                                      ? { ...current, programId: value }
+                                      : current,
+                                ),
+                              }));
+                              setStepError(null);
+                            }}
+                            disabled={programCatalogLoading || Boolean(programCatalogError)}
+                          >
+                            <SelectTrigger
+                              id={`program-${requirement.id}`}
+                              className={`w-full ${stepError && !requirement.programId ? "border-destructive focus:ring-destructive" : ""}`}
+                              aria-invalid={Boolean(stepError && !requirement.programId)}
+                            >
+                              <SelectValue placeholder="Selecciona un programa">
+                                {selectedProgram
+                                  ? `${selectedProgram.name} — ${selectedProgram.schoolName}`
+                                  : undefined}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {programSchools.map((school) =>
+                                school.programs.map((program) => {
+                                  const selectedElsewhere =
+                                    form.programRequirements.some(
+                                      (item) =>
+                                        item.programId === program.id &&
+                                        item.id !== requirement.id,
+                                    );
+                                  return (
+                                    <SelectItem
+                                      key={program.id}
+                                      value={program.id}
+                                      disabled={selectedElsewhere}
+                                    >
+                                      {program.name} — {school.name}
+                                    </SelectItem>
+                                  );
+                                }),
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </Field>
+
+                        <Field>
+                          <FieldLabel htmlFor={`student-count-${requirement.id}`}>
+                            Estudiantes
+                          </FieldLabel>
+                          <Input
+                            id={`student-count-${requirement.id}`}
+                            type="number"
+                            min={1}
+                            step={1}
+                            inputMode="numeric"
+                            value={requirement.studentCount}
+                            aria-invalid={Boolean(stepError && (!requirement.studentCount.trim() || !Number.isInteger(Number(requirement.studentCount)) || Number(requirement.studentCount) < 1))}
+                            className={stepError && (!requirement.studentCount.trim() || !Number.isInteger(Number(requirement.studentCount)) || Number(requirement.studentCount) < 1) ? "border-destructive focus-visible:ring-destructive" : ""}
+                            onChange={(event) => {
+                              setForm((previous) => ({
+                                ...previous,
+                                programRequirements: previous.programRequirements.map(
+                                  (current) =>
+                                    current.id === requirement.id
+                                      ? {
+                                          ...current,
+                                          studentCount: event.target.value,
+                                        }
+                                      : current,
+                                ),
+                              }));
+                              setStepError(null);
+                            }}
+                          />
+                        </Field>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setForm((previous) => ({
+                              ...previous,
+                              programRequirements: previous.programRequirements.filter(
+                                (item) => item.id !== requirement.id,
+                              ),
+                            }));
+                            setStepError(null);
+                          }}
+                          aria-label={`Eliminar programa ${index + 1}`}
+                        >
+                          <RiDeleteBinLine />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-fit"
+                  onClick={() => {
+                    setForm((previous) => ({
+                      ...previous,
+                      programRequirements: [
+                        ...previous.programRequirements,
+                        {
+                          id: createClientId(),
+                          programId: "",
+                          studentCount: "1",
+                        },
+                      ],
+                    }));
+                    setStepError(null);
+                  }}
+                  disabled={
+                    programCatalogLoading ||
+                    Boolean(programCatalogError) ||
+                    form.programRequirements.length >= 4
+                  }
+                >
+                  <RiAddLine data-icon="inline-start" />
+                  Agregar programa
+                </Button>
+
+                <FieldDescription>
+                  {form.programRequirements.length}/4 programas seleccionados. Cada programa se asocia automáticamente con su escuela.
+                </FieldDescription>
+              </Field>
+
+
+              <Field>
                 <FieldLabel htmlFor="teamRequirements">
-                  Estudiantes requeridos
+                  Conocimientos requeridos (opcional)
                 </FieldLabel>
 
                 <FieldDescription>
-                  El proyecto requiere un mínimo de{" "}
-                  <strong>3 estudiantes</strong>. Indica qué tipo de
-                  estudiantes, carreras, conocimientos o perfiles se
-                  necesitan.
+                  Puedes indicar conocimientos, habilidades o perfiles deseados para orientar a los estudiantes interesados.
                 </FieldDescription>
 
                 <Textarea
@@ -1152,8 +1350,7 @@ export default function SubmitProjectForm() {
                   onChange={handleChange}
                   maxLength={MAX_TEXT_LENGTH}
                   rows={4}
-                  placeholder="Ejemplo: mínimo 3 estudiantes de Ingeniería de Sistemas con conocimientos en desarrollo web."
-                  required
+                  placeholder="Ejemplo: conocimientos en desarrollo web, bases de datos o diseño de interfaces."
                 />
 
                 <CharacterCounter

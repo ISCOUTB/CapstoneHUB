@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RiAddLine, RiDeleteBinLine } from "@remixicon/react";
-import { updateProject } from "../../services/projects";
+import { getProjectProgramsCatalog, updateProject } from "../../services/projects";
 import {
   ProjectDetails,
+  ProjectProgramSchool,
   ProjectSource,
   UpdateProjectPayload,
 } from "../../services/schemas";
@@ -57,6 +58,14 @@ type DeliverableField = {
   value: string;
 };
 
+type ProgramRequirementField = {
+  id: string;
+  programId: string;
+  programName: string;
+  schoolName: string;
+  studentCount: string;
+};
+
 type FormState = {
   name: string;
   source: ProjectSource;
@@ -70,6 +79,7 @@ type FormState = {
   teamRequirements: string;
   expectedOutcomes: string;
   deliverables: DeliverableField[];
+  programRequirements: ProgramRequirementField[];
   requiresLegalization: boolean;
   isPrivate: boolean;
 };
@@ -94,6 +104,10 @@ function serializeForm(form: FormState): string {
   return JSON.stringify({
     ...form,
     deliverables: form.deliverables.map((deliverable) => deliverable.value),
+    programRequirements: form.programRequirements.map((requirement) => ({
+      programId: requirement.programId,
+      studentCount: requirement.studentCount,
+    })),
   });
 }
 
@@ -114,6 +128,13 @@ function createInitialForm(project: ProjectDetails): FormState {
     facultyAdvisor: project.facultyAdvisor ?? "",
     teamRequirements: project.teamRequirements ?? "",
     expectedOutcomes: project.expectedOutcomes ?? "",
+    programRequirements: (project.programRequirements ?? []).map((requirement) => ({
+      id: `program-${requirement.id}`,
+      programId: requirement.programId,
+      programName: requirement.programName,
+      schoolName: requirement.schoolName ?? "Escuela no disponible",
+      studentCount: String(requirement.studentCount),
+    })),
     deliverables: (deliverableValues.length > 0
       ? deliverableValues
       : [""]
@@ -137,9 +158,31 @@ export default function ProjectGeneralEditForm({
   const router = useRouter();
   const initialForm = useMemo(() => createInitialForm(project), [project]);
   const [form, setForm] = useState<FormState>(initialForm);
+  const [programSchools, setProgramSchools] = useState<ProjectProgramSchool[]>([]);
+  const [programCatalogLoading, setProgramCatalogLoading] = useState(true);
+  const [programCatalogError, setProgramCatalogError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProgramCatalog() {
+      const result = await getProjectProgramsCatalog();
+      if (!active) return;
+
+      setProgramSchools(result.schools);
+      setProgramCatalogError(result.error ?? null);
+      setProgramCatalogLoading(false);
+    }
+
+    void loadProgramCatalog();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const isPrivateChanged = form.isPrivate !== Boolean(project.isPrivate);
   const isPublishing = Boolean(project.isPrivate) && !form.isPrivate;
@@ -176,6 +219,43 @@ export default function ProjectGeneralEditForm({
     }));
   }
 
+  function addProgramRequirement() {
+    setForm((previous) => ({
+      ...previous,
+      programRequirements: [
+        ...previous.programRequirements,
+        {
+          id: `program-new-${Date.now()}-${previous.programRequirements.length}`,
+          programId: "",
+          programName: "",
+          schoolName: "",
+          studentCount: "1",
+        },
+      ],
+    }));
+  }
+
+  function updateProgramRequirement(
+    id: string,
+    changes: Partial<ProgramRequirementField>,
+  ) {
+    setForm((previous) => ({
+      ...previous,
+      programRequirements: previous.programRequirements.map((requirement) =>
+        requirement.id === id ? { ...requirement, ...changes } : requirement,
+      ),
+    }));
+  }
+
+  function removeProgramRequirement(id: string) {
+    setForm((previous) => ({
+      ...previous,
+      programRequirements: previous.programRequirements.filter(
+        (requirement) => requirement.id !== id,
+      ),
+    }));
+  }
+
   async function save() {
     setErrorMessage(null);
 
@@ -206,6 +286,52 @@ export default function ProjectGeneralEditForm({
       return;
     }
 
+    if (form.programRequirements.length > 4) {
+      setErrorMessage("Puedes seleccionar un máximo de cuatro programas académicos.");
+      return;
+    }
+
+    const selectedProgramIds = form.programRequirements.map(
+      (requirement) => requirement.programId,
+    );
+    if (
+      selectedProgramIds.some((programId) => !programId) ||
+      new Set(selectedProgramIds).size !== selectedProgramIds.length
+    ) {
+      setErrorMessage("Selecciona programas válidos y evita repetirlos.");
+      return;
+    }
+
+    if (
+      form.programRequirements.some((requirement) => {
+        const count = Number(requirement.studentCount);
+        return (
+          requirement.studentCount.trim() === "" ||
+          !Number.isInteger(count) ||
+          count < 1
+        );
+      })
+    ) {
+      setErrorMessage("La cantidad de estudiantes debe ser un entero mayor que cero para cada programa.");
+      return;
+    }
+
+    const currentProgramRequirements = (project.programRequirements ?? []).map(
+      (requirement) => ({
+        programId: requirement.programId,
+        studentCount: requirement.studentCount,
+      }),
+    );
+    const nextProgramRequirements = form.programRequirements.map(
+      (requirement) => ({
+        programId: requirement.programId,
+        studentCount: Number(requirement.studentCount),
+      }),
+    );
+    const programRequirementsChanged =
+      JSON.stringify(currentProgramRequirements) !==
+      JSON.stringify(nextProgramRequirements);
+
     const payload: UpdateProjectPayload = {
       name,
       description,
@@ -223,6 +349,9 @@ export default function ProjectGeneralEditForm({
       deliverables: form.deliverables
         .map((deliverable) => deliverable.value.trim())
         .filter(Boolean),
+      ...(programRequirementsChanged
+        ? { programRequirements: nextProgramRequirements }
+        : {}),
     };
 
     setSaving(true);
@@ -339,6 +468,157 @@ export default function ProjectGeneralEditForm({
           </FieldSet>
 
           <FieldSet>
+            <FieldLegend>Programas académicos</FieldLegend>
+            <FieldDescription>
+              Puedes asociar hasta cuatro programas al proyecto e indicar la cantidad de estudiantes requerida para cada uno.
+            </FieldDescription>
+
+            {programCatalogError ? (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  No se pudo cargar el catálogo: {programCatalogError}. Los programas existentes se conservan; para agregar otros, vuelve a cargar la página cuando el servicio esté disponible.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
+            {programCatalogLoading ? (
+              <p className="text-sm text-muted-foreground">
+                Cargando catálogo de programas...
+              </p>
+            ) : null}
+
+            {form.programRequirements.map((requirement, index) => {
+              const selectedProgram = programSchools
+                .flatMap((school) =>
+                  school.programs.map((program) => ({
+                    ...program,
+                    schoolName: school.name,
+                  })),
+                )
+                .find((program) => program.id === requirement.programId);
+
+              return (
+                <div
+                  key={requirement.id}
+                  className="grid gap-3 rounded-xl border p-3 sm:grid-cols-[minmax(0,1fr)_9rem_auto] sm:items-end"
+                >
+                  <Field>
+                    <FieldLabel htmlFor={`edit-program-${requirement.id}`}>
+                      Programa {index + 1}
+                    </FieldLabel>
+                    <Select
+                      value={requirement.programId}
+                      onValueChange={(value) => {
+                        if (value === null) return;
+                        const program = programSchools
+                          .flatMap((school) =>
+                            school.programs.map((item) => ({
+                              ...item,
+                              schoolName: school.name,
+                            })),
+                          )
+                          .find((item) => item.id === value);
+                        updateProgramRequirement(requirement.id, {
+                          programId: value,
+                          programName: program?.name ?? value,
+                          schoolName: program?.schoolName ?? "",
+                        });
+                      }}
+                      disabled={saving || programCatalogLoading || Boolean(programCatalogError)}
+                    >
+                      <SelectTrigger
+                        id={`edit-program-${requirement.id}`}
+                        className="w-full"
+                      >
+                        <SelectValue placeholder="Selecciona un programa">
+                          {selectedProgram
+                            ? `${selectedProgram.name} — ${selectedProgram.schoolName}`
+                            : requirement.programName
+                              ? `${requirement.programName} — ${requirement.schoolName}`
+                              : undefined}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {programSchools.map((school) =>
+                          school.programs.map((program) => {
+                            const selectedElsewhere =
+                              form.programRequirements.some(
+                                (item) =>
+                                  item.programId === program.id &&
+                                  item.id !== requirement.id,
+                              );
+                            return (
+                              <SelectItem
+                                key={program.id}
+                                value={program.id}
+                                disabled={selectedElsewhere}
+                              >
+                                {program.name} — {school.name}
+                              </SelectItem>
+                            );
+                          }),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  <Field>
+                    <FieldLabel htmlFor={`edit-students-${requirement.id}`}>
+                      Estudiantes
+                    </FieldLabel>
+                    <Input
+                      id={`edit-students-${requirement.id}`}
+                      type="number"
+                      min={1}
+                      step={1}
+                      inputMode="numeric"
+                      value={requirement.studentCount}
+                      onChange={(event) =>
+                        updateProgramRequirement(requirement.id, {
+                          studentCount: event.target.value,
+                        })
+                      }
+                      disabled={saving}
+                    />
+                  </Field>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => removeProgramRequirement(requirement.id)}
+                    aria-label={`Eliminar programa ${index + 1}`}
+                    disabled={saving}
+                  >
+                    <RiDeleteBinLine />
+                  </Button>
+                </div>
+              );
+            })}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-fit"
+              onClick={addProgramRequirement}
+              disabled={
+                saving ||
+                programCatalogLoading ||
+                Boolean(programCatalogError) ||
+                form.programRequirements.length >= 4
+              }
+            >
+              <RiAddLine data-icon="inline-start" />
+              Agregar programa
+            </Button>
+
+            <FieldDescription>
+              {form.programRequirements.length}/4 programas asociados. Si el proyecto todavía no tiene programas, puedes agregarlos sin afectar sus demás datos.
+            </FieldDescription>
+          </FieldSet>
+
+          <FieldSet>
             <FieldLegend>Fechas y costos</FieldLegend>
 
             <Field>
@@ -399,8 +679,11 @@ export default function ProjectGeneralEditForm({
 
             <Field>
               <FieldLabel htmlFor="edit-team-requirements">
-                Equipo requerido
+                Conocimientos requeridos (opcional)
               </FieldLabel>
+              <FieldDescription>
+                Describe conocimientos, habilidades o perfiles deseados para orientar a los estudiantes interesados.
+              </FieldDescription>
               <Textarea
                 id="edit-team-requirements"
                 name="teamRequirements"

@@ -9,6 +9,27 @@ import type { ActorRole, UserRole } from "./roles";
 
 export type ProjectProposer = ProjectNaturalProposer;
 
+export type ProjectProgram = {
+  id: string;
+  name: string;
+};
+
+export type ProjectProgramSchool = {
+  id: string;
+  name: string;
+  programs: ProjectProgram[];
+};
+
+export type ProjectProgramRequirement = {
+  id: number;
+  programId: string;
+  programName: string;
+  schoolId: string | null;
+  schoolName: string | null;
+  studentCount: number;
+  createdAt: string;
+};
+
 export type ProjectSource =
   | "external_entity"
   | "research"
@@ -190,6 +211,7 @@ export type UpdateProjectPayload = {
   teamRequirements?: string | null;
   expectedOutcomes?: string | null;
   deliverables?: string[];
+  programRequirements?: { programId: string; studentCount: number }[];
 };
 
 export type ProjectItem = {
@@ -307,6 +329,7 @@ export type ProjectDetails = {
   facultyAdvisor?: string | null;
   facultyAdvisors?: string[];
   engineeringArea?: string | null;
+  programRequirements?: ProjectProgramRequirement[];
   externalAdvisorName?: string | null;
   externalAdvisorEmail?: string | null;
   nit?: string | null;
