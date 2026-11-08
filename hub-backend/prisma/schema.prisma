@@ -100,6 +100,7 @@ model User {
   createdRubricTemplates RubricTemplate[]          @relation("RubricTemplateCreatedBy")
   rubricAssignments      ProjectRubricAssignment[] @relation("RubricAssignmentAssignedBy")
   projectEvaluations     ProjectEvaluation[]       @relation("ProjectEvaluationEvaluator")
+  milestoneRubricsUpdated ProjectMilestoneRubric[]
 
   @@index([fullName], map: "idx_user_full_name")
   @@map("user")
@@ -169,6 +170,7 @@ model Project {
   phaseApprovals    ProjectPhaseApproval[]
   rubricAssignments ProjectRubricAssignment[]
   evaluations       ProjectEvaluation[]
+  milestoneRubrics  ProjectMilestoneRubric[]
 
   @@index([status], map: "idx_project_status")
   @@index([startDate], map: "idx_project_start_date")
@@ -333,6 +335,23 @@ model ProjectMilestones {
   @@index([completed], map: "idx_project_milestones_completed")
   @@index([isMinimum], map: "idx_project_milestones_is_minimum")
   @@map("project_milestones")
+}
+
+
+model ProjectMilestoneRubric {
+  id              Int      @id @default(autoincrement())
+  projectId       Int      @map("project_id")
+  programId       String   @map("program_id") @db.VarChar(100)
+  answers         Json     @default("{}")
+  updatedByUserId Int?     @map("updated_by_user_id")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  updatedBy User? @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, programId], map: "uk_project_milestone_rubric_project_program")
+  @@index([programId], map: "idx_project_milestone_rubric_program_id")
+  @@map("project_milestone_rubric")
 }
 
 model ProjectPhaseApproval {

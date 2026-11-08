@@ -50,11 +50,8 @@ export default function ProjectMemberTabs({
       <TabsContent value="hitos" className="mt-6">
         <ProjectMilestonesPanel
           projectId={project.id}
-          milestones={project.milestones ?? []}
           actorAssignments={assignments}
-          projectPhase={project.phase ?? null}
-          reports={project.reports ?? []}
-          onProjectChange={onProjectChange}
+          programRequirements={project.programRequirements ?? []}
         />
       </TabsContent>
 

@@ -9,6 +9,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsObject,
 } from 'class-validator';
 import { ProjectPhase } from '../generated/prisma/client';
 
@@ -115,4 +116,10 @@ export class UpdateMilestoneDto {
   @IsInt({ each: true })
   @IsOptional()
   reportIds?: number[];
+}
+
+export class SaveMilestoneRubricDto {
+  @ApiProperty({ description: 'Answers keyed by rubric item identifier' })
+  @IsObject()
+  answers!: Record<string, unknown>;
 }
