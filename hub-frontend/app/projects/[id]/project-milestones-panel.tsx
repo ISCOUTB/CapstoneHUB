@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getProjectMilestoneRubrics, saveProjectMilestoneRubric } from "../../services/milestone-rubrics";
 import type { ProjectProgramRequirement } from "../../services/schemas";
 import { canManageMilestones } from "../../services/project-permissions";
@@ -389,6 +390,7 @@ function ProjectProgramCard({
   const answeredItems = Object.values(answers).filter(
     (answer) => answer.status !== null,
   ).length;
+  const [showStudentPreview, setShowStudentPreview] = useState(false);
 
   return (
     <Card>
@@ -400,13 +402,27 @@ function ProjectProgramCard({
               {program.studentCount} estudiante(s) requerido(s) · {template.introduction}
             </CardDescription>
           </div>
-          <Badge variant="outline">
-            {canManage ? `${answeredItems}/${totalItems} evaluados` : "Resumen"}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            {canManage ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowStudentPreview((current) => !current)}
+              >
+                {showStudentPreview ? "Volver a editar" : "Vista del estudiante"}
+              </Button>
+            ) : null}
+            <Badge variant="outline">
+              {canManage && !showStudentPreview
+                ? `${answeredItems}/${totalItems} evaluados`
+                : "Resumen"}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {canManage ? (
+        {canManage && !showStudentPreview ? (
           <TeacherRubricEditor
             programId={program.programId}
             template={template}
@@ -430,6 +446,7 @@ export default function ProjectMilestonesPanel({
   programRequirements,
 }: ProjectMilestonesPanelProps) {
   const { session, isAuthenticated, ready } = useAuth();
+  const router = useRouter();
   const canManage = useMemo(
     () => (session ? canManageMilestones(session.user, actorAssignments) : false),
     [session, actorAssignments],
@@ -514,6 +531,7 @@ export default function ProjectMilestonesPanel({
           [programId]: normalizeAnswers(programId, saved.answers),
         }));
         setSuccessProgram(programId);
+        router.refresh();
       } catch (error) {
         setErrorMessage(
           error instanceof Error
@@ -524,7 +542,7 @@ export default function ProjectMilestonesPanel({
         setSavingProgram(null);
       }
     },
-    [projectId, rubrics],
+    [projectId, rubrics, router],
   );
 
   if (!ready) {

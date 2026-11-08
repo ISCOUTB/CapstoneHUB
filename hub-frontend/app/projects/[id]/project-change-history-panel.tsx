@@ -1,4 +1,5 @@
 import { ProjectChangeHistoryItem } from "../../services/schemas";
+import { RUBRIC_TEMPLATES } from "./milestones/rubric-templates";
 import { formatPhase, formatProjectSource } from "../../services/utils";
 import { formatCurrency, formatDate } from "./project-formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,46 @@ const FIELD_LABELS: Record<string, string> = {
   expectedOutcomes: "Expectativas al finalizar",
   deliverables: "Entregables",
 };
+
+
+type MilestoneHistoryValue = {
+  programId?: string;
+  itemId?: string;
+  answer?: { status?: string | null; observation?: string } | null;
+};
+
+function parseMilestoneHistoryValue(value: string | null): MilestoneHistoryValue | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (typeof parsed !== "object" || parsed === null) return null;
+    return parsed as MilestoneHistoryValue;
+  } catch {
+    return null;
+  }
+}
+
+function formatMilestoneAnswer(value: MilestoneHistoryValue | null): string {
+  if (!value) return "Sin información";
+  const statusLabels: Record<string, string> = {
+    yes: "Sí",
+    no: "No",
+    na: "N/A",
+  };
+  const status = value.answer?.status
+    ? statusLabels[value.answer.status] ?? value.answer.status
+    : "Sin estado";
+  const observation = value.answer?.observation?.trim();
+  return observation ? `${status} · ${observation}` : status;
+}
+
+function getMilestoneHistoryLabel(value: MilestoneHistoryValue | null): string {
+  if (!value?.programId || !value.itemId) return "Evaluación de hitos";
+  const template = RUBRIC_TEMPLATES[value.programId];
+  const item = template?.overviewItems.find((entry) => entry.id === value.itemId)
+    ?? template?.sections.flatMap((section) => section.items).find((entry) => entry.id === value.itemId);
+  return item ? `${template.programName} · ${item.label}` : `${value.programId} · ${value.itemId}`;
+}
 
 function formatChangedAt(dateValue: string): string {
   return new Intl.DateTimeFormat("es-CO", {
@@ -110,19 +151,45 @@ export default function ProjectChangeHistoryPanel({
               <li key={entry.id}>
                 <Card size="sm">
                   <CardContent className="flex flex-col gap-2 pt-4">
-                    <p className="text-sm font-medium">
-                      {FIELD_LABELS[entry.field] ?? entry.field}
-                    </p>
-
-                    <p className="text-sm">
-                      <span className="text-muted-foreground line-through">
-                        {formatFieldValue(entry.field, entry.previousValue)}
-                      </span>{" "}
-                      <span className="text-muted-foreground">→</span>{" "}
-                      <span className="text-foreground">
-                        {formatFieldValue(entry.field, entry.newValue)}
-                      </span>
-                    </p>
+                    {entry.field === "milestone_rubric" ? (
+                      <>
+                        {(() => {
+                          const previous = parseMilestoneHistoryValue(entry.previousValue);
+                          const next = parseMilestoneHistoryValue(entry.newValue);
+                          return (
+                            <>
+                              <p className="text-sm font-medium">
+                                Hitos · {getMilestoneHistoryLabel(next ?? previous)}
+                              </p>
+                              <p className="text-sm">
+                                <span className="text-muted-foreground line-through">
+                                  {formatMilestoneAnswer(previous)}
+                                </span>{" "}
+                                <span className="text-muted-foreground">→</span>{" "}
+                                <span className="text-foreground">
+                                  {formatMilestoneAnswer(next)}
+                                </span>
+                              </p>
+                            </>
+                          );
+                        })()}
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm font-medium">
+                          {FIELD_LABELS[entry.field] ?? entry.field}
+                        </p>
+                        <p className="text-sm">
+                          <span className="text-muted-foreground line-through">
+                            {formatFieldValue(entry.field, entry.previousValue)}
+                          </span>{" "}
+                          <span className="text-muted-foreground">→</span>{" "}
+                          <span className="text-foreground">
+                            {formatFieldValue(entry.field, entry.newValue)}
+                          </span>
+                        </p>
+                      </>
+                    )}
 
                     <p className="text-xs text-muted-foreground">
                       {entry.author

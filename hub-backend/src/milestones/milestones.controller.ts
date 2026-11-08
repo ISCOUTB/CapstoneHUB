@@ -15,7 +15,11 @@ import {
   MilestonesService,
   ProjectMilestoneResponse,
 } from './milestones.service';
-import { CreateMilestoneDto, SaveMilestoneRubricDto, UpdateMilestoneDto } from './milestones.dto';
+import {
+  CreateMilestoneDto,
+  SaveMilestoneRubricDto,
+  UpdateMilestoneDto,
+} from './milestones.dto';
 
 @Controller('projects/:projectId/milestones')
 export class MilestonesController {
@@ -44,7 +48,12 @@ export class MilestonesController {
     @Body() data: SaveMilestoneRubricDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.milestonesService.saveProjectRubric({ projectId, programId, answers: data.answers, user });
+    return this.milestonesService.saveProjectRubric({
+      projectId,
+      programId,
+      answers: data.answers,
+      user,
+    });
   }
 
   @Post()
