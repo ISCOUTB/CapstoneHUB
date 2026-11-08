@@ -485,6 +485,26 @@ export class AuthorizationService {
    * El directivo global sí entra en {@link assertCanManageReports}, pero los
    * hitos quedan reservados a quien participa en el proyecto.
    */
+  async canManageMilestone(
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<boolean> {
+    if (user.roles.includes(UserRole.admin)) {
+      return true;
+    }
+
+    const assignment = await this.prisma.projectActorAssignment.findFirst({
+      where: {
+        projectId,
+        userId: user.id,
+        role: { in: [ActorRole.teacher, ActorRole.evaluator] },
+      },
+      select: { id: true },
+    });
+
+    return Boolean(assignment);
+  }
+
   async assertCanManageMilestone(
     user: AuthenticatedUser,
     projectId: number,

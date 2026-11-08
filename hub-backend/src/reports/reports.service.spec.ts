@@ -105,12 +105,15 @@ describe('ReportsService', () => {
         delete: jest.fn(),
         deleteMany: jest.fn(),
       },
+      $transaction: jest.fn(),
     };
+
     // `deleteReport` envuelve el borrado en una transacción.
-    prisma.$transaction = jest.fn(
+    prisma.$transaction.mockImplementation(
       async (callback: (tx: typeof prisma) => Promise<unknown>) =>
         callback(prisma),
     );
+
     const authorization = {
       assertProjectMember: jest.fn(),
       assertCanSubmitReports: jest.fn(),

@@ -190,7 +190,7 @@ function getOptionalSections(project: ProjectDetails): ProjectSection[] {
 
   if (programRequirements) sections.push(programRequirements);
   sections.push({
-    title: "Equipo requerido",
+    title: "Conocimientos requeridos",
     content: <p className="whitespace-pre-line">{project.teamRequirements?.trim() || "N/A"}</p>,
   });
   if (engineering) sections.push(engineering);

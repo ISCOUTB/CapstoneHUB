@@ -64,6 +64,197 @@ export class MilestonesService {
     private readonly authorization: AuthorizationService,
   ) {}
 
+  async rubricsByProject(projectId: number, user: AuthenticatedUser) {
+    await assertProjectExists(this.prisma, projectId);
+    await this.authorization.assertProjectMember(user, projectId);
+
+    const rubrics = await this.prisma.projectMilestoneRubric.findMany({
+      where: { projectId },
+      orderBy: { programId: 'asc' },
+      select: {
+        id: true,
+        projectId: true,
+        programId: true,
+        answers: true,
+        updatedAt: true,
+      },
+    });
+
+    if (await this.authorization.canManageMilestone(user, projectId)) {
+      return rubrics;
+    }
+
+    return rubrics.map((rubric) => {
+      const answers = rubric.answers;
+      if (
+        typeof answers !== 'object' ||
+        answers === null ||
+        Array.isArray(answers)
+      ) {
+        return { ...rubric, answers: {} };
+      }
+
+      const visibleAnswers = Object.fromEntries(
+        Object.entries(answers).flatMap(([itemId, value]) => {
+          if (
+            typeof value !== 'object' ||
+            value === null ||
+            Array.isArray(value)
+          ) {
+            return [];
+          }
+
+          const answer = value as { status?: unknown; observation?: unknown };
+          const observation =
+            typeof answer.observation === 'string' ? answer.observation : '';
+          if (answer.status !== 'yes' && !observation.trim()) {
+            return [];
+          }
+
+          return [
+            [
+              itemId,
+              {
+                status: answer.status === 'yes' ? 'yes' : null,
+                observation,
+              },
+            ],
+          ];
+        }),
+      );
+
+      return { ...rubric, answers: visibleAnswers };
+    });
+  }
+
+  async saveProjectRubric(params: {
+    projectId: number;
+    programId: string;
+    answers: Record<string, unknown>;
+    user: AuthenticatedUser;
+  }) {
+    await assertProjectExists(this.prisma, params.projectId);
+    await this.authorization.assertCanManageMilestone(
+      params.user,
+      params.projectId,
+    );
+    const requirement = await this.prisma.projectProgramRequirement.findUnique({
+      where: {
+        projectId_programId: {
+          projectId: params.projectId,
+          programId: params.programId,
+        },
+      },
+      select: { id: true },
+    });
+    if (!requirement) {
+      throw new BadRequestException(
+        'The program is not associated with this project',
+      );
+    }
+
+    for (const [itemId, value] of Object.entries(params.answers)) {
+      if (
+        !/^(\d+(\.\d+)?|overview-\d+)$/.test(itemId) ||
+        typeof value !== 'object' ||
+        value === null
+      ) {
+        throw new BadRequestException('Invalid rubric answer');
+      }
+      const answer = value as { status?: unknown; observation?: unknown };
+      if (![null, 'yes', 'no', 'na'].includes(answer.status as string | null)) {
+        throw new BadRequestException(
+          `Invalid status for rubric item ${itemId}`,
+        );
+      }
+      if (
+        typeof answer.observation !== 'string' ||
+        answer.observation.length > 1000
+      ) {
+        throw new BadRequestException(
+          `Invalid observation for rubric item ${itemId}`,
+        );
+      }
+    }
+
+    return this.prisma.$transaction(async (transaction) => {
+      const rubricKey = {
+        projectId_programId: {
+          projectId: params.projectId,
+          programId: params.programId,
+        },
+      };
+      const previousRubric =
+        await transaction.projectMilestoneRubric.findUnique({
+          where: rubricKey,
+          select: { answers: true },
+        });
+      const previousAnswers =
+        typeof previousRubric?.answers === 'object' &&
+        previousRubric.answers !== null &&
+        !Array.isArray(previousRubric.answers)
+          ? (previousRubric.answers as Record<string, unknown>)
+          : {};
+      const changedItems = Object.keys({
+        ...previousAnswers,
+        ...params.answers,
+      }).flatMap((itemId) => {
+        const previousValue = previousAnswers[itemId] ?? null;
+        const newValue = params.answers[itemId] ?? null;
+        if (JSON.stringify(previousValue) === JSON.stringify(newValue)) {
+          return [];
+        }
+
+        return [
+          {
+            projectId: params.projectId,
+            authorUserId: params.user.id,
+            field: 'milestone_rubric',
+            previousValue: JSON.stringify({
+              programId: params.programId,
+              itemId,
+              answer: previousValue,
+            }),
+            newValue: JSON.stringify({
+              programId: params.programId,
+              itemId,
+              answer: newValue,
+            }),
+          },
+        ];
+      });
+
+      const savedRubric = await transaction.projectMilestoneRubric.upsert({
+        where: rubricKey,
+        create: {
+          projectId: params.projectId,
+          programId: params.programId,
+          answers: params.answers as Prisma.InputJsonValue,
+          updatedByUserId: params.user.id,
+        },
+        update: {
+          answers: params.answers as Prisma.InputJsonValue,
+          updatedByUserId: params.user.id,
+        },
+        select: {
+          id: true,
+          projectId: true,
+          programId: true,
+          answers: true,
+          updatedAt: true,
+        },
+      });
+
+      if (changedItems.length > 0) {
+        await transaction.projectChangeHistory.createMany({
+          data: changedItems,
+        });
+      }
+
+      return savedRubric;
+    });
+  }
+
   async milestonesByProject(
     projectId: number,
     user: AuthenticatedUser,

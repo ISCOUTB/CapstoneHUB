@@ -1,72 +1,16 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import {
-  createProjectMilestone,
-  deleteProjectMilestone,
-  updateProjectMilestone,
-} from "../../services/milestones";
-import {
-  ProjectMilestoneItem,
-  ProjectPhase,
-  ProjectReportItem,
-} from "../../services/schemas";
-import {
-  PROJECT_PHASES,
-  formatDate,
-  formatPhase,
-  toDateTimeLocal,
-} from "../../services/utils";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getProjectMilestoneRubrics, saveProjectMilestoneRubric } from "../../services/milestone-rubrics";
+import type { ProjectProgramRequirement } from "../../services/schemas";
 import { canManageMilestones } from "../../services/project-permissions";
 import { useAuth } from "../../components/auth-provider";
 import AccessNotice from "../../components/access-notice";
-import FormActions from "@/app/components/form-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -77,869 +21,598 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import {
-  RiAddLine,
-  RiCheckboxBlankCircleLine,
-  RiCheckboxCircleLine,
-  RiDeleteBinLine,
-  RiErrorWarningLine,
-  RiLinksLine,
-  RiPencilLine,
-} from "@remixicon/react";
+  RUBRIC_TEMPLATES,
+  type RubricAnswer,
+  type RubricAnswers,
+  type RubricItem,
+  type RubricSection,
+  type RubricTemplate,
+} from "./milestones/rubric-templates";
 
 type ProjectMilestonesPanelProps = {
-  projectId: number;
-  milestones: ProjectMilestoneItem[];
-  actorAssignments: {
-    id: number;
-    userId: number;
-    role: string;
-  }[];
-  /** Fase (semestre) actual del proyecto; se usa como valor por defecto. */
-  projectPhase: ProjectPhase | null;
-  /** Entregas del proyecto disponibles para vincular a un hito. */
-  reports: ProjectReportItem[];
-  /** Recarga el detalle del proyecto tras una mutación. */
-  onProjectChange: () => Promise<void>;
+  readonly projectId: number;
+  readonly actorAssignments: { readonly id: number; readonly userId: number; readonly role: string }[];
+  readonly programRequirements: readonly ProjectProgramRequirement[];
 };
 
-type MilestoneFormState = {
-  title: string;
-  description: string;
-  dueDate: string;
-  isMinimum: boolean;
-  phase: ProjectPhase;
-  reportIds: number[];
+type SupportedProgram = ProjectProgramRequirement & {
+  readonly template: RubricTemplate;
 };
 
-const DEFAULT_PHASE: ProjectPhase = "semester_1";
+type AnswerUpdate = (
+  programId: string,
+  itemId: string,
+  update: Partial<RubricAnswer>,
+) => void;
 
-const REPORT_STATUS_LABELS: Record<string, string> = {
-  pending: "Pendiente",
-  submitted: "Enviada",
-  accepted: "Aceptada",
-  rejected: "Rechazada",
+type RubricItemRowProps = {
+  readonly programId: string;
+  readonly item: RubricItem;
+  readonly answer: RubricAnswer;
+  readonly placeholder: string;
+  readonly onUpdate: AnswerUpdate;
 };
 
-function reportStatusLabel(status: string): string {
-  return REPORT_STATUS_LABELS[status] ?? status;
+const EMPTY_ANSWER: RubricAnswer = { status: null, observation: "" };
+const RUBRIC_STATUSES = ["yes", "no", "na"] as const;
+
+function isDeliverablesSection(title: string): boolean {
+  return title.toLocaleLowerCase("es").includes("entregable");
 }
 
-/** Una entrega está "lista" cuando fue aceptada. */
-function isReportDone(status: string): boolean {
-  return status === "accepted";
-}
+function createEmptyAnswers(programId: string): RubricAnswers {
+  const template = RUBRIC_TEMPLATES[programId];
+  if (!template) return {};
 
-function hasPendingReports(milestone: ProjectMilestoneItem): boolean {
-  return (milestone.reports ?? []).some(
-    (report) => !isReportDone(report.status),
-  );
-}
-
-/** Mensaje que explica por qué un hito no se puede completar. */
-function blockedCompletionMessage(milestone: ProjectMilestoneItem): string {
-  const pending = (milestone.reports ?? []).filter(
-    (report) => !isReportDone(report.status),
-  );
-  const details = pending
-    .map((report) => `${report.title} (${reportStatusLabel(report.status)})`)
-    .join(", ");
-  return `No puedes completar este hito: sus entregas vinculadas no están aceptadas: ${details}.`;
-}
-
-function createEmptyForm(phase: ProjectPhase | null): MilestoneFormState {
-  return {
-    title: "",
-    description: "",
-    dueDate: "",
-    isMinimum: false,
-    phase: phase ?? DEFAULT_PHASE,
-    reportIds: [],
-  };
-}
-
-function isOverdue(milestone: ProjectMilestoneItem): boolean {
-  if (milestone.completed) {
-    return false;
-  }
-
-  return new Date(milestone.dueDate).getTime() < Date.now();
-}
-
-export default function ProjectMilestonesPanel({
-  projectId,
-  milestones,
-  actorAssignments,
-  projectPhase,
-  reports,
-  onProjectChange,
-}: ProjectMilestonesPanelProps) {
-  const { session, isAuthenticated, ready } = useAuth();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingMilestone, setEditingMilestone] =
-    useState<ProjectMilestoneItem | null>(null);
-  const [form, setForm] = useState<MilestoneFormState>(() =>
-    createEmptyForm(projectPhase),
-  );
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [detailMilestone, setDetailMilestone] =
-    useState<ProjectMilestoneItem | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] =
-    useState<ProjectMilestoneItem | null>(null);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  const canManage = useMemo(
-    () =>
-      session ? canManageMilestones(session.user, actorAssignments) : false,
-    [session, actorAssignments],
-  );
-
-  const sortedMilestones = useMemo(
-    () =>
-      [...milestones].sort(
-        (left, right) =>
-          new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime() ||
-          left.id - right.id,
-      ),
-    [milestones],
-  );
-
-  const completedCount = useMemo(
-    () => milestones.filter((milestone) => milestone.completed).length,
-    [milestones],
-  );
-
-  const minimumMilestones = useMemo(
-    () => milestones.filter((milestone) => milestone.isMinimum),
-    [milestones],
-  );
-
-  const completedMinimumCount = useMemo(
-    () => minimumMilestones.filter((milestone) => milestone.completed).length,
-    [minimumMilestones],
-  );
-
-  const completionPercentage = useMemo(
-    () =>
-      milestones.length === 0
-        ? 0
-        : Math.round((completedCount / milestones.length) * 100),
-    [completedCount, milestones.length],
-  );
-
-  // Se deriva del listado actual para que el diálogo refleje los cambios tras
-  // completar o reabrir un hito sin cerrarse.
-  const activeDetailMilestone = detailMilestone
-    ? (milestones.find((milestone) => milestone.id === detailMilestone.id) ??
-      detailMilestone)
-    : null;
-
-  function openCreateDialog() {
-    setEditingMilestone(null);
-    setForm(createEmptyForm(projectPhase));
-    setErrorMessage(null);
-    setDialogOpen(true);
-  }
-
-  function openEditDialog(milestone: ProjectMilestoneItem) {
-    setEditingMilestone(milestone);
-    setForm({
-      title: milestone.title,
-      description: milestone.description ?? "",
-      dueDate: toDateTimeLocal(milestone.dueDate),
-      isMinimum: milestone.isMinimum,
-      phase: milestone.phase ?? projectPhase ?? DEFAULT_PHASE,
-      reportIds: (milestone.reports ?? []).map((report) => report.id),
-    });
-    setErrorMessage(null);
-    setDialogOpen(true);
-  }
-
-  function openDetailDialog(milestone: ProjectMilestoneItem) {
-    setDetailMilestone(milestone);
-    setErrorMessage(null);
-    setDetailOpen(true);
-  }
-
-  function handleSubmit(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrorMessage(null);
-
-    const title = form.title.trim();
-    const dueDate = form.dueDate;
-
-    if (!title) {
-      setErrorMessage("El título es obligatorio.");
-      return;
-    }
-
-    if (!dueDate) {
-      setErrorMessage("La fecha de vencimiento es obligatoria.");
-      return;
-    }
-
-    const payload = {
-      title,
-      description: form.description.trim() || null,
-      dueDate: new Date(dueDate).toISOString(),
-      isMinimum: form.isMinimum,
-      phase: form.phase,
-      reportIds: form.reportIds,
+  const answers: RubricAnswers = {};
+  for (const item of template.overviewItems) {
+    answers[item.id] = {
+      ...EMPTY_ANSWER,
+      status: isDeliverablesSection(item.label) ? "yes" : null,
     };
-
-    startTransition(async () => {
-      try {
-        if (editingMilestone) {
-          await updateProjectMilestone(
-            String(projectId),
-            editingMilestone.id,
-            payload,
-          );
-        } else {
-          await createProjectMilestone(String(projectId), payload);
-        }
-        setDialogOpen(false);
-        await onProjectChange();
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error ? error.message : "No se pudo guardar el hito",
-        );
-      }
-    });
   }
 
-  function handleToggle(milestone: ProjectMilestoneItem) {
-    if (!milestone.completed && hasPendingReports(milestone)) {
-      setErrorMessage(blockedCompletionMessage(milestone));
-      return;
+  for (const section of template.sections) {
+    const isMandatoryDeliverable = isDeliverablesSection(section.title);
+    for (const item of section.items) {
+      answers[item.id] = {
+        ...EMPTY_ANSWER,
+        status: isMandatoryDeliverable ? "yes" : null,
+      };
     }
-
-    setErrorMessage(null);
-
-    startTransition(async () => {
-      try {
-        await updateProjectMilestone(String(projectId), milestone.id, {
-          completed: !milestone.completed,
-        });
-        await onProjectChange();
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "No se pudo actualizar el hito",
-        );
-      }
-    });
   }
 
-  function requestDelete(milestone: ProjectMilestoneItem) {
-    setDeleteTarget(milestone);
-    setDeleteOpen(true);
-  }
+  return answers;
+}
 
-  function handleDelete() {
-    const milestone = deleteTarget;
+function normalizeAnswers(programId: string, answers?: RubricAnswers): RubricAnswers {
+  const defaults = createEmptyAnswers(programId);
+  const normalized = { ...defaults, ...answers };
 
-    if (!milestone) {
-      return;
+  for (const [itemId, defaultAnswer] of Object.entries(defaults)) {
+    const savedAnswer = answers?.[itemId];
+    if (defaultAnswer.status === "yes" && !savedAnswer?.status) {
+      normalized[itemId] = {
+        ...defaultAnswer,
+        ...savedAnswer,
+        status: "yes",
+      };
     }
-
-    setDeleteOpen(false);
-    setDeleteTarget(null);
-    setErrorMessage(null);
-
-    startTransition(async () => {
-      try {
-        await deleteProjectMilestone(String(projectId), milestone.id);
-        await onProjectChange();
-      } catch (error) {
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "No se pudo eliminar el hito",
-        );
-      }
-    });
   }
 
-  const columnCount = canManage ? 4 : 3;
+  return normalized;
+}
+
+function RubricItemRow({
+  programId,
+  item,
+  answer,
+  placeholder,
+  onUpdate,
+}: RubricItemRowProps) {
+  return (
+    <TableRow>
+      <TableCell className="font-medium">
+        {item.id.startsWith("overview-") ? item.label : `${item.id} ${item.label}`}
+      </TableCell>
+      {RUBRIC_STATUSES.map((status) => (
+        <TableCell key={status} className="text-center">
+          <input
+            type="radio"
+            name={`${programId}-${item.id}`}
+            aria-label={`${item.label}: ${status}`}
+            checked={answer.status === status}
+            onChange={() => onUpdate(programId, item.id, { status })}
+            className="h-4 w-4 accent-primary"
+          />
+        </TableCell>
+      ))}
+      <TableCell>
+        <Textarea
+          value={answer.observation}
+          onChange={(event) =>
+            onUpdate(programId, item.id, { observation: event.target.value })
+          }
+          rows={2}
+          maxLength={1000}
+          placeholder={placeholder}
+        />
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function RubricTable({
+  programId,
+  items,
+  answers,
+  heading,
+  itemHeading,
+  placeholder,
+  onUpdate,
+}: {
+  readonly programId: string;
+  readonly items: readonly RubricItem[];
+  readonly answers: RubricAnswers;
+  readonly heading: string;
+  readonly itemHeading: string;
+  readonly placeholder: string;
+  readonly onUpdate: AnswerUpdate;
+}) {
+  return (
+    <section className="space-y-2">
+      <h3 className="font-semibold">{heading}</h3>
+      <div className="overflow-x-auto rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[260px]">{itemHeading}</TableHead>
+              <TableHead className="w-16 text-center">Sí</TableHead>
+              <TableHead className="w-16 text-center">No</TableHead>
+              <TableHead className="w-16 text-center">N/A</TableHead>
+              <TableHead className="min-w-[220px]">Observaciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <RubricItemRow
+                key={item.id}
+                programId={programId}
+                item={item}
+                answer={answers[item.id] ?? EMPTY_ANSWER}
+                placeholder={placeholder}
+                onUpdate={onUpdate}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </section>
+  );
+}
+
+function TeacherRubricEditor({
+  programId,
+  template,
+  answers,
+  saving,
+  saved,
+  onUpdate,
+  onSave,
+}: {
+  readonly programId: string;
+  readonly template: RubricTemplate;
+  readonly answers: RubricAnswers;
+  readonly saving: boolean;
+  readonly saved: boolean;
+  readonly onUpdate: AnswerUpdate;
+  readonly onSave: () => void;
+}) {
+  return (
+    <>
+      <p className="text-sm text-muted-foreground">
+        Marque una sola opción por requisito. Use las observaciones para justificar
+        los puntos marcados como No o N/A e indicar los ajustes requeridos.
+      </p>
+      <div className="space-y-5">
+        <RubricTable
+          programId={programId}
+          items={template.overviewItems}
+          answers={answers}
+          heading="Resumen general de hitos"
+          itemHeading="Hito"
+          placeholder="Observación general..."
+          onUpdate={onUpdate}
+        />
+        {template.sections.map((section) => (
+          <RubricSectionTable
+            key={section.id}
+            programId={programId}
+            section={section}
+            answers={answers}
+            onUpdate={onUpdate}
+          />
+        ))}
+      </div>
+      {template.notes?.map((note) => (
+        <p key={note} className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+          {note}
+        </p>
+      ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={onSave} disabled={saving}>
+          {saving ? (
+            <>
+              <Spinner data-icon="inline-start" /> Guardando...
+            </>
+          ) : (
+            "Guardar evaluación"
+          )}
+        </Button>
+        {saved ? (
+          <span className="text-sm text-emerald-700">
+            Evaluación guardada correctamente.
+          </span>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
+function RubricSectionTable({
+  programId,
+  section,
+  answers,
+  onUpdate,
+}: {
+  readonly programId: string;
+  readonly section: RubricSection;
+  readonly answers: RubricAnswers;
+  readonly onUpdate: AnswerUpdate;
+}) {
+  return (
+    <RubricTable
+      programId={programId}
+      items={section.items}
+      answers={answers}
+      heading={`${section.id}. ${section.title}`}
+      itemHeading="Requisito"
+      placeholder="Observación del profesor..."
+      onUpdate={onUpdate}
+    />
+  );
+}
+
+function StudentMilestoneSummary({
+  template,
+  answers,
+}: {
+  readonly template: RubricTemplate;
+  readonly answers: RubricAnswers;
+}) {
+  const visibleSections = template.overviewItems
+    .map((item, index) => {
+      const overviewAnswer = answers[item.id] ?? EMPTY_ANSWER;
+      const section = template.sections[index];
+      const visibleItems = section?.items.filter((detail) => {
+        const answer = answers[detail.id] ?? EMPTY_ANSWER;
+        return answer.status === "yes" || Boolean(answer.observation.trim());
+      }) ?? [];
+      const isVisible =
+        overviewAnswer.status === "yes" ||
+        Boolean(overviewAnswer.observation.trim()) ||
+        visibleItems.length > 0;
+
+      return isVisible ? { item, overviewAnswer, visibleItems } : null;
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+
+  if (visibleSections.length === 0) {
+    return (
+      <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+        El profesor todavía no ha publicado requisitos ni observaciones para este formato.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Selecciona un hito para consultar los requisitos que el profesor ha marcado
+        como incluidos y sus observaciones.
+      </p>
+      {visibleSections.map(({ item, overviewAnswer, visibleItems }) => (
+        <details key={item.id} className="rounded-lg border px-4 py-3">
+          <summary className="cursor-pointer font-medium">{item.label}</summary>
+          <div className="mt-3 space-y-3 pl-1 text-sm">
+            {overviewAnswer.observation.trim() ? (
+              <p className="text-muted-foreground">{overviewAnswer.observation}</p>
+            ) : null}
+            {visibleItems.length > 0 ? (
+              <ul className="space-y-2">
+                {visibleItems.map((detail) => (
+                  <StudentVisibleRequirement
+                    key={detail.id}
+                    item={detail}
+                    answer={answers[detail.id] ?? EMPTY_ANSWER}
+                  />
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+function StudentVisibleRequirement({
+  item,
+  answer,
+}: {
+  readonly item: RubricItem;
+  readonly answer: RubricAnswer;
+}) {
+  return (
+    <li>
+      <p>{item.label}</p>
+      {answer.observation.trim() ? (
+        <p className="mt-1 text-muted-foreground">
+          Observación del docente: {answer.observation}
+        </p>
+      ) : null}
+    </li>
+  );
+}
+
+function ProjectProgramCard({
+  program,
+  answers,
+  canManage,
+  saving,
+  saved,
+  onUpdate,
+  onSave,
+}: {
+  readonly program: SupportedProgram;
+  readonly answers: RubricAnswers;
+  readonly canManage: boolean;
+  readonly saving: boolean;
+  readonly saved: boolean;
+  readonly onUpdate: AnswerUpdate;
+  readonly onSave: () => void;
+}) {
+  const { template } = program;
+  const totalItems =
+    template.overviewItems.length +
+    template.sections.reduce((total, section) => total + section.items.length, 0);
+  const answeredItems = Object.values(answers).filter(
+    (answer) => answer.status !== null,
+  ).length;
+  const [showStudentPreview, setShowStudentPreview] = useState(false);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Hitos</CardTitle>
-        <CardDescription>
-          {milestones.length === 0
-            ? "Define los hitos y entregas del proyecto."
-            : `${completedCount} de ${milestones.length} completados`}
-        </CardDescription>
-
-        {milestones.length > 0 ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <Progress value={completionPercentage} className="w-40" />
-            <span className="text-sm font-medium">{completionPercentage}%</span>
-            {minimumMilestones.length > 0 ? (
-              <Badge
-                variant={
-                  completedMinimumCount === minimumMilestones.length
-                    ? "secondary"
-                    : "destructive"
-                }
-              >
-                Hitos mínimos: {completedMinimumCount}/
-                {minimumMilestones.length}
-              </Badge>
-            ) : null}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle>{template.programName}</CardTitle>
+            <CardDescription>
+              {program.studentCount} estudiante(s) requerido(s) · {template.introduction}
+            </CardDescription>
           </div>
-        ) : null}
-
-        {ready && canManage ? (
-          <CardAction>
-            <Button onClick={openCreateDialog}>
-              <RiAddLine data-icon="inline-start" />
-              Nuevo hito
-            </Button>
-          </CardAction>
-        ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {canManage ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowStudentPreview((current) => !current)}
+              >
+                {showStudentPreview ? "Volver a editar" : "Vista del estudiante"}
+              </Button>
+            ) : null}
+            <Badge variant="outline">
+              {canManage && !showStudentPreview
+                ? `${answeredItems}/${totalItems} evaluados`
+                : "Resumen"}
+            </Badge>
+          </div>
+        </div>
       </CardHeader>
-
-      <CardContent>
-        {errorMessage && !dialogOpen ? (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{errorMessage}</AlertDescription>
-          </Alert>
-        ) : null}
-
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">Estado</TableHead>
-              <TableHead>Hito</TableHead>
-              <TableHead className="w-48">Vence</TableHead>
-              {canManage ? (
-                <TableHead className="w-24 text-right">Acciones</TableHead>
-              ) : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedMilestones.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columnCount}
-                  className="h-24 text-center text-muted-foreground"
-                >
-                  No hay hitos todavía.
-                </TableCell>
-              </TableRow>
-            ) : (
-              sortedMilestones.map((milestone) => (
-                <TableRow key={milestone.id}>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={
-                        milestone.completed
-                          ? "Marcar como pendiente"
-                          : "Marcar como completado"
-                      }
-                      onClick={() => handleToggle(milestone)}
-                      disabled={!canManage || isPending}
-                    >
-                      {milestone.completed ? (
-                        <RiCheckboxCircleLine className="text-success" />
-                      ) : (
-                        <RiCheckboxBlankCircleLine />
-                      )}
-                    </Button>
-                  </TableCell>
-                  <TableCell className="whitespace-normal">
-                    <Button
-                      variant="link"
-                      onClick={() => openDetailDialog(milestone)}
-                      className={cn(
-                        "h-auto justify-start whitespace-normal p-0 text-left font-medium",
-                        milestone.completed
-                          ? "text-muted-foreground line-through"
-                          : "text-foreground",
-                      )}
-                    >
-                      {milestone.title}
-                    </Button>
-                    {milestone.description ? (
-                      <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-muted-foreground">
-                        {milestone.description}
-                      </p>
-                    ) : null}
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {milestone.phase ? (
-                        <Badge variant="outline">
-                          {formatPhase(milestone.phase)}
-                        </Badge>
-                      ) : null}
-                      {milestone.isMinimum ? (
-                        <Badge variant="secondary">Hito mínimo</Badge>
-                      ) : null}
-                      {(milestone.reports ?? []).length > 0 ? (
-                        <Badge variant="outline">
-                          <RiLinksLine className="size-3.5" />
-                          {(milestone.reports ?? []).length} entrega(s)
-                        </Badge>
-                      ) : null}
-                    </div>
-                    {(milestone.reports ?? []).length > 0 ? (
-                      <div className="mt-2 flex flex-col gap-1">
-                        {(milestone.reports ?? []).map((report) => (
-                          <span
-                            key={report.id}
-                            className="inline-flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground"
-                          >
-                            <RiLinksLine className="size-3.5" />
-                            {report.title}
-                            <Badge
-                              variant={
-                                isReportDone(report.status)
-                                  ? "secondary"
-                                  : "outline"
-                              }
-                            >
-                              {reportStatusLabel(report.status)}
-                            </Badge>
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-muted-foreground">
-                      {formatDate(milestone.dueDate)}
-                    </div>
-                    {isOverdue(milestone) ? (
-                      <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-destructive">
-                        <RiErrorWarningLine className="size-3.5" />
-                        Vencido
-                      </span>
-                    ) : null}
-                  </TableCell>
-                  {canManage ? (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label="Editar hito"
-                          onClick={() => openEditDialog(milestone)}
-                        >
-                          <RiPencilLine />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label="Eliminar hito"
-                          className="text-destructive"
-                          onClick={() => requestDelete(milestone)}
-                        >
-                          <RiDeleteBinLine />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  ) : null}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-
-        {!ready ? (
-          <Alert className="mt-6">
-            <AlertDescription>Cargando acceso...</AlertDescription>
-          </Alert>
-        ) : !isAuthenticated ? (
-          <AccessNotice
-            variant="alert"
-            className="mt-6"
-            message="Inicia sesión para administrar los hitos."
+      <CardContent className="space-y-4">
+        {canManage && !showStudentPreview ? (
+          <TeacherRubricEditor
+            programId={program.programId}
+            template={template}
+            answers={answers}
+            saving={saving}
+            saved={saved}
+            onUpdate={onUpdate}
+            onSave={onSave}
           />
-        ) : null}
+        ) : (
+          <StudentMilestoneSummary template={template} answers={answers} />
+        )}
       </CardContent>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingMilestone ? "Editar hito" : "Nuevo hito"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingMilestone
-                ? "Actualiza los detalles del hito."
-                : "Define un hito o entrega del proyecto."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit}>
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="milestone-title">Título</FieldLabel>
-                <Input
-                  id="milestone-title"
-                  value={form.title}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, title: event.target.value }))
-                  }
-                  placeholder="Nombre del hito"
-                  disabled={isPending}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="milestone-description">
-                  Descripción
-                </FieldLabel>
-                <Textarea
-                  id="milestone-description"
-                  value={form.description}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      description: event.target.value,
-                    }))
-                  }
-                  rows={3}
-                  disabled={isPending}
-                  placeholder="Descripción opcional del hito"
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="milestone-due-date">
-                  Fecha de vencimiento
-                </FieldLabel>
-                <Input
-                  id="milestone-due-date"
-                  type="datetime-local"
-                  value={form.dueDate}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, dueDate: event.target.value }))
-                  }
-                  disabled={isPending}
-                />
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="milestone-phase">
-                  Fase (semestre)
-                </FieldLabel>
-
-                <Select
-                  value={form.phase}
-                  onValueChange={(value) => {
-                    if (value) {
-                      setForm((prev) => ({
-                        ...prev,
-                        phase: value as ProjectPhase,
-                      }));
-                    }
-                  }}
-                  disabled={isPending}
-                >
-                  <SelectTrigger id="milestone-phase" className="w-full">
-                    <SelectValue>{formatPhase(form.phase)}</SelectValue>
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    {PROJECT_PHASES.map((phase) => (
-                      <SelectItem key={phase} value={phase}>
-                        {formatPhase(phase)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <FieldDescription>
-                  Semestre en el que se espera completar el hito.
-                </FieldDescription>
-              </Field>
-
-              <Field orientation="horizontal">
-                <Checkbox
-                  id="milestone-minimum"
-                  checked={form.isMinimum}
-                  onCheckedChange={(checked) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      isMinimum: checked === true,
-                    }))
-                  }
-                  disabled={isPending}
-                />
-
-                <FieldContent>
-                  <FieldLabel
-                    htmlFor="milestone-minimum"
-                    className="font-normal"
-                  >
-                    Hito mínimo
-                  </FieldLabel>
-
-                  <FieldDescription>
-                    Obligatorio para avanzar de semestre y cerrar el proyecto.
-                  </FieldDescription>
-                </FieldContent>
-              </Field>
-
-              <Field>
-                <FieldLabel>Entregas vinculadas</FieldLabel>
-
-                {reports.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    El proyecto no tiene entregas todavía.
-                  </p>
-                ) : (
-                  <div className="flex max-h-52 flex-col gap-1 overflow-y-auto rounded-lg border border-border p-2">
-                    {reports.map((report) => (
-                      <div
-                        key={report.id}
-                        className="flex items-center gap-2 rounded-md px-1 py-1"
-                      >
-                        <Checkbox
-                          id={`milestone-report-${report.id}`}
-                          checked={form.reportIds.includes(report.id)}
-                          onCheckedChange={(next) =>
-                            setForm((prev) => ({
-                              ...prev,
-                              reportIds:
-                                next === true
-                                  ? [...new Set([...prev.reportIds, report.id])]
-                                  : prev.reportIds.filter(
-                                      (id) => id !== report.id,
-                                    ),
-                            }))
-                          }
-                          disabled={isPending}
-                        />
-                        <label
-                          htmlFor={`milestone-report-${report.id}`}
-                          className="flex-1 cursor-pointer text-sm"
-                        >
-                          {report.title}
-                        </label>
-                        <Badge
-                          variant={
-                            isReportDone(report.status)
-                              ? "secondary"
-                              : "outline"
-                          }
-                        >
-                          {reportStatusLabel(report.status)}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <FieldDescription>
-                  El hito no se podrá completar hasta que todas las entregas
-                  vinculadas estén aceptadas.
-                </FieldDescription>
-              </Field>
-
-              {errorMessage ? (
-                <Alert variant="destructive">
-                  <AlertDescription>{errorMessage}</AlertDescription>
-                </Alert>
-              ) : null}
-
-              <FormActions
-                loading={isPending}
-                loadingText="Guardando..."
-                submitText={editingMilestone ? "Guardar cambios" : "Crear hito"}
-                onCancel={() => setDialogOpen(false)}
-              />
-            </FieldGroup>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{activeDetailMilestone?.title}</DialogTitle>
-            <DialogDescription>Detalles del hito</DialogDescription>
-          </DialogHeader>
-
-          {activeDetailMilestone ? (
-            <>
-              <div className="flex flex-col gap-4">
-                {isOverdue(activeDetailMilestone) ? (
-                  <Alert variant="destructive">
-                    <RiErrorWarningLine />
-                    <AlertDescription>Este hito ya venció.</AlertDescription>
-                  </Alert>
-                ) : null}
-
-                <div className="flex items-center gap-2">
-                  {activeDetailMilestone.completed ? (
-                    <RiCheckboxCircleLine className="text-success" />
-                  ) : (
-                    <RiCheckboxBlankCircleLine />
-                  )}
-                  <span className="text-sm font-medium">
-                    {activeDetailMilestone.completed ? "Completado" : "Pendiente"}
-                  </span>
-                </div>
-
-                {activeDetailMilestone.phase ||
-                activeDetailMilestone.isMinimum ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {activeDetailMilestone.phase ? (
-                      <Badge variant="outline">
-                        {formatPhase(activeDetailMilestone.phase)}
-                      </Badge>
-                    ) : null}
-                    {activeDetailMilestone.isMinimum ? (
-                      <Badge variant="secondary">Hito mínimo</Badge>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Vence
-                  </p>
-                  <p className="mt-1 text-sm">
-                    {formatDate(activeDetailMilestone.dueDate)}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Descripción
-                  </p>
-                  {activeDetailMilestone.description ? (
-                    <p className="mt-1 whitespace-pre-line text-sm">
-                      {activeDetailMilestone.description}
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Sin descripción.
-                    </p>
-                  )}
-                </div>
-
-                {activeDetailMilestone.createdAt ? (
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Creado
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {formatDate(activeDetailMilestone.createdAt)}
-                    </p>
-                  </div>
-                ) : null}
-
-                {(activeDetailMilestone.reports ?? []).length > 0 ? (
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Entregas vinculadas
-                    </p>
-                    <div className="mt-1 flex flex-col gap-1">
-                      {(activeDetailMilestone.reports ?? []).map((report) => (
-                        <span
-                          key={report.id}
-                          className="inline-flex flex-wrap items-center gap-1.5 text-sm"
-                        >
-                          <RiLinksLine className="size-3.5 text-muted-foreground" />
-                          {report.title}
-                          <Badge
-                            variant={
-                              isReportDone(report.status)
-                                ? "secondary"
-                                : "outline"
-                            }
-                          >
-                            {reportStatusLabel(report.status)}
-                          </Badge>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {!activeDetailMilestone.completed &&
-                hasPendingReports(activeDetailMilestone) ? (
-                  <Alert variant="destructive">
-                    <RiErrorWarningLine />
-                    <AlertDescription>
-                      No puedes completar este hito hasta que sus entregas
-                      vinculadas estén aceptadas.
-                    </AlertDescription>
-                  </Alert>
-                ) : null}
-
-                {errorMessage ? (
-                  <Alert variant="destructive">
-                    <RiErrorWarningLine />
-                    <AlertDescription>{errorMessage}</AlertDescription>
-                  </Alert>
-                ) : null}
-              </div>
-
-              {canManage ? (
-                <DialogFooter>
-                  <Button
-                    variant={
-                      activeDetailMilestone.completed ? "outline" : "default"
-                    }
-                    onClick={() => handleToggle(activeDetailMilestone)}
-                    disabled={isPending}
-                  >
-                    {isPending ? (
-                      <Spinner data-icon="inline-start" />
-                    ) : activeDetailMilestone.completed ? (
-                      <RiCheckboxBlankCircleLine data-icon="inline-start" />
-                    ) : (
-                      <RiCheckboxCircleLine data-icon="inline-start" />
-                    )}
-                    {isPending
-                      ? "Guardando..."
-                      : activeDetailMilestone.completed
-                        ? "Marcar como pendiente"
-                        : "Marcar como completado"}
-                  </Button>
-                </DialogFooter>
-              ) : null}
-            </>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar hito</AlertDialogTitle>
-            <AlertDialogDescription>
-              ¿Eliminar el hito &quot;{deleteTarget?.title}&quot;? Esta acción no
-              se puede deshacer.
-              {(deleteTarget?.reports ?? []).length > 0 ? (
-                <span className="mt-2 block text-destructive">
-                  Se desvincularán {deleteTarget?.reports?.length} entrega(s):{" "}
-                  {deleteTarget?.reports?.map((report) => report.title).join(", ")}
-                  .
-                </span>
-              ) : null}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleDelete}>
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
+  );
+}
+
+export default function ProjectMilestonesPanel({
+  projectId,
+  actorAssignments,
+  programRequirements,
+}: ProjectMilestonesPanelProps) {
+  const { session, isAuthenticated, ready } = useAuth();
+  const router = useRouter();
+  const canManage = useMemo(
+    () => (session ? canManageMilestones(session.user, actorAssignments) : false),
+    [session, actorAssignments],
+  );
+  const programs = useMemo(
+    () =>
+      programRequirements
+        .map((requirement) => ({
+          ...requirement,
+          template: RUBRIC_TEMPLATES[requirement.programId],
+        }))
+        .filter(
+          (requirement): requirement is SupportedProgram =>
+            Boolean(requirement.template),
+        ),
+    [programRequirements],
+  );
+  const [rubrics, setRubrics] = useState<Record<string, RubricAnswers>>({});
+  const [loading, setLoading] = useState(true);
+  const [savingProgram, setSavingProgram] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successProgram, setSuccessProgram] = useState<string | null>(null);
+
+  const loadRubrics = useCallback(async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const saved = await getProjectMilestoneRubrics(projectId);
+      const next: Record<string, RubricAnswers> = {};
+      for (const program of programs) {
+        const stored = saved.find(
+          (rubric) => rubric.programId === program.programId,
+        );
+        next[program.programId] = normalizeAnswers(
+          program.programId,
+          stored?.answers,
+        );
+      }
+      setRubrics(next);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudieron cargar los hitos.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId, programs]);
+
+  useEffect(() => {
+    void loadRubrics();
+  }, [loadRubrics]);
+
+  const updateAnswer = useCallback<AnswerUpdate>((programId, itemId, update) => {
+    setRubrics((previous) => ({
+      ...previous,
+      [programId]: {
+        ...(previous[programId] ?? createEmptyAnswers(programId)),
+        [itemId]: {
+          ...(previous[programId]?.[itemId] ?? EMPTY_ANSWER),
+          ...update,
+        },
+      },
+    }));
+    setSuccessProgram(null);
+  }, []);
+
+  const saveRubric = useCallback(
+    async (programId: string) => {
+      setSavingProgram(programId);
+      setErrorMessage(null);
+      setSuccessProgram(null);
+      try {
+        const saved = await saveProjectMilestoneRubric(
+          projectId,
+          programId,
+          rubrics[programId] ?? createEmptyAnswers(programId),
+        );
+        setRubrics((previous) => ({
+          ...previous,
+          [programId]: normalizeAnswers(programId, saved.answers),
+        }));
+        setSuccessProgram(programId);
+        router.refresh();
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "No se pudo guardar la evaluación.",
+        );
+      } finally {
+        setSavingProgram(null);
+      }
+    },
+    [projectId, rubrics, router],
+  );
+
+  if (!ready) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-sm text-muted-foreground">
+          Cargando acceso...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AccessNotice
+        title="Acceso requerido"
+        message="Inicia sesión para consultar los hitos del proyecto."
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+          <Spinner /> Cargando formatos de hitos...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (programs.length === 0) {
+    return (
+      <Alert>
+        <AlertDescription>
+          Este proyecto no tiene programas académicos con un formato de hitos
+          disponible. Actualmente se encuentran configurados Ingeniería Ambiental,
+          Ingeniería Industrial e Ingeniería Mecatrónica.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold">Hitos del proyecto</h2>
+        <p className="text-sm text-muted-foreground">
+          {canManage
+            ? "Formatos de evaluación asociados automáticamente a los programas del proyecto."
+            : "Resumen de los requisitos de hitos correspondientes a los programas del proyecto."}
+        </p>
+      </div>
+      {errorMessage ? (
+        <Alert variant="destructive">
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      ) : null}
+      {programs.map((program) => (
+        <ProjectProgramCard
+          key={program.programId}
+          program={program}
+          answers={rubrics[program.programId] ?? createEmptyAnswers(program.programId)}
+          canManage={canManage}
+          saving={savingProgram === program.programId}
+          saved={successProgram === program.programId}
+          onUpdate={updateAnswer}
+          onSave={() => void saveRubric(program.programId)}
+        />
+      ))}
+    </div>
   );
 }

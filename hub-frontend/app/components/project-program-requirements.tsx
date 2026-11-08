@@ -22,6 +22,25 @@ type ProgramRequirementItem = {
   readonly schoolName?: string;
 };
 
+const SUPPORTED_ENGINEERING_PROGRAMS = new Set([
+  "ingenieria-ambiental",
+  "ingenieria-industrial",
+  "ingenieria-mecatronica",
+]);
+
+function isSupportedEngineeringProgram(programId: string, programName: string): boolean {
+  const normalize = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+  return SUPPORTED_ENGINEERING_PROGRAMS.has(normalize(programId)) ||
+    SUPPORTED_ENGINEERING_PROGRAMS.has(normalize(programName));
+}
+
 type ProjectProgramRequirementsProps = {
   readonly items: readonly ProgramRequirementItem[];
   readonly schools: readonly ProjectProgramSchool[];
@@ -135,7 +154,7 @@ export default function ProjectProgramRequirements({
                         <SelectItem
                           key={program.id}
                           value={program.id}
-                          disabled={selectedElsewhere}
+                          disabled={selectedElsewhere || !isSupportedEngineeringProgram(program.id, program.name)}
                         >
                           {program.name} — {school.name}
                         </SelectItem>

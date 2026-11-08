@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
@@ -14,7 +15,11 @@ import {
   MilestonesService,
   ProjectMilestoneResponse,
 } from './milestones.service';
-import { CreateMilestoneDto, UpdateMilestoneDto } from './milestones.dto';
+import {
+  CreateMilestoneDto,
+  SaveMilestoneRubricDto,
+  UpdateMilestoneDto,
+} from './milestones.dto';
 
 @Controller('projects/:projectId/milestones')
 export class MilestonesController {
@@ -26,6 +31,29 @@ export class MilestonesController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ProjectMilestoneResponse[]> {
     return this.milestonesService.milestonesByProject(projectId, user);
+  }
+
+  @Get('rubrics')
+  getProjectRubrics(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.milestonesService.rubricsByProject(projectId, user);
+  }
+
+  @Put('rubrics/:programId')
+  saveProjectRubric(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Param('programId') programId: string,
+    @Body() data: SaveMilestoneRubricDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.milestonesService.saveProjectRubric({
+      projectId,
+      programId,
+      answers: data.answers,
+      user,
+    });
   }
 
   @Post()
