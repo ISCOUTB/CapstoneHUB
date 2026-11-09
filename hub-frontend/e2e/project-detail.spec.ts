@@ -35,7 +35,25 @@ test("muestra las pestañas del detalle sin desborde horizontal", async ({
   await expect(
     page.getByRole("heading", { name: "Proyecto E2E" }),
   ).toBeVisible();
+
+  // En móvil el enlace de perfil está dentro del drawer de la sidebar.
+  const menuButton = page.getByRole("button", {
+    name: "Abrir menú",
+    exact: true,
+  });
+  if (await menuButton.isVisible()) {
+    await menuButton.click();
+  }
+
   await expect(page.getByRole("link", { name: "Mi perfil" })).toBeVisible();
+
+  const closeMenuButton = page.getByRole("button", {
+    name: "Cerrar menú",
+    exact: true,
+  });
+  if (await closeMenuButton.isVisible()) {
+    await closeMenuButton.click();
+  }
 
   // El proponente es miembro: ve las 8 pestañas internas.
   await expect(page.locator('[data-slot="tabs-trigger"]')).toHaveCount(8);

@@ -13,14 +13,26 @@ test("inicia sesión y muestra el menú de perfil", async ({ page, request }) =>
   await expect(page).toHaveURL(/\/projects/);
   await page.getByRole("heading", { name: "Lista de proyectos" }).waitFor();
 
-  // En móvil el widget de perfil vive en el menú hamburguesa.
-  const menuButton = page.getByRole("button", { name: "Abrir menú" });
+  // En móvil los enlaces de usuario viven en el drawer de la sidebar.
+  const menuButton = page.getByRole("button", {
+    name: "Abrir menú",
+    exact: true,
+  });
   if (await menuButton.isVisible()) {
     await menuButton.click();
   }
 
   await page.waitForLoadState("networkidle");
   await expect(page.getByRole("link", { name: "Mi perfil" })).toBeVisible();
+
+  // El drawer es modal: hay que cerrarlo para abrir el menú de perfil.
+  const closeMenuButton = page.getByRole("button", {
+    name: "Cerrar menú",
+    exact: true,
+  });
+  if (await closeMenuButton.isVisible()) {
+    await closeMenuButton.click();
+  }
 
   const profileTrigger = page.getByRole("button", {
     name: "Abrir menú de perfil",
