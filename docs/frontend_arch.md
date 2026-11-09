@@ -17,7 +17,8 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 - `app/` — rutas del App Router.
 - `app/api/` — route handlers que actúan como BFF/proxy hacia el backend.
 - `app/services/` — acceso a datos y sesión.
-- `app/components/` — componentes propios (navbar, auth, formularios).
+- `app/components/` — componentes propios (shell, sidebar, navbar, auth,
+  formularios).
 - `components/ui/` — componentes base de shadcn/ui.
 - `lib/utils.ts` — utilidades (por ejemplo `cn`).
 - `app/globals.css` — tokens de diseño y utilidades propias.
@@ -119,20 +120,26 @@ aparece en el detalle de los proyectos públicos aprobados. En la pestaña
 asignarlos o descartarlos, con confirmación. El perfil muestra una tarjeta
 **Proyectos de interés** además de **Mis proyectos**.
 
-## Statusbar y pestañas de usuario
+## Shell, sidebar y header de módulo
 
-La navegación principal vive en la navbar superior: Inicio, Proyectos y
-Proponer. El widget de perfil de la navbar abre un dropdown con **Mi perfil** y
-**Cerrar sesión**. Debajo de la navbar, `PageFrame` monta un **statusbar** con la
-categoría y el título de la página (`Administración / Rúbricas`, `Proyecto #12 /
-Nombre`). Inmediatamente debajo aparecen las **pestañas de acciones de usuario**:
-Administración (solo admin), Rúbricas para admin/directivo, Indicadores para los
-roles con acceso a KPIs y Mi perfil.
+`AppShell` monta una **sidebar** oscura fija de altura completa y un **topbar**
+claro (`bg-card`) sticky.
+La sidebar
+([`app-sidebar.tsx`](../hub-frontend/app/components/app-sidebar.tsx)) agrupa la
+navegación en dos secciones: **Navegación** (Inicio, Proyectos, Proponer) y
+**Acciones de usuario** (Administración solo admin, Rúbricas para
+admin/directivo, Indicadores para los roles con acceso a KPIs y Mi perfil). Los
+links se calculan en `navigation-links.ts`. En móvil la sidebar se monta en un
+drawer y se cierra al navegar.
 
-Solo la navbar es sticky; el statusbar y las pestañas acompañan al scroll. La
-home, login y registro no muestran este chrome. Las pestañas son solo atajos: la
-página de rúbricas vive en `/admin/rubrics` y el backend vuelve a validar los
-permisos.
+El topbar
+([`navbar.tsx`](../hub-frontend/app/components/navbar.tsx)) muestra el
+`ModuleHeader` del módulo activo —categoría, título y tamaño del equipo— y el
+widget de sesión, cuyo dropdown conserva **Mi perfil** y **Cerrar sesión**.
+`PageFrame` publica esos datos en `page-header-context.tsx`; ya no existe el
+statusbar ni las pestañas de usuario dentro del contenido. Login y registro se
+muestran sin sidebar y con la marca en el topbar. La página de rúbricas vive en
+`/admin/rubrics` y el backend vuelve a validar los permisos.
 
 ## Autenticación
 
