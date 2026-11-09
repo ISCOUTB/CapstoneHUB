@@ -6,35 +6,57 @@ export type AppLink = {
   label: string;
 };
 
-/** Navegación principal que vive en la navbar superior. */
-export function navigationLinks(): AppLink[] {
-  return [
-    { href: "/", label: "Inicio" },
-    { href: "/projects", label: "Proyectos" },
-    { href: "/submit", label: "Proponer" },
-  ];
-}
+export type AppSection = {
+  id: string;
+  label: string;
+  links: AppLink[];
+};
 
 /**
- * Acciones rápidas de la sesión. Se muestran como pestañas debajo del
- * statusbar y cambian según los roles globales.
+ * Links de la sidebar. La primera sección es siempre visible; las acciones de
+ * usuario dependen de la sesión y de los roles globales, igual que las
+ * antiguas pestañas bajo el statusbar.
  */
-export function userTabLinks(roles: readonly string[]): AppLink[] {
-  const links: AppLink[] = [];
+export function sidebarSections(
+  roles: readonly string[] | null,
+): AppSection[] {
+  const sections: AppSection[] = [
+    {
+      id: "navigation",
+      label: "Navegación",
+      links: [
+        { href: "/", label: "Inicio" },
+        { href: "/projects", label: "Proyectos" },
+        { href: "/submit", label: "Proponer" },
+      ],
+    },
+  ];
+
+  if (!roles) {
+    return sections;
+  }
+
+  const userLinks: AppLink[] = [];
 
   if (roles.includes("admin")) {
-    links.push({ href: "/admin/users", label: "Administración" });
+    userLinks.push({ href: "/admin/users", label: "Administración" });
   }
 
   if (canManageRubrics(roles)) {
-    links.push({ href: "/admin/rubrics", label: "Rúbricas" });
+    userLinks.push({ href: "/admin/rubrics", label: "Rúbricas" });
   }
 
   if (canViewKpis(roles)) {
-    links.push({ href: "/profile/kpis", label: "Indicadores" });
+    userLinks.push({ href: "/profile/kpis", label: "Indicadores" });
   }
 
-  links.push({ href: "/profile", label: "Mi perfil" });
+  userLinks.push({ href: "/profile", label: "Mi perfil" });
 
-  return links;
+  sections.push({
+    id: "account",
+    label: "Acciones de usuario",
+    links: userLinks,
+  });
+
+  return sections;
 }

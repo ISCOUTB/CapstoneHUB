@@ -1,141 +1,47 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
 import { AuthNav } from "./auth-nav";
-import { UtbLogo } from "./utb-logo";
-import { navigationLinks } from "./navigation-links";
-import { cn } from "@/lib/utils";
+import { Brand } from "./brand";
+import { ModuleHeader } from "./module-header";
+import { usePageHeader } from "./page-header-context";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
-interface NavLink {
-  href: string;
-  label: string;
-}
-
-/** Ítem de navegación: píldora azul UTB cuando la ruta está activa. */
-function NavItem({
-  href,
-  label,
-  pathname,
-  onNavigate,
-  className,
-}: NavLink & {
-  pathname: string;
-  onNavigate?: () => void;
-  className?: string;
-}) {
-  const isActive = pathname === href || pathname.startsWith(href + "/");
+/**
+ * Topbar de la plataforma: en las pantallas internas muestra el header del
+ * módulo (categoría + título) y el widget de sesión. En login/registro, donde
+ * no hay sidebar, recupera la marca a la izquierda.
+ */
+export default function Navbar({
+  isAuthPage = false,
+}: Readonly<{ isAuthPage?: boolean }>) {
+  const { header } = usePageHeader();
 
   return (
-    <Link
-      href={href}
-      onClick={onNavigate}
-      aria-current={isActive ? "page" : undefined}
-      className={cn(
-        "relative flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] font-medium transition-all duration-150",
-        "focus-visible:ring-2 focus-visible:ring-utb-blue-pale/60 focus-visible:outline-none",
-        isActive
-          ? "bg-utb-blue text-white shadow-lg shadow-utb-blue/30"
-          : "text-white/55 hover:bg-white/10 hover:text-white/90",
-        className
-      )}
-    >
-      {label}
-      {isActive ? (
-        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-white/60" />
-      ) : null}
-    </Link>
-  );
-}
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-card">
+      <div className="flex h-16 w-full items-center gap-3 px-4 sm:px-6 lg:px-8">
+        {isAuthPage ? (
+          <>
+            <Brand variant="light" />
 
-export default function Navbar() {
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const links: NavLink[] = navigationLinks();
-  const closeMobile = () => setMobileOpen(false);
-
-  return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-utb-deep-blue">
-      <div className="noise-overlay relative">
-        <div className="grid-lines-dark pointer-events-none absolute inset-0 opacity-60" />
-
-        {/* Una sola fila: marca a la izquierda, enlaces, sesión a la derecha. */}
-        <div className="relative z-10 mx-auto flex w-full max-w-384 items-center gap-2 px-4 py-2.5 sm:px-6 lg:px-8">
-          <Link
-            href="/"
-            onClick={closeMobile}
-            className="flex shrink-0 items-center gap-2.5 rounded-xl transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-utb-blue-pale/60 focus-visible:outline-none"
-          >
-            <UtbLogo className="h-7 w-auto text-white sm:h-8" />
-
-            <span
-              className="h-6 w-px shrink-0 bg-white/20 sm:h-7"
-              aria-hidden="true"
+            <div className="ml-auto flex shrink-0 items-center">
+              <AuthNav />
+            </div>
+          </>
+        ) : (
+          <>
+            <SidebarTrigger
+              aria-label="Abrir menú"
+              className="size-9 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground lg:hidden"
             />
 
-            <span className="text-base font-bold tracking-tight text-white sm:text-lg">
-              Capstone<span className="text-utb-blue-pale">HUB</span>
-            </span>
-          </Link>
-
-          {/* Menú de escritorio */}
-          <nav
-            aria-label="Navegación principal"
-            className="ml-3 hidden min-w-0 items-center gap-1 lg:flex"
-          >
-            {links.map((link) => (
-              <NavItem key={link.href} {...link} pathname={pathname} />
-            ))}
-          </nav>
-
-          <div className="ml-auto hidden lg:flex">
-            <AuthNav />
-          </div>
-
-          {/* Botón hamburguesa: solo visible cuando no cabe el menú de escritorio */}
-          <button
-            type="button"
-            onClick={() => setMobileOpen((open) => !open)}
-            aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"}
-            aria-expanded={mobileOpen}
-            aria-controls="mobile-menu"
-            className="ml-auto flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-utb-blue-pale/60 focus-visible:outline-none lg:hidden"
-          >
-            {mobileOpen ? (
-              <X className="size-4.5" aria-hidden="true" />
-            ) : (
-              <Menu className="size-4.5" aria-hidden="true" />
-            )}
-          </button>
-        </div>
-
-        {/* Panel móvil: repite todo lo que el menú de escritorio esconde */}
-        {mobileOpen && (
-          <div
-            id="mobile-menu"
-            className="relative z-10 border-t border-white/10 px-4 py-3 sm:px-6 lg:hidden"
-          >
-            <nav aria-label="Navegación móvil" className="flex flex-col gap-1">
-              {links.map((link) => (
-                <NavItem
-                  key={link.href}
-                  {...link}
-                  pathname={pathname}
-                  onNavigate={closeMobile}
-                  className="justify-start"
-                />
-              ))}
-            </nav>
-
-            <div className="mt-3 flex flex-col gap-3 border-t border-white/10 pt-3">
-              <div className="px-1.5">
-                <AuthNav onNavigate={closeMobile} />
-              </div>
+            <div className="min-w-0 flex-1 overflow-hidden">
+              {header ? <ModuleHeader {...header} /> : null}
             </div>
-          </div>
+
+            <div className="ml-auto flex shrink-0 items-center">
+              <AuthNav />
+            </div>
+          </>
         )}
       </div>
     </header>
