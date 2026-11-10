@@ -36,7 +36,9 @@ const useIsomorphicLayoutEffect =
  * Guarda el header del módulo activo para que el topbar pueda renderizarlo.
  * `PageFrame` es quien lo publica; el topbar solo consume.
  */
-export function PageHeaderProvider({ children }: { children: ReactNode }) {
+export function PageHeaderProvider({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   const [header, setHeader] = useState<PageHeader | null>(null);
 
   const value = useMemo<PageHeaderContextValue>(

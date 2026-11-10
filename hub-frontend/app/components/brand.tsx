@@ -41,7 +41,7 @@ export function Brand({
           isLight ? "text-foreground" : "text-white",
         )}
       >
-        Capstone
+        <span>Capstone</span>
         <span className={isLight ? "text-utb-blue" : "text-utb-blue-pale"}>
           HUB
         </span>
