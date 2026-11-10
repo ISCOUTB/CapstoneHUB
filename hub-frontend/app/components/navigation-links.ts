@@ -25,7 +25,7 @@ export function sidebarSections(
       id: "navigation",
       label: "Navegación",
       links: [
-        { href: "/", label: "Inicio" },
+        { href: "/home", label: "Inicio" },
         { href: "/projects", label: "Proyectos" },
         { href: "/submit", label: "Proponer" },
       ],

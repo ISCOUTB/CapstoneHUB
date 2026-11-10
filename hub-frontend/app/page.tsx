@@ -97,6 +97,12 @@ export default function Home() {
               >
                 Proponer un proyecto
               </Link>
+              <Link
+                href="/login"
+                className="inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold text-utb-blue-pale transition-colors hover:bg-white/5 hover:text-white focus-visible:ring-2 focus-visible:ring-utb-blue-pale/60 focus-visible:outline-none"
+              >
+                Iniciar sesión
+              </Link>
             </div>
           </div>
         </div>

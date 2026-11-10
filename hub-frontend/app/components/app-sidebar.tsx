@@ -32,7 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, typeof RiUser3Line> = {
-  "/": RiHome5Line,
+  "/home": RiHome5Line,
   "/projects": RiFolder3Line,
   "/submit": RiAddCircleLine,
   "/admin/users": RiTeamLine,
@@ -43,7 +43,7 @@ const ICONS: Record<string, typeof RiUser3Line> = {
 
 /** `/profile` es padre de `/profile/kpis`: solo se marca en su ruta exacta. */
 function isActiveLink(pathname: string, href: string): boolean {
-  if (href === "/" || href === "/profile") {
+  if (href === "/profile") {
     return pathname === href;
   }
 
@@ -71,7 +71,7 @@ export default function AppSidebar() {
   return (
     <Sidebar collapsible="offcanvas" className="border-sidebar-border">
       <SidebarHeader className="h-16 flex-row items-center justify-between gap-2 border-b border-sidebar-border px-3 py-0">
-        <Brand onNavigate={closeMobile} />
+        <Brand />
 
         {isMobile ? (
           <button

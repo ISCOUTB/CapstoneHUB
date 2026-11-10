@@ -8,18 +8,18 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 /**
  * Topbar de la plataforma: en las pantallas internas muestra el header del
- * módulo (categoría + título) y el widget de sesión. En login/registro, donde
- * no hay sidebar, recupera la marca a la izquierda.
+ * módulo (categoría + título) y el widget de sesión. En las pantallas sin
+ * sidebar (login y registro) recupera la marca a la izquierda.
  */
 export default function Navbar({
-  isAuthPage = false,
-}: Readonly<{ isAuthPage?: boolean }>) {
+  showBrand = false,
+}: Readonly<{ showBrand?: boolean }>) {
   const { header } = usePageHeader();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-card">
       <div className="flex h-16 w-full items-center gap-3 px-4 sm:px-6 lg:px-8">
-        {isAuthPage ? (
+        {showBrand ? (
           <>
             <Brand variant="light" />
 

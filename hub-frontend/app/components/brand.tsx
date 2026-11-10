@@ -1,37 +1,24 @@
-import Link from "next/link";
 import { UtbLogo } from "./utb-logo";
 import { cn } from "@/lib/utils";
 
 /**
  * Marca institucional de CapstoneHUB. Vive en la cabecera de la sidebar (fondo
  * oscuro) y, cuando la sidebar no está disponible (login y registro), en el
- * topbar claro.
+ * topbar claro. Es una marca estática: no navega.
  */
 export function Brand({
   variant = "dark",
   className,
   logoClassName,
-  onNavigate,
 }: Readonly<{
   variant?: "dark" | "light";
   className?: string;
   logoClassName?: string;
-  onNavigate?: () => void;
 }>) {
   const isLight = variant === "light";
 
   return (
-    <Link
-      href="/"
-      onClick={onNavigate}
-      className={cn(
-        "flex shrink-0 items-center gap-2.5 rounded-xl transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:outline-none",
-        isLight
-          ? "focus-visible:ring-utb-blue/40"
-          : "focus-visible:ring-utb-blue-pale/60",
-        className,
-      )}
-    >
+    <div className={cn("flex shrink-0 items-center gap-2.5", className)}>
       <UtbLogo
         className={cn(
           "h-7 w-auto sm:h-8",
@@ -59,7 +46,7 @@ export function Brand({
           HUB
         </span>
       </span>
-    </Link>
+    </div>
   );
 }
 
