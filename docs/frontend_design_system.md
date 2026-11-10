@@ -144,8 +144,10 @@ izquierda y un **topbar** claro (`bg-card`) sticky sobre el contenido.
   ([`navbar.tsx`](../hub-frontend/app/components/navbar.tsx)) muestra el
   `ModuleHeader` del módulo activo y el widget de sesión (`AuthNav`). El
   dropdown de perfil conserva **Mi perfil** y **Cerrar sesión**.
-- En login y registro no hay sidebar: el topbar recupera la marca a la izquierda
-  y deja el formulario a ancho completo.
+- En login y registro no hay sidebar: el topbar recupera la marca estática a la
+  izquierda y deja el formulario a ancho completo.
+- La landing pública (`/`) no monta sidebar ni topbar. El acceso a la sesión
+  vive en el CTA **Iniciar sesión** del hero.
 
 ## Header de módulo y contenido
 
@@ -154,9 +156,10 @@ registra la categoría, el título, el acento y el tamaño del equipo en
 `page-header-context.tsx`; el topbar los consume. Ya no hay statusbar ni
 pestañas de usuario dentro del cuerpo: la navegación vive solo en la sidebar.
 
-La home mantiene su hero y no publica header. Las pantallas cargadas sin
-`PageFrame` (login, registro y algunos estados de carga) dejan el topbar sin
-título de módulo.
+La landing `/` mantiene su hero y no publica header ni usa el shell. El inicio
+interno (`/home`) requiere sesión y publica su header como cualquier módulo. Las
+pantallas cargadas sin `PageFrame` (login, registro y algunos estados de carga)
+dejan el topbar sin título de módulo.
 
 ## Convenciones para pantallas nuevas
 

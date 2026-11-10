@@ -52,14 +52,16 @@ content width and padding:
   ([`app/components/module-header.tsx`](./app/components/module-header.tsx))
   lives in the topbar; `PageFrame` publishes its data through
   `page-header-context.tsx`. Do not render it inside the page body.
-- `accentColor` distinguishes modules — use cool tones only (cyan/emerald/
-  indigo; warm tones go muddy over the deep blue).
+- `accentColor` distinguishes modules — keep the current cool family
+  (cyan/emerald/indigo).
 - Navigation lives in the sidebar
   ([`app/components/app-sidebar.tsx`](./app/components/app-sidebar.tsx)) and is
   grouped by `navigation-links.ts`; `AuthNav` stays in the topbar
   ([`app/components/navbar.tsx`](./app/components/navbar.tsx)).
-- Use `UtbLogo`/`Brand` for the mark; the full-height sidebar and the sticky
-  topbar form the app shell (`app-shell.tsx`).
+- `/` is the public landing and renders without the shell; internal Inicio is
+  `/home` and requires a session.
+- Use `UtbLogo`/`Brand` for the mark; `Brand` is static (no link). The
+  full-height sidebar and the sticky topbar form the app shell (`app-shell.tsx`).
 
 ## Cards and tables
 

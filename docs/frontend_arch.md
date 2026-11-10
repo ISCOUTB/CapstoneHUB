@@ -27,7 +27,8 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 
 | Ruta | Pantalla |
 | --- | --- |
-| `/` | Inicio. |
+| `/` | Landing pública, sin sidebar ni topbar. |
+| `/home` | Inicio interno (requiere sesión). Por ahora es un placeholder dentro del shell. |
 | `/login` | Inicio de sesión. |
 | `/register` | Registro de proponentes (auto-login). |
 | `/projects` | Lista de proyectos. |
@@ -123,11 +124,14 @@ asignarlos o descartarlos, con confirmación. El perfil muestra una tarjeta
 ## Shell, sidebar y header de módulo
 
 `AppShell` monta una **sidebar** oscura fija de altura completa y un **topbar**
-claro (`bg-card`) sticky.
+claro (`bg-card`) sticky. La landing pública (`/`) es la excepción: no monta
+sidebar, topbar ni drawer; solo login y registro conservan el topbar sin
+sidebar.
+
 La sidebar
 ([`app-sidebar.tsx`](../hub-frontend/app/components/app-sidebar.tsx)) agrupa la
-navegación en dos secciones: **Navegación** (Inicio, Proyectos, Proponer) y
-**Acciones de usuario** (Administración solo admin, Rúbricas para
+navegación en dos secciones: **Navegación** (Inicio → `/home`, Proyectos,
+Proponer) y **Acciones de usuario** (Administración solo admin, Rúbricas para
 admin/directivo, Indicadores para los roles con acceso a KPIs y Mi perfil). Los
 links se calculan en `navigation-links.ts`. En móvil la sidebar se monta en un
 drawer y se cierra al navegar.
@@ -138,8 +142,10 @@ El topbar
 widget de sesión, cuyo dropdown conserva **Mi perfil** y **Cerrar sesión**.
 `PageFrame` publica esos datos en `page-header-context.tsx`; ya no existe el
 statusbar ni las pestañas de usuario dentro del contenido. Login y registro se
-muestran sin sidebar y con la marca en el topbar. La página de rúbricas vive en
-`/admin/rubrics` y el backend vuelve a validar los permisos.
+muestran sin sidebar y con la marca estática en el topbar. Tras iniciar sesión,
+el destino por defecto es `/home`; `?next=` conserva los enlaces profundos. La
+página de rúbricas vive en `/admin/rubrics` y el backend vuelve a validar los
+permisos.
 
 ## Autenticación
 
@@ -150,8 +156,9 @@ usuario; `GET /api/auth/me` hidrata la sesión al montar; `POST /api/auth/logout
 la limpia. Los services ya no envían `Authorization` (la cookie viaja sola en
 peticiones same-origin) y el BFF la reenvía al backend como Bearer. El registro
 (`POST /auth/register` vía el BFF) crea al usuario con rol `proposer`, lo deja
-autenticado igual que el login y redirige a `/submit`. Si un usuario con sesión
-abre `/register`, se le redirige a `/profile`.
+autenticado igual que el login y redirige a `/submit`. El login sin `?next=`
+redirige a `/home`. Si un usuario con sesión abre `/register`, se le redirige a
+`/profile`.
 
 La renovación deslizante ocurre en el BFF: cuando el backend devuelve
 `x-access-token`, el proxy actualiza la cookie; ante un `401` la limpia y el
