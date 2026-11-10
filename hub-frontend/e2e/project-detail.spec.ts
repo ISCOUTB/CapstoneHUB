@@ -27,7 +27,7 @@ test("muestra las pestañas del detalle sin desborde horizontal", async ({
   await page.getByLabel("Correo electrónico").fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
-  await expect(page).toHaveURL(/\/projects/);
+  await expect(page).toHaveURL(/\/home/);
 
   await page.goto(`/projects/${id}`);
 
