@@ -32,19 +32,19 @@ function getPostLoginPath(): string {
   const next = new URLSearchParams(window.location.search).get("next");
 
   if (!next) {
-    return "/projects";
+    return "/home";
   }
 
   try {
     const resolved = new URL(next, window.location.origin);
 
     if (resolved.origin !== window.location.origin) {
-      return "/projects";
+      return "/home";
     }
 
     return resolved.pathname + resolved.search + resolved.hash;
   } catch {
-    return "/projects";
+    return "/home";
   }
 }
 

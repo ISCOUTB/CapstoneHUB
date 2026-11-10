@@ -33,29 +33,35 @@ opacity modifiers.
 
 ## Screens
 
-Open every module screen with `ModuleHeader`
-([`app/components/module-header.tsx`](./app/components/module-header.tsx)) and
-the standard shell:
+Open every module screen with `PageFrame`
+([`app/components/page-frame.tsx`](./app/components/page-frame.tsx)). It
+registers the category and title for the topbar and provides the standard
+content width and padding:
 
 ```tsx
-<main className="flex-1 text-foreground">
-  <section className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-    <ModuleHeader eyebrow="…" title="…" subtitle="…" />
-    {/* content */}
-  </section>
-</main>
+<PageFrame eyebrow="…" title="…" accentColor="…">
+  {/* content */}
+</PageFrame>
 ```
 
 - `<body>` supplies the page background (`bg-muted/40`); do not add
   `bg-background` or `min-h-screen` to `main`.
 - Width: `max-w-6xl` by default, `max-w-7xl` for project detail, `max-w-4xl` for
   forms.
-- `ModuleHeader` `accentColor` distinguishes modules — use cool tones only
-  (cyan/emerald/indigo; warm tones go muddy over the deep blue). Buttons passed
-  in `actions` sit on the light part of the gradient: solid white with
-  `text-utb-deep-blue`, not `bg-white/10`.
-- Use `UtbLogo` for the mark; the two-part `navbar` (institutional band +
-  `sticky` nav row) is intentional — keep the strips siblings inside `<body>`.
+- `ModuleHeader`
+  ([`app/components/module-header.tsx`](./app/components/module-header.tsx))
+  lives in the topbar; `PageFrame` publishes its data through
+  `page-header-context.tsx`. Do not render it inside the page body.
+- `accentColor` distinguishes modules — keep the current cool family
+  (cyan/emerald/indigo).
+- Navigation lives in the sidebar
+  ([`app/components/app-sidebar.tsx`](./app/components/app-sidebar.tsx)) and is
+  grouped by `navigation-links.ts`; `AuthNav` stays in the topbar
+  ([`app/components/navbar.tsx`](./app/components/navbar.tsx)).
+- `/` is the public landing and renders without the shell; internal Inicio is
+  `/home` and requires a session.
+- Use `UtbLogo`/`Brand` for the mark; `Brand` is static (no link). The
+  full-height sidebar and the sticky topbar form the app shell (`app-shell.tsx`).
 
 ## Cards and tables
 

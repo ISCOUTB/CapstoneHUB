@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../components/auth-provider";
 import PageFrame from "../components/page-frame";
-import AssignedProjects from "./assigned-projects";
 import ChangePasswordForm from "./change-password-form";
 import InterestedProjects from "./interested-projects";
 import { Badge } from "@/components/ui/badge";
@@ -114,8 +113,6 @@ export default function ProfilePage() {
         ) : null}
 
       <ChangePasswordForm />
-
-      <AssignedProjects />
 
       {isStudent ? <InterestedProjects /> : null}
     </PageFrame>

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/navbar";
+import AppShell from "./components/app-shell";
 import AuthProvider from "./components/auth-provider";
+import { PageHeaderProvider } from "./components/page-header-context";
 import { cn } from "@/lib/utils";
 
 const geistSans = Geist({
@@ -40,10 +41,11 @@ export default function RootLayout({
         "font-sans"
       )}
     >
-      <body className="flex min-h-full flex-col bg-muted/40">
+      <body className="min-h-svh bg-muted/40">
         <AuthProvider>
-          <Navbar />
-          {children}
+          <PageHeaderProvider>
+            <AppShell>{children}</AppShell>
+          </PageHeaderProvider>
         </AuthProvider>
       </body>
     </html>

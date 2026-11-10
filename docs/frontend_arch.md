@@ -17,7 +17,8 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 - `app/` — rutas del App Router.
 - `app/api/` — route handlers que actúan como BFF/proxy hacia el backend.
 - `app/services/` — acceso a datos y sesión.
-- `app/components/` — componentes propios (navbar, auth, formularios).
+- `app/components/` — componentes propios (shell, sidebar, navbar, auth,
+  formularios).
 - `components/ui/` — componentes base de shadcn/ui.
 - `lib/utils.ts` — utilidades (por ejemplo `cn`).
 - `app/globals.css` — tokens de diseño y utilidades propias.
@@ -26,13 +27,14 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 
 | Ruta | Pantalla |
 | --- | --- |
-| `/` | Inicio. |
+| `/` | Landing pública, sin sidebar ni topbar. |
+| `/home` | Inicio interno (requiere sesión): proyectos propios y asignados del usuario. |
 | `/login` | Inicio de sesión. |
 | `/register` | Registro de proponentes (auto-login). |
 | `/projects` | Lista de proyectos. |
 | `/projects/[id]` | Detalle por pestañas (general, equipo, hitos, entregas, evaluación, anexos, historial). |
 | `/projects/[id]/edit` | Edición de los datos del proyecto (admin, directivo o actor asignado). |
-| `/profile` | Mi perfil: datos de la cuenta, proyectos propios/asignados y proyectos de interés. |
+| `/profile` | Mi perfil: datos de la cuenta, cambio de contraseña y proyectos de interés. |
 | `/submit`, `/submit/natural` | Propuesta de proyecto. |
 | `/profile/kpis` | Panel de indicadores y panorama por semestre (docentes, evaluadores, directivos y admin; el panorama es solo para admin/directivo). |
 | `/admin/users` | Administración de usuarios y roles. |
@@ -116,21 +118,33 @@ para expresar o retirar su interés con un mensaje opcional. La misma tarjeta
 aparece en el detalle de los proyectos públicos aprobados. En la pestaña
 **Equipo**, quienes pueden asignar actores ven la tarjeta
 `InterestedStudentsList` con los estudiantes interesados y acciones para
-asignarlos o descartarlos, con confirmación. El perfil muestra una tarjeta
-**Proyectos de interés** además de **Mis proyectos**.
+asignarlos o descartarlos, con confirmación. El inicio (`/home`) muestra la
+tarjeta **Mis proyectos**; el perfil conserva **Proyectos de interés** para los
+estudiantes.
 
-## Statusbar y pestañas de usuario
+## Shell, sidebar y header de módulo
 
-La navegación principal vive en la navbar superior: Inicio, Proyectos y
-Proponer. El widget de perfil de la navbar abre un dropdown con **Mi perfil** y
-**Cerrar sesión**. Debajo de la navbar, `PageFrame` monta un **statusbar** con la
-categoría y el título de la página (`Administración / Rúbricas`, `Proyecto #12 /
-Nombre`). Inmediatamente debajo aparecen las **pestañas de acciones de usuario**:
-Administración (solo admin), Rúbricas para admin/directivo, Indicadores para los
-roles con acceso a KPIs y Mi perfil.
+`AppShell` monta una **sidebar** oscura fija de altura completa y un **topbar**
+claro (`bg-card`) sticky. La landing pública (`/`) es la excepción: no monta
+sidebar, topbar ni drawer; solo login y registro conservan el topbar sin
+sidebar.
 
-Solo la navbar es sticky; el statusbar y las pestañas acompañan al scroll. La
-home, login y registro no muestran este chrome. Las pestañas son solo atajos: la
+La sidebar
+([`app-sidebar.tsx`](../hub-frontend/app/components/app-sidebar.tsx)) agrupa la
+navegación en dos secciones: **Navegación** (Inicio → `/home`, Proyectos,
+Proponer) y **Acciones de usuario** (Administración solo admin, Rúbricas para
+admin/directivo, Indicadores para los roles con acceso a KPIs y Mi perfil). Los
+links se calculan en `navigation-links.ts`. En móvil la sidebar se monta en un
+drawer y se cierra al navegar.
+
+El topbar
+([`navbar.tsx`](../hub-frontend/app/components/navbar.tsx)) muestra el
+`ModuleHeader` del módulo activo —categoría, título y tamaño del equipo— y el
+widget de sesión, cuyo dropdown conserva **Mi perfil** y **Cerrar sesión**.
+`PageFrame` publica esos datos en `page-header-context.tsx`; ya no existe el
+statusbar ni las pestañas de usuario dentro del contenido. Login y registro se
+muestran sin sidebar y con la marca estática en el topbar. Tras iniciar sesión,
+el destino por defecto es `/home`; `?next=` conserva los enlaces profundos. La
 página de rúbricas vive en `/admin/rubrics` y el backend vuelve a validar los
 permisos.
 
@@ -143,8 +157,9 @@ usuario; `GET /api/auth/me` hidrata la sesión al montar; `POST /api/auth/logout
 la limpia. Los services ya no envían `Authorization` (la cookie viaja sola en
 peticiones same-origin) y el BFF la reenvía al backend como Bearer. El registro
 (`POST /auth/register` vía el BFF) crea al usuario con rol `proposer`, lo deja
-autenticado igual que el login y redirige a `/submit`. Si un usuario con sesión
-abre `/register`, se le redirige a `/profile`.
+autenticado igual que el login y redirige a `/submit`. El login sin `?next=`
+redirige a `/home`. Si un usuario con sesión abre `/register`, se le redirige a
+`/profile`.
 
 La renovación deslizante ocurre en el BFF: cuando el backend devuelve
 `x-access-token`, el proxy actualiza la cookie; ante un `401` la limpia y el

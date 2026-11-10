@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import ModuleHeader from "./module-header";
-import UserActionTabs from "./user-action-tabs";
+import { PageHeaderSync } from "./page-header-context";
 
 type PageFrameProps = {
   eyebrow?: string;
-  title: ReactNode;
+  title: string;
   accentColor?: string;
   teamSize?: number;
   maxWidth?: string;
@@ -14,8 +13,9 @@ type PageFrameProps = {
 };
 
 /**
- * Chrome de las páginas internas: statusbar pegado bajo la navbar, pestañas de
- * acciones de usuario y contenido. Solo la navbar es sticky.
+ * Contenedor de las páginas internas. Publica el header del módulo para que el
+ * topbar lo renderice (categoría, título y equipo) y deja el contenido con el
+ * ancho y el padding estándar.
  */
 export default function PageFrame({
   eyebrow,
@@ -28,22 +28,16 @@ export default function PageFrame({
 }: Readonly<PageFrameProps>) {
   return (
     <main className="flex-1 text-foreground">
-      <div className="border-b border-border/60 bg-card">
-        <div className="mx-auto w-full max-w-[96rem] px-4 py-3 sm:px-6 lg:px-8">
-          <ModuleHeader
-            eyebrow={eyebrow}
-            title={title}
-            accentColor={accentColor}
-            teamSize={teamSize}
-          />
-        </div>
-      </div>
-
-      <UserActionTabs />
+      <PageHeaderSync
+        eyebrow={eyebrow}
+        title={title}
+        accentColor={accentColor}
+        teamSize={teamSize}
+      />
 
       <section
         className={cn(
-          "mx-auto w-full px-4 py-6 sm:px-6 lg:px-8",
+          "mx-auto w-full px-4 py-8 sm:px-6 lg:px-8",
           maxWidth,
           className,
         )}

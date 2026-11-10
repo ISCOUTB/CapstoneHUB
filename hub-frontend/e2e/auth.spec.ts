@@ -10,17 +10,32 @@ test("inicia sesión y muestra el menú de perfil", async ({ page, request }) =>
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Iniciar sesión" }).click();
 
-  await expect(page).toHaveURL(/\/projects/);
-  await page.getByRole("heading", { name: "Lista de proyectos" }).waitFor();
+  await expect(page).toHaveURL(/\/home/);
+  await page.getByRole("heading", { name: "Inicio" }).waitFor();
+  await expect(
+    page.getByText("Mis proyectos", { exact: true }),
+  ).toBeVisible();
 
-  // En móvil el widget de perfil vive en el menú hamburguesa.
-  const menuButton = page.getByRole("button", { name: "Abrir menú" });
+  // En móvil los enlaces de usuario viven en el drawer de la sidebar.
+  const menuButton = page.getByRole("button", {
+    name: "Abrir menú",
+    exact: true,
+  });
   if (await menuButton.isVisible()) {
     await menuButton.click();
   }
 
   await page.waitForLoadState("networkidle");
   await expect(page.getByRole("link", { name: "Mi perfil" })).toBeVisible();
+
+  // El drawer es modal: hay que cerrarlo para abrir el menú de perfil.
+  const closeMenuButton = page.getByRole("button", {
+    name: "Cerrar menú",
+    exact: true,
+  });
+  if (await closeMenuButton.isVisible()) {
+    await closeMenuButton.click();
+  }
 
   const profileTrigger = page.getByRole("button", {
     name: "Abrir menú de perfil",
@@ -50,6 +65,27 @@ test("inicia sesión y muestra el menú de perfil", async ({ page, request }) =>
   await expect(
     page.getByRole("menuitem", { name: "Cerrar sesión" }),
   ).toBeVisible();
+});
+
+test("la landing pública no monta el chrome de la app", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(
+    page.getByRole("heading", { name: /Gestión de proyectos/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Iniciar sesión" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Navegación principal" }),
+  ).toHaveCount(0);
+  await expect(page.locator("header")).toHaveCount(0);
+});
+
+test("redirige /home al login cuando no hay sesión", async ({ page }) => {
+  await page.goto("/home");
+
+  await expect(page).toHaveURL(/\/login\?next=(%2F|\/)home/);
 });
 
 test("muestra un error con credenciales inválidas", async ({ page }) => {

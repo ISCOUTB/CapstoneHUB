@@ -1,9 +1,8 @@
-import type { ReactNode } from "react";
 import { RiTeamLine } from "@remixicon/react";
 import { cn } from "@/lib/utils";
 
 export interface ModuleHeaderProps {
-  title: ReactNode;
+  title: string;
   /** Categoría/contexto de la página. Ej: "Administración". */
   eyebrow?: string;
   /** Color del acento lateral que identifica el módulo. */
@@ -14,9 +13,9 @@ export interface ModuleHeaderProps {
 }
 
 /**
- * Statusbar de módulo: barra plana con categoría y título, pegada bajo la
- * navbar. No es sticky; solo la navbar queda fija. Se renderiza dentro de
- * `PageFrame`, que aporta el ancho completo y las pestañas de usuario.
+ * Header del módulo activo. Vive en el topbar claro, por eso usa los tokens de
+ * superficie y el acento como barra vertical. `PageFrame` publica los datos y
+ * el topbar lo renderiza.
  */
 export function ModuleHeader({
   title,
@@ -28,46 +27,49 @@ export function ModuleHeader({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-3",
+        "flex min-w-0 items-center gap-2.5 sm:gap-3",
         className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <span
-          className="h-8 w-1 shrink-0 rounded-full"
-          style={{ backgroundColor: accentColor }}
-          aria-hidden="true"
-        />
+      <span
+        className="h-8 w-1 shrink-0 rounded-full"
+        style={{ backgroundColor: accentColor }}
+        aria-hidden="true"
+      />
 
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          {eyebrow ? (
-            <>
-              <span className="text-[10px] font-bold tracking-[0.18em] text-muted-foreground uppercase sm:text-[11px] sm:tracking-[0.2em]">
-                {eyebrow}
-              </span>
-              <span
-                className="text-sm text-muted-foreground/60"
-                aria-hidden="true"
-              >
-                /
-              </span>
-            </>
-          ) : null}
+      <div className="flex min-w-0 items-center gap-2">
+        {eyebrow ? (
+          <>
+            <span className="hidden max-w-[14rem] truncate text-[10px] font-bold tracking-[0.18em] text-muted-foreground uppercase sm:inline">
+              {eyebrow}
+            </span>
+            <span
+              className="hidden text-sm text-muted-foreground/50 sm:inline"
+              aria-hidden="true"
+            >
+              /
+            </span>
+          </>
+        ) : null}
 
-          <h1 className="min-w-0 truncate text-lg leading-tight font-semibold tracking-tight text-foreground sm:text-xl">
-            {title}
-          </h1>
-        </div>
+        <h1 className="min-w-0 truncate text-base leading-tight font-semibold tracking-tight text-foreground sm:text-lg">
+          {title}
+        </h1>
       </div>
 
       {teamSize != null ? (
-        <div className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs font-medium text-muted-foreground sm:self-auto">
-          <RiTeamLine className="size-4 text-utb-blue" aria-hidden="true" />
-          <span>
-            {teamSize}{" "}
-            {teamSize === 1 ? "persona en el equipo" : "personas en el equipo"}
-          </span>
-        </div>
+        <span
+          className="ml-1 hidden shrink-0 items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground md:inline-flex"
+          aria-label={`${teamSize} ${
+            teamSize === 1 ? "persona en el equipo" : "personas en el equipo"
+          }`}
+        >
+          <RiTeamLine
+            className="size-3.5 text-utb-blue"
+            aria-hidden="true"
+          />
+          {teamSize} {teamSize === 1 ? "persona" : "personas"}
+        </span>
       ) : null}
     </div>
   );
