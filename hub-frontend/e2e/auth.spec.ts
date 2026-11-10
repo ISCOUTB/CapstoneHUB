@@ -12,6 +12,9 @@ test("inicia sesión y muestra el menú de perfil", async ({ page, request }) =>
 
   await expect(page).toHaveURL(/\/home/);
   await page.getByRole("heading", { name: "Inicio" }).waitFor();
+  await expect(
+    page.getByText("Mis proyectos", { exact: true }),
+  ).toBeVisible();
 
   // En móvil los enlaces de usuario viven en el drawer de la sidebar.
   const menuButton = page.getByRole("button", {

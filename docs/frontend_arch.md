@@ -28,13 +28,13 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 | Ruta | Pantalla |
 | --- | --- |
 | `/` | Landing pública, sin sidebar ni topbar. |
-| `/home` | Inicio interno (requiere sesión). Por ahora es un placeholder dentro del shell. |
+| `/home` | Inicio interno (requiere sesión): proyectos propios y asignados del usuario. |
 | `/login` | Inicio de sesión. |
 | `/register` | Registro de proponentes (auto-login). |
 | `/projects` | Lista de proyectos. |
 | `/projects/[id]` | Detalle por pestañas (general, equipo, hitos, entregas, evaluación, anexos, historial). |
 | `/projects/[id]/edit` | Edición de los datos del proyecto (admin, directivo o actor asignado). |
-| `/profile` | Mi perfil: datos de la cuenta, proyectos propios/asignados y proyectos de interés. |
+| `/profile` | Mi perfil: datos de la cuenta, cambio de contraseña y proyectos de interés. |
 | `/submit`, `/submit/natural` | Propuesta de proyecto. |
 | `/profile/kpis` | Panel de indicadores y panorama por semestre (docentes, evaluadores, directivos y admin; el panorama es solo para admin/directivo). |
 | `/admin/users` | Administración de usuarios y roles. |
@@ -118,8 +118,9 @@ para expresar o retirar su interés con un mensaje opcional. La misma tarjeta
 aparece en el detalle de los proyectos públicos aprobados. En la pestaña
 **Equipo**, quienes pueden asignar actores ven la tarjeta
 `InterestedStudentsList` con los estudiantes interesados y acciones para
-asignarlos o descartarlos, con confirmación. El perfil muestra una tarjeta
-**Proyectos de interés** además de **Mis proyectos**.
+asignarlos o descartarlos, con confirmación. El inicio (`/home`) muestra la
+tarjeta **Mis proyectos**; el perfil conserva **Proyectos de interés** para los
+estudiantes.
 
 ## Shell, sidebar y header de módulo
 

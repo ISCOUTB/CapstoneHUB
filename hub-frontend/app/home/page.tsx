@@ -2,15 +2,14 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { RiHome5Line } from "@remixicon/react";
 import { useAuth } from "../components/auth-provider";
 import PageFrame from "../components/page-frame";
-import { Card, CardContent } from "@/components/ui/card";
+import AssignedProjects from "./assigned-projects";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * Inicio de la plataforma (dentro del shell). Por ahora es un placeholder: el
- * panel real se construirá más adelante. Requiere sesión.
+ * Inicio de la plataforma (dentro del shell). Por ahora concentra los proyectos
+ * propios y asignados del usuario. Requiere sesión.
  */
 export default function HomePage() {
   const router = useRouter();
@@ -36,26 +35,7 @@ export default function HomePage() {
 
   return (
     <PageFrame eyebrow="Inicio" title="Inicio">
-      <Card>
-        <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-utb-blue/10">
-            <RiHome5Line
-              className="size-6 text-utb-blue"
-              aria-hidden="true"
-            />
-          </span>
-
-          <h2 className="text-lg font-semibold tracking-tight">
-            Bienvenido a CapstoneHUB
-          </h2>
-
-          <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-            El panel de inicio estará disponible próximamente. Mientras tanto,
-            puedes consultar los proyectos o registrar una nueva propuesta
-            desde la navegación.
-          </p>
-        </CardContent>
-      </Card>
+      <AssignedProjects />
     </PageFrame>
   );
 }
