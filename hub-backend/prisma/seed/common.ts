@@ -20,7 +20,8 @@ export type SeedSection =
   | 'observations'
   | 'status'
   | 'attachments'
-  | 'reports';
+  | 'reports'
+  | 'guides';
 
 export const ALL_SECTIONS: SeedSection[] = [
   'users',
@@ -31,6 +32,7 @@ export const ALL_SECTIONS: SeedSection[] = [
   'status',
   'attachments',
   'reports',
+  'guides',
 ];
 
 const SECTION_DEPENDENCIES: Record<SeedSection, SeedSection[]> = {
@@ -42,6 +44,7 @@ const SECTION_DEPENDENCIES: Record<SeedSection, SeedSection[]> = {
   status: ['projects', 'actors'],
   attachments: ['projects', 'users'],
   reports: ['projects'],
+  guides: [],
 };
 
 export interface SeedOptions {

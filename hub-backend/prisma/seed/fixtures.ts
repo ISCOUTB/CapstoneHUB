@@ -1,5 +1,6 @@
 import {
   ActorRole,
+  GuideCategory,
   ProjectPhase,
   ProjectSource,
   ProjectStatus,
@@ -104,6 +105,19 @@ export interface ReportFixture {
 
 export type ReportsFixture = Record<string, ReportFixture[]>;
 
+export interface GuideDocumentFixture {
+  title: string;
+  description?: string;
+  category: GuideCategory;
+  audiences: UserRole[];
+  externalUrl?: string;
+  isPublished?: boolean;
+}
+
+export interface GuidesFixture {
+  documents: GuideDocumentFixture[];
+}
+
 export const loadUsers = (): UsersFixture =>
   loadFixture<UsersFixture>('users.json');
 export const loadProjects = (): ProjectsFixture =>
@@ -114,3 +128,5 @@ export const loadObservations = (): ObservationsFixture =>
   loadFixture<ObservationsFixture>('observations.json');
 export const loadReports = (): ReportsFixture =>
   loadFixture<ReportsFixture>('reports.json');
+export const loadGuides = (): GuidesFixture =>
+  loadFixture<GuidesFixture>('guides.json');

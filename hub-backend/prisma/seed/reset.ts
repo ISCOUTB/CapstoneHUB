@@ -1,5 +1,5 @@
 import { SeedContext, SeedSection, log, normalizeEmail } from './common';
-import { loadProjects, loadUsers } from './fixtures';
+import { loadGuides, loadProjects, loadUsers } from './fixtures';
 import { createStorage, deleteFromStorage } from './storage';
 
 const PROJECT_SECTIONS: SeedSection[] = [
@@ -19,12 +19,16 @@ export async function resetSeed(
     PROJECT_SECTIONS.includes(section),
   );
   const shouldResetUsers = sections.includes('users');
+  const shouldResetGuides = sections.includes('guides');
 
   const projectNames = shouldResetProjects
     ? loadProjects().projects.map((project) => project.name)
     : [];
   const emails = shouldResetUsers
     ? loadUsers().users.map((user) => normalizeEmail(user.email))
+    : [];
+  const guideTitles = shouldResetGuides
+    ? loadGuides().documents.map((document) => document.title)
     : [];
 
   const seededProjects = projectNames.length
@@ -36,33 +40,51 @@ export async function resetSeed(
         },
       })
     : [];
+  const seededGuides = guideTitles.length
+    ? await prisma.guideDocument.findMany({
+        where: { title: { in: guideTitles } },
+        select: { id: true, storageKey: true },
+      })
+    : [];
 
   if (options.dryRun) {
     log.info(
-      `[dry-run] would remove ${seededProjects.length} project(s) and up to ${emails.length} user(s)`,
+      `[dry-run] would remove ${seededProjects.length} project(s), ${seededGuides.length} guide document(s) and up to ${emails.length} user(s)`,
     );
     return;
   }
 
-  if (seededProjects.some((project) => project.attachments.length > 0)) {
+  const storageKeys = [
+    ...seededProjects.flatMap((project) =>
+      project.attachments.map((attachment) => attachment.storageKey),
+    ),
+    ...seededGuides.flatMap((document) =>
+      document.storageKey ? [document.storageKey] : [],
+    ),
+  ];
+
+  if (storageKeys.length > 0) {
     const storage = createStorage();
     if (storage) {
-      for (const project of seededProjects) {
-        for (const attachment of project.attachments) {
-          try {
-            await deleteFromStorage(storage, attachment.storageKey);
-          } catch {
-            log.warn(`Could not delete S3 object ${attachment.storageKey}`);
-          }
+      for (const storageKey of storageKeys) {
+        try {
+          await deleteFromStorage(storage, storageKey);
+        } catch {
+          log.warn(`Could not delete S3 object ${storageKey}`);
         }
       }
     } else {
       log.warn(
-        'S3/RustFS is not configured; attachment objects will not be removed from storage.',
+        'S3/RustFS is not configured; attachment and guide files will not be removed from storage.',
       );
     }
   }
 
+  const deletedGuides = guideTitles.length
+    ? await prisma.guideDocument.deleteMany({
+        where: { title: { in: guideTitles } },
+      })
+    : { count: 0 };
   const deletedProjects = projectNames.length
     ? await prisma.project.deleteMany({
         where: { name: { in: projectNames } },
@@ -73,6 +95,6 @@ export async function resetSeed(
     : { count: 0 };
 
   log.ok(
-    `Removed ${deletedProjects.count} seeded project(s) and ${deletedUsers.count} seeded user(s)`,
+    `Removed ${deletedProjects.count} seeded project(s), ${deletedGuides.count} guide document(s) and ${deletedUsers.count} seeded user(s)`,
   );
 }
