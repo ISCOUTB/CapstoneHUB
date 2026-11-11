@@ -4,6 +4,7 @@ import { StorageService } from './storage.service';
 
 const DEFAULT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const PROJECT_PREFIX = 'projects/';
+const GUIDE_PREFIX = 'guides/';
 
 export type StorageGcOptions = {
   /** Solo considera huérfanos con antigüedad mayor a este valor. */
@@ -35,11 +36,26 @@ export class StorageGcService {
     const maxAgeMs = options.maxAgeMs ?? DEFAULT_MAX_AGE_MS;
     const cutoff = Date.now() - maxAgeMs;
 
-    const objects = await this.storage.listObjects(PROJECT_PREFIX);
-    const registered = await this.prisma.projectAttachment.findMany({
-      select: { storageKey: true },
-    });
-    const known = new Set(registered.map((item) => item.storageKey));
+    const [projectObjects, guideObjects, projectAttachments, guideDocuments] =
+      await Promise.all([
+        this.storage.listObjects(PROJECT_PREFIX),
+        this.storage.listObjects(GUIDE_PREFIX),
+        this.prisma.projectAttachment.findMany({
+          select: { storageKey: true },
+        }),
+        this.prisma.guideDocument.findMany({
+          where: { storageKey: { not: null } },
+          select: { storageKey: true },
+        }),
+      ]);
+
+    const objects = [...projectObjects, ...guideObjects];
+    const known = new Set<string>([
+      ...projectAttachments.map((item) => item.storageKey),
+      ...guideDocuments.flatMap((item) =>
+        item.storageKey ? [item.storageKey] : [],
+      ),
+    ]);
 
     const deleted: string[] = [];
 

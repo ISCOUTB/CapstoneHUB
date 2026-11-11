@@ -161,3 +161,22 @@ export async function apiRequestVoid(
 
   await ensureOk(response, options);
 }
+
+/**
+ * Petición multipart: el navegador agrega el `Content-Type` con el boundary.
+ * Devuelve el JSON de la respuesta.
+ */
+export async function apiFormRequest<T>(
+  path: string,
+  formData: FormData,
+  options: ApiErrorOptions & { method?: "POST" | "PUT" | "PATCH" },
+): Promise<T> {
+  const response = await fetch(getApiUrl(path), {
+    method: options.method ?? "POST",
+    body: formData,
+  });
+
+  await ensureOk(response, options);
+
+  return (await response.json()) as T;
+}

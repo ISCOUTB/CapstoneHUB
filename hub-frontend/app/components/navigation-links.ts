@@ -1,4 +1,4 @@
-import { canManageRubrics } from "../services/roles";
+import { canManageGuides, canManageRubrics } from "../services/roles";
 import { canViewKpis } from "../services/stats";
 
 export type AppLink = {
@@ -28,6 +28,7 @@ export function sidebarSections(
         { href: "/home", label: "Inicio" },
         { href: "/projects", label: "Proyectos" },
         { href: "/submit", label: "Proponer" },
+        { href: "/guides", label: "Guías" },
       ],
     },
   ];
@@ -44,6 +45,10 @@ export function sidebarSections(
 
   if (canManageRubrics(roles)) {
     userLinks.push({ href: "/admin/rubrics", label: "Rúbricas" });
+  }
+
+  if (canManageGuides(roles)) {
+    userLinks.push({ href: "/admin/guides", label: "Administrar guías" });
   }
 
   if (canViewKpis(roles)) {

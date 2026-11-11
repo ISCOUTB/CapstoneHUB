@@ -348,6 +348,29 @@ export class AuthorizationService {
     );
   }
 
+  /** Verdadero para admin/directivo, que mantienen el catálogo de guías. */
+  canManageGuides(user: AuthenticatedUser | undefined): boolean {
+    return Boolean(
+      user &&
+      (user.roles.includes(UserRole.admin) ||
+        user.roles.includes(UserRole.directivo)),
+    );
+  }
+
+  /**
+   * Crear, editar, publicar y borrar documentos del catálogo está reservado a
+   * directivos y administradores.
+   */
+  assertCanManageGuides(user: AuthenticatedUser): void {
+    if (this.canManageGuides(user)) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'A directivo or admin role is required to manage guides',
+    );
+  }
+
   /**
    * Consultar la pestaña de evaluación: admin y directivo ven cualquier
    * proyecto; el resto solo si está asignado como evaluador.
