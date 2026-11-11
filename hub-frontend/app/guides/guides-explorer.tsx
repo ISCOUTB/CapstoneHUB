@@ -93,6 +93,10 @@ function matchesAudience(
   );
 }
 
+function documentCountLabel(count: number): string {
+  return `${count} documento${count === 1 ? "" : "s"}`;
+}
+
 function DocumentSection({
   documents,
   loading,
@@ -130,6 +134,67 @@ function DocumentSection({
       "Los documentos compartidos con todos los roles siguen disponibles en la pestaña Todos.";
   }
 
+  const resultLabel = loading
+    ? "Cargando documentos…"
+    : documentCountLabel(documents.length);
+
+  function renderDocumentsContent() {
+    if (loading) {
+      return (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <Skeleton className="h-56 w-full rounded-2xl" />
+          <Skeleton className="h-56 w-full rounded-2xl" />
+          <Skeleton className="h-56 w-full rounded-2xl" />
+        </div>
+      );
+    }
+
+    if (error) {
+      return <ServiceUnavailable onRetry={onRetry} message={error} />;
+    }
+
+    if (grouped.length === 0) {
+      return (
+        <Empty className="rounded-2xl bg-card shadow-sm ring-1 ring-utb-blue/10">
+          <EmptyHeader>
+            <EmptyTitle>{emptyTitle}</EmptyTitle>
+            <EmptyDescription>{emptyDescription}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {grouped.map((group) => (
+          <section
+            key={group.category}
+            aria-labelledby={`guide-category-${role}-${group.category}`}
+            className="space-y-3"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <h3
+                id={`guide-category-${role}-${group.category}`}
+                className="text-sm font-semibold tracking-tight"
+              >
+                {GUIDE_CATEGORY_LABELS[group.category]}
+              </h3>
+              <span className="text-xs text-muted-foreground">
+                {group.documents.length}
+              </span>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {group.documents.map((document) => (
+                <GuideDocumentCard key={document.id} document={document} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <section aria-labelledby={headingId} className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -152,9 +217,7 @@ function DocumentSection({
             className="text-sm text-muted-foreground"
             aria-live="polite"
           >
-            {loading
-              ? "Cargando documentos…"
-              : `${documents.length} documento${documents.length === 1 ? "" : "s"}`}
+            {resultLabel}
           </span>
 
           {hasFilters ? (
@@ -171,50 +234,7 @@ function DocumentSection({
         </div>
       </div>
 
-      {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <Skeleton className="h-56 w-full rounded-2xl" />
-          <Skeleton className="h-56 w-full rounded-2xl" />
-          <Skeleton className="h-56 w-full rounded-2xl" />
-        </div>
-      ) : error ? (
-        <ServiceUnavailable onRetry={onRetry} message={error} />
-      ) : grouped.length === 0 ? (
-        <Empty className="rounded-2xl bg-card shadow-sm ring-1 ring-utb-blue/10">
-          <EmptyHeader>
-            <EmptyTitle>{emptyTitle}</EmptyTitle>
-            <EmptyDescription>{emptyDescription}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <div className="space-y-6">
-          {grouped.map((group) => (
-            <section
-              key={group.category}
-              aria-labelledby={`guide-category-${role}-${group.category}`}
-              className="space-y-3"
-            >
-              <div className="flex flex-wrap items-center gap-2">
-                <h3
-                  id={`guide-category-${role}-${group.category}`}
-                  className="text-sm font-semibold tracking-tight"
-                >
-                  {GUIDE_CATEGORY_LABELS[group.category]}
-                </h3>
-                <span className="text-xs text-muted-foreground">
-                  {group.documents.length}
-                </span>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {group.documents.map((document) => (
-                  <GuideDocumentCard key={document.id} document={document} />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
+      {renderDocumentsContent()}
     </section>
   );
 }

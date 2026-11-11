@@ -17,6 +17,7 @@ import {
   uploadGuideDocumentFile,
   type GuideCategory,
   type GuideDocumentItem,
+  type GuideDocumentPayload,
 } from "../../services/guides";
 import {
   USER_ROLES,
@@ -64,6 +65,109 @@ function isHttpUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+type GuideFormValidation = {
+  title: string;
+  allRoles: boolean;
+  audiences: UserRole[];
+  externalUrl: string;
+  selectedFile: File | null;
+};
+
+type GuidePersistResult = {
+  error?: string;
+  redirectTo?: string;
+};
+
+function validationMessage(values: GuideFormValidation): string | null {
+  if (!values.title) {
+    return "El título es obligatorio.";
+  }
+
+  if (!values.allRoles && values.audiences.length === 0) {
+    return "Selecciona al menos un rol o marca «Todos los roles».";
+  }
+
+  if (values.selectedFile && values.externalUrl) {
+    return "Un documento solo puede tener un archivo o un enlace externo, no ambos.";
+  }
+
+  if (values.externalUrl && !isHttpUrl(values.externalUrl)) {
+    return "El enlace externo debe comenzar con http:// o https://.";
+  }
+
+  if (
+    values.selectedFile &&
+    values.selectedFile.size > MAX_GUIDE_FILE_SIZE_BYTES
+  ) {
+    return "El archivo supera el máximo de 25 MB.";
+  }
+
+  return null;
+}
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+async function saveNewGuideDocument(
+  payload: GuideDocumentPayload,
+  selectedFile: File | null,
+): Promise<GuidePersistResult> {
+  let created: GuideDocumentItem;
+
+  try {
+    created = await createGuideDocument(payload);
+  } catch (error) {
+    return { error: errorMessage(error, "No se pudo crear el documento.") };
+  }
+
+  if (selectedFile) {
+    try {
+      await uploadGuideDocumentFile(created.id, selectedFile);
+    } catch {
+      return { redirectTo: `/admin/guides?uploadError=${created.id}` };
+    }
+  }
+
+  return {};
+}
+
+async function saveExistingGuideDocument(
+  documentId: number,
+  payload: GuideDocumentPayload,
+  selectedFile: File | null,
+  removeFile: boolean,
+): Promise<GuidePersistResult> {
+  if (removeFile) {
+    try {
+      await deleteGuideDocumentFile(documentId);
+    } catch {
+      return { error: "No se pudo quitar el archivo. Vuelve a intentarlo." };
+    }
+  }
+
+  let updated: GuideDocumentItem;
+
+  try {
+    updated = await updateGuideDocument(documentId, payload);
+  } catch (error) {
+    return { error: errorMessage(error, "No se pudo guardar el documento.") };
+  }
+
+  if (selectedFile) {
+    try {
+      await uploadGuideDocumentFile(updated.id, selectedFile);
+    } catch {
+      return {
+        error:
+          "Los datos se guardaron, pero el archivo no se pudo subir. Vuelve a intentarlo.",
+      };
+    }
+  }
+
+  return {};
 }
 
 export default function GuideDocumentForm({
@@ -152,106 +256,55 @@ export default function GuideDocumentForm({
 
     const trimmedTitle = title.trim();
     const trimmedExternalUrl = externalUrl.trim();
-    const effectiveAudiences = allRoles ? [] : audiences;
+    const validationError = validationMessage({
+      title: trimmedTitle,
+      allRoles,
+      audiences,
+      externalUrl: trimmedExternalUrl,
+      selectedFile,
+    });
 
-    if (!trimmedTitle) {
-      setError("El título es obligatorio.");
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
-    if (!allRoles && effectiveAudiences.length === 0) {
-      setError("Selecciona al menos un rol o marca «Todos los roles».");
-      return;
-    }
-
-    if (selectedFile && trimmedExternalUrl) {
-      setError(
-        "Un documento solo puede tener un archivo o un enlace externo, no ambos.",
-      );
-      return;
-    }
-
-    if (trimmedExternalUrl && !isHttpUrl(trimmedExternalUrl)) {
-      setError("El enlace externo debe comenzar con http:// o https://.");
-      return;
-    }
-
-    if (selectedFile && selectedFile.size > MAX_GUIDE_FILE_SIZE_BYTES) {
-      setError("El archivo supera el máximo de 25 MB.");
-      return;
-    }
-
-    const payload = {
+    const payload: GuideDocumentPayload = {
       title: trimmedTitle,
       description: description.trim() || undefined,
       category,
-      audiences: effectiveAudiences,
+      audiences: allRoles ? [] : audiences,
       externalUrl: trimmedExternalUrl || undefined,
       isPublished,
     };
 
+    setSaving(true);
+
     try {
-      setSaving(true);
+      const result = documentId
+        ? await saveExistingGuideDocument(
+            documentId,
+            payload,
+            selectedFile,
+            removeFile,
+          )
+        : await saveNewGuideDocument(payload, selectedFile);
 
-      if (!documentId) {
-        let created: GuideDocumentItem;
-
-        try {
-          created = await createGuideDocument(payload);
-        } catch (createError) {
-          setError(
-            createError instanceof Error
-              ? createError.message
-              : "No se pudo crear el documento.",
-          );
-          return;
-        }
-
-        if (selectedFile) {
-          try {
-            await uploadGuideDocumentFile(created.id, selectedFile);
-          } catch {
-            router.push(`/admin/guides?uploadError=${created.id}`);
-            return;
-          }
-        }
-
-        router.push("/admin/guides");
-        router.refresh();
+      if (result.error) {
+        setError(result.error);
         return;
       }
 
-      if (removeFile) {
-        try {
-          await deleteGuideDocumentFile(documentId);
-        } catch {
-          setError(
-            "No se pudo quitar el archivo. Vuelve a intentarlo.",
-          );
-          return;
-        }
-      }
-
-      const updated = await updateGuideDocument(documentId, payload);
-
-      if (selectedFile) {
-        try {
-          await uploadGuideDocumentFile(updated.id, selectedFile);
-        } catch {
-          setError(
-            "Los datos se guardaron, pero el archivo no se pudo subir. Vuelve a intentarlo.",
-          );
-          return;
-        }
+      if (result.redirectTo) {
+        router.push(result.redirectTo);
+        return;
       }
 
       router.push("/admin/guides");
       router.refresh();
     } catch (saveError) {
       setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "No se pudo guardar el documento.",
+        errorMessage(saveError, "No se pudo guardar el documento."),
       );
     } finally {
       setSaving(false);

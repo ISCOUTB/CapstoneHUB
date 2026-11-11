@@ -28,7 +28,7 @@ export type DownloadedGuideDocument = {
 
 function normalizeOptional(value: string | null | undefined): string | null {
   const normalized = value?.trim();
-  return normalized ? normalized : null;
+  return normalized || null;
 }
 
 function uniqueAudiences(audiences: UserRole[] | undefined): UserRole[] {

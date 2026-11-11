@@ -66,13 +66,15 @@ export async function resetSeed(
   if (storageKeys.length > 0) {
     const storage = createStorage();
     if (storage) {
-      for (const storageKey of storageKeys) {
-        try {
-          await deleteFromStorage(storage, storageKey);
-        } catch {
-          log.warn(`Could not delete S3 object ${storageKey}`);
-        }
-      }
+      await Promise.all(
+        storageKeys.map(async (storageKey) => {
+          try {
+            await deleteFromStorage(storage, storageKey);
+          } catch {
+            log.warn(`Could not delete S3 object ${storageKey}`);
+          }
+        }),
+      );
     } else {
       log.warn(
         'S3/RustFS is not configured; attachment and guide files will not be removed from storage.',

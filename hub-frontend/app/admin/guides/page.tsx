@@ -76,6 +76,156 @@ function sourceDetail(document: GuideDocumentItem): string {
   return sourceLabel(document);
 }
 
+type AdminGuidesContentProps = {
+  loading: boolean;
+  documents: GuideDocumentItem[];
+  onDelete: (document: GuideDocumentItem) => void;
+};
+
+function AdminGuidesContent({
+  loading,
+  documents,
+  onDelete,
+}: Readonly<AdminGuidesContentProps>) {
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-12 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (documents.length === 0) {
+    return (
+      <Empty className="rounded-2xl bg-muted/20">
+        <EmptyHeader>
+          <EmptyTitle>Todavía no hay documentos</EmptyTitle>
+          <EmptyDescription>
+            Crea el primer formato, plantilla o guía del catálogo. Puedes
+            adjuntar un archivo o enlazar un recurso externo.
+          </EmptyDescription>
+        </EmptyHeader>
+        <Button
+          nativeButton={false}
+          render={
+            <Link href="/admin/guides/new">
+              <RiAddLine data-icon="inline-start" />
+              Crear documento
+            </Link>
+          }
+        />
+      </Empty>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableHead>Documento</TableHead>
+            <TableHead>Categoría</TableHead>
+            <TableHead>Dirigido a</TableHead>
+            <TableHead>Archivo</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+
+        <TableBody>
+          {documents.map((document) => (
+            <TableRow
+              key={document.id}
+              className="transition-colors hover:bg-utb-blue/[0.04]"
+            >
+              <TableCell className="max-w-72 min-w-56">
+                <Link
+                  href={`/admin/guides/${document.id}`}
+                  className="font-medium hover:underline"
+                >
+                  {document.title}
+                </Link>
+                {document.description ? (
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    {document.description}
+                  </p>
+                ) : null}
+              </TableCell>
+
+              <TableCell>
+                <Badge variant="outline">
+                  {formatGuideCategory(document.category)}
+                </Badge>
+              </TableCell>
+
+              <TableCell className="max-w-56 text-sm text-muted-foreground">
+                {formatGuideAudiences(document.audiences)}
+              </TableCell>
+
+              <TableCell className="max-w-56 text-sm text-muted-foreground">
+                {sourceDetail(document)}
+              </TableCell>
+
+              <TableCell>
+                <Badge
+                  variant={document.isPublished ? "outline" : "secondary"}
+                >
+                  {document.isPublished ? "Publicado" : "Borrador"}
+                </Badge>
+              </TableCell>
+
+              <TableCell>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    nativeButton={false}
+                    render={
+                      <Link href={`/admin/guides/${document.id}`}>
+                        <RiEditLine data-icon="inline-start" />
+                        Editar
+                      </Link>
+                    }
+                  />
+
+                  {document.hasFile ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      nativeButton={false}
+                      render={
+                        <a
+                          href={guideDownloadHref(document.id)}
+                          aria-label={`Descargar ${document.title}`}
+                        />
+                      }
+                    >
+                      <RiDownloadLine data-icon="inline-start" />
+                      Descargar
+                    </Button>
+                  ) : null}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDelete(document)}
+                    aria-label={`Eliminar ${document.title}`}
+                  >
+                    <RiDeleteBinLine data-icon="inline-start" />
+                    Eliminar
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export default function AdminGuidesPage() {
   const [documents, setDocuments] = useState<GuideDocumentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,137 +320,11 @@ export default function AdminGuidesPage() {
         </CardHeader>
 
         <CardContent>
-          {loading ? (
-            <div className="flex flex-col gap-3">
-              <Skeleton className="h-12 w-full rounded-xl" />
-              <Skeleton className="h-12 w-full rounded-xl" />
-              <Skeleton className="h-12 w-full rounded-xl" />
-            </div>
-          ) : documents.length === 0 ? (
-            <Empty className="rounded-2xl bg-muted/20">
-              <EmptyHeader>
-                <EmptyTitle>Todavía no hay documentos</EmptyTitle>
-                <EmptyDescription>
-                  Crea el primer formato, plantilla o guía del catálogo. Puedes
-                  adjuntar un archivo o enlazar un recurso externo.
-                </EmptyDescription>
-              </EmptyHeader>
-              <Button
-                nativeButton={false}
-                render={
-                  <Link href="/admin/guides/new">
-                    <RiAddLine data-icon="inline-start" />
-                    Crear documento
-                  </Link>
-                }
-              />
-            </Empty>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableHead>Documento</TableHead>
-                    <TableHead>Categoría</TableHead>
-                    <TableHead>Dirigido a</TableHead>
-                    <TableHead>Archivo</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {documents.map((document) => (
-                    <TableRow
-                      key={document.id}
-                      className="transition-colors hover:bg-utb-blue/[0.04]"
-                    >
-                      <TableCell className="max-w-72 min-w-56">
-                        <Link
-                          href={`/admin/guides/${document.id}`}
-                          className="font-medium hover:underline"
-                        >
-                          {document.title}
-                        </Link>
-                        {document.description ? (
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                            {document.description}
-                          </p>
-                        ) : null}
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge variant="outline">
-                          {formatGuideCategory(document.category)}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="max-w-56 text-sm text-muted-foreground">
-                        {formatGuideAudiences(document.audiences)}
-                      </TableCell>
-
-                      <TableCell className="max-w-56 text-sm text-muted-foreground">
-                        {sourceDetail(document)}
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge
-                          variant={
-                            document.isPublished ? "outline" : "secondary"
-                          }
-                        >
-                          {document.isPublished ? "Publicado" : "Borrador"}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            nativeButton={false}
-                            render={
-                              <Link href={`/admin/guides/${document.id}`}>
-                                <RiEditLine data-icon="inline-start" />
-                                Editar
-                              </Link>
-                            }
-                          />
-
-                          {document.hasFile ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              nativeButton={false}
-                              render={
-                                <a
-                                  href={guideDownloadHref(document.id)}
-                                  aria-label={`Descargar ${document.title}`}
-                                />
-                              }
-                            >
-                              <RiDownloadLine data-icon="inline-start" />
-                              Descargar
-                            </Button>
-                          ) : null}
-
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeleteTarget(document)}
-                            aria-label={`Eliminar ${document.title}`}
-                          >
-                            <RiDeleteBinLine data-icon="inline-start" />
-                            Eliminar
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <AdminGuidesContent
+            loading={loading}
+            documents={documents}
+            onDelete={setDeleteTarget}
+          />
         </CardContent>
       </Card>
 

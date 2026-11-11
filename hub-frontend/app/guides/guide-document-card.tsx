@@ -61,6 +61,55 @@ const CATEGORY_ICONS = {
   guide: RiBookOpenLine,
 } as const;
 
+function DocumentAction({
+  document,
+}: Readonly<{ document: GuideDocumentItem }>) {
+  if (document.hasFile) {
+    return (
+      <Button
+        className="w-full"
+        nativeButton={false}
+        render={
+          <a
+            href={guideDownloadHref(document.id)}
+            aria-label={`Descargar ${document.title}`}
+          />
+        }
+      >
+        <RiDownloadLine data-icon="inline-start" />
+        Descargar
+      </Button>
+    );
+  }
+
+  if (document.externalUrl) {
+    return (
+      <Button
+        className="w-full"
+        nativeButton={false}
+        render={
+          <a
+            href={document.externalUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${document.title} (se abre en una pestaña nueva)`}
+          />
+        }
+      >
+        <RiExternalLinkLine data-icon="inline-start" />
+        Abrir enlace
+      </Button>
+    );
+  }
+
+  return (
+    <Button className="w-full" variant="outline" disabled>
+      <RiHourglassLine data-icon="inline-start" />
+      Próximamente
+    </Button>
+  );
+}
+
 export default function GuideDocumentCard({
   document,
 }: Readonly<{ document: GuideDocumentItem }>) {
@@ -103,42 +152,7 @@ export default function GuideDocumentCard({
       </CardContent>
 
       <CardFooter>
-        {document.hasFile ? (
-          <Button
-            className="w-full"
-            nativeButton={false}
-            render={
-              <a
-                href={guideDownloadHref(document.id)}
-                aria-label={`Descargar ${document.title}`}
-              />
-            }
-          >
-            <RiDownloadLine data-icon="inline-start" />
-            Descargar
-          </Button>
-        ) : document.externalUrl ? (
-          <Button
-            className="w-full"
-            nativeButton={false}
-            render={
-              <a
-                href={document.externalUrl}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`${document.title} (se abre en una pestaña nueva)`}
-              />
-            }
-          >
-            <RiExternalLinkLine data-icon="inline-start" />
-            Abrir enlace
-          </Button>
-        ) : (
-          <Button className="w-full" variant="outline" disabled>
-            <RiHourglassLine data-icon="inline-start" />
-            Próximamente
-          </Button>
-        )}
+        <DocumentAction document={document} />
       </CardFooter>
     </Card>
   );
