@@ -105,7 +105,7 @@ las referencia con `${VAR}`.
 | `AUTH_SECRET` | Firma de tokens (mínimo 32 caracteres, aleatoria). |
 | `INITIAL_ADMIN_*` | Admin inicial si la base está vacía. |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | Credenciales y bucket del almacenamiento RustFS. |
-| `MAX_FILE_SIZE_BYTES`, `MAX_REPORT_FILE_SIZE_BYTES` | Límites de archivos. |
+| `MAX_FILE_SIZE_BYTES`, `MAX_REPORT_FILE_SIZE_BYTES`, `MAX_GUIDE_FILE_SIZE_BYTES` | Límites de archivos (anexos, entregas y guías). |
 | `SWAGGER_ENABLED` | `true` habilita Swagger en `/api`; está **deshabilitado por defecto**. |
 
 > **No ejecutes el seed en producción.** El seeder se niega a correr cuando

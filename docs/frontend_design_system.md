@@ -112,6 +112,7 @@ mantener esa familia para que la barra se lea bien sobre el topbar claro.
 | --- | --- |
 | Proyectos, detalle | por defecto (azul) |
 | Proponer | `rgba(56,189,248,0.34)` — cian |
+| Guías | `rgba(45,212,191,0.32)` — verde azulado |
 | Perfil | `rgba(16,185,129,0.28)` — esmeralda |
 | Administración | `rgba(129,140,248,0.38)` — índigo |
 
@@ -133,9 +134,10 @@ izquierda y un **topbar** claro (`bg-card`) sticky sobre el contenido.
 
 - La sidebar
   ([`app-sidebar.tsx`](../hub-frontend/app/components/app-sidebar.tsx)) contiene
-  la marca y dos secciones: **Navegación** (Inicio, Proyectos, Proponer) y
-  **Acciones de usuario** (Administración, Rúbricas, Indicadores, Mi perfil).
-  La segunda se calcula con `navigation-links.ts` según los roles.
+  la marca y dos secciones: **Navegación** (Inicio, Proyectos, Proponer, Guías) y
+  **Acciones de usuario** (Administración, Rúbricas, Administrar guías,
+  Indicadores, Mi perfil). La segunda se calcula con `navigation-links.ts` según
+  los roles.
 - La ruta activa se marca con una píldora `bg-utb-blue`; es el único elemento
   con ese tratamiento.
 - En escritorio (`lg`) la sidebar queda fija y expandida. Por debajo de `lg` se

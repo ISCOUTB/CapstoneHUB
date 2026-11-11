@@ -38,6 +38,9 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 | `/submit`, `/submit/natural` | Propuesta de proyecto. |
 | `/profile/kpis` | Panel de indicadores y panorama por semestre (docentes, evaluadores, directivos y admin; el panorama es solo para admin/directivo). |
 | `/admin/users` | Administración de usuarios y roles. |
+| `/guides` | Guías y documentos: manuales de uso por rol y catálogo público de formatos, plantillas y guías. |
+| `/admin/guides` | Administración del catálogo de guías y documentos (admin/directivo). |
+| `/admin/guides/new`, `/admin/guides/[id]` | Crear y editar un documento del catálogo. |
 | `/admin/rubrics` | Plantillas de rúbricas para directivos y administradores. |
 | `/admin/rubrics/new`, `/admin/rubrics/[id]` | Crear y editar una plantilla de rúbrica. |
 
@@ -56,7 +59,9 @@ descarga/reproducción sigue pasando por el proxy `stream`, que reenvía `Range`
 `app/api/auth/proxy.ts` es un helper reutilizable para login y usuarios.
 `app/api/rubrics/[...path]/route.ts` hace lo mismo para las plantillas de
 rúbricas; las evaluaciones y asignaciones cuelgan de `/api/projects/...` y usan
-el proxy de proyectos.
+el proxy de proyectos. `app/api/guides/[...path]/route.ts` atiende el catálogo
+de guías: reenvía JSON para las mutaciones, transmite las descargas y reenvía las
+subidas multipart del archivo del documento.
 
 ## Capa de servicios
 
@@ -74,6 +79,8 @@ el proxy de proyectos.
 - `project-permissions.ts` — reglas de permisos del cliente (editar, gestionar,
   hitos, estados), espejo de `AuthorizationService`.
 - `rubrics.ts` — plantillas de rúbricas y su administración.
+- `guides.ts` — catálogo de guías y documentos: tipos, etiquetas de categoría y
+  tipo de archivo, listado público, CRUD administrativo y subida de archivos.
 - `evaluations.ts` — evaluación semestral, notas, rúbrica asignada y asignación
   de plantillas desde la pestaña Evaluación.
 - `stats.ts` — KPIs del panel y panorama global por semestre.
@@ -132,10 +139,11 @@ sidebar.
 La sidebar
 ([`app-sidebar.tsx`](../hub-frontend/app/components/app-sidebar.tsx)) agrupa la
 navegación en dos secciones: **Navegación** (Inicio → `/home`, Proyectos,
-Proponer) y **Acciones de usuario** (Administración solo admin, Rúbricas para
-admin/directivo, Indicadores para los roles con acceso a KPIs y Mi perfil). Los
-links se calculan en `navigation-links.ts`. En móvil la sidebar se monta en un
-drawer y se cierra al navegar.
+Proponer y Guías) y **Acciones de usuario** (Administración solo admin, Rúbricas
+para admin/directivo, Administrar guías para admin/directivo, Indicadores para
+los roles con acceso a KPIs y Mi perfil). Los links se calculan en
+`navigation-links.ts`. En móvil la sidebar se monta en un drawer y se cierra al
+navegar.
 
 El topbar
 ([`navbar.tsx`](../hub-frontend/app/components/navbar.tsx)) muestra el
@@ -147,6 +155,26 @@ muestran sin sidebar y con la marca estática en el topbar. Tras iniciar sesión
 el destino por defecto es `/home`; `?next=` conserva los enlaces profundos. La
 página de rúbricas vive en `/admin/rubrics` y el backend vuelve a validar los
 permisos.
+
+## Guías y documentos
+
+La página pública `/guides` reúne los manuales de uso por rol y el catálogo de
+formatos, plantillas y guías. Los manuales son contenido estático del frontend
+([`app/guides/role-manuals.ts`](../hub-frontend/app/guides/role-manuals.ts)) y se
+muestran al inicio de la pestaña de cada rol; la pestaña **Todos** presenta las
+tarjetas de los seis manuales y luego el catálogo completo.
+
+El catálogo se carga desde el BFF (`getGuideDocuments`) y se filtra en el cliente
+por rol, categoría y texto. Cada documento muestra su tipo de archivo y permite
+descargarlo, abrir un enlace externo o, si aún no tiene fuente, verlo como
+«Próximamente». El botón **Administrar guías** aparece para admin/directivo.
+
+La administración vive en `/admin/guides` (layout protegido con
+`canManageGuides`). La tabla lista todos los documentos, incluidos los borradores;
+el formulario crea y edita metadatos (título, descripción, categoría, roles
+destinatarios y publicación) y gestiona la fuente: un archivo PDF, Word, Excel,
+PowerPoint o ZIP de hasta 25 MB, un enlace externo, o ninguno. Si un documento
+tiene archivo, el enlace externo queda bloqueado hasta retirarlo.
 
 ## Autenticación
 
