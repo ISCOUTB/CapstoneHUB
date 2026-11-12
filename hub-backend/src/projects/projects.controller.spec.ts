@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectsController } from './projects.controller';
+import { ProjectExportsService } from './project-exports.service';
 import { ProjectsService } from './projects.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AuthService } from '../auth/auth.service';
@@ -12,6 +13,7 @@ describe('ProjectsController', () => {
       controllers: [ProjectsController],
       providers: [
         { provide: ProjectsService, useValue: {} },
+        { provide: ProjectExportsService, useValue: {} },
         { provide: AuthService, useValue: {} },
         AuthGuard,
       ],
