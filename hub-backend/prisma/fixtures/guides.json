@@ -1,0 +1,60 @@
+{
+  "documents": [
+    {
+      "title": "Formato de propuesta de proyecto",
+      "description": "Plantilla base para registrar una propuesta de proyecto Capstone con los datos del proponente, el contexto, los objetivos y los entregables esperados.",
+      "category": "format",
+      "audiences": ["student", "proposer"],
+      "isPublished": true
+    },
+    {
+      "title": "Formato de anteproyecto",
+      "description": "Estructura sugerida para el anteproyecto: planteamiento del problema, justificación, objetivos, alcance, metodología y cronograma.",
+      "category": "format",
+      "audiences": ["student", "teacher"],
+      "isPublished": true
+    },
+    {
+      "title": "Formato de artículo final",
+      "description": "Guía de estructura y presentación del documento final del proyecto para su entrega y depósito en el repositorio de biblioteca.",
+      "category": "format",
+      "audiences": ["student", "teacher"],
+      "isPublished": true
+    },
+    {
+      "title": "Planos y mediciones",
+      "description": "Relación de planos, memorias de cálculo y mediciones que acompañan los entregables técnicos de los proyectos de ingeniería.",
+      "category": "format",
+      "audiences": ["student", "teacher"],
+      "isPublished": true
+    },
+    {
+      "title": "Plantilla de acta de reunión",
+      "description": "Formato para registrar asistentes, temas tratados, compromisos y fechas de seguimiento de las reuniones del proyecto.",
+      "category": "template",
+      "audiences": ["teacher", "evaluator"],
+      "isPublished": true
+    },
+    {
+      "title": "Plantilla de presentación de la expo",
+      "description": "Estructura recomendada para la presentación final del proyecto ante el comité evaluador.",
+      "category": "template",
+      "audiences": ["student", "evaluator"],
+      "isPublished": true
+    },
+    {
+      "title": "Guía de hitos y entregas",
+      "description": "Explica cómo se organizan los hitos mínimos, las entregas y los vínculos entre ambos durante las fases del proyecto.",
+      "category": "guide",
+      "audiences": [],
+      "isPublished": true
+    },
+    {
+      "title": "Guía de evaluación de proyectos",
+      "description": "Resume el proceso de evaluación semestral, las rúbricas y los criterios que se aplican para avanzar de fase y cerrar el proyecto.",
+      "category": "guide",
+      "audiences": ["teacher", "evaluator", "directivo"],
+      "isPublished": true
+    }
+  ]
+}

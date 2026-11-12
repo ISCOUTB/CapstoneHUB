@@ -51,15 +51,25 @@ export abstract class StorageService {
   abstract listObjects(prefix: string): Promise<ListedObject[]>;
 }
 
+function safeFileExtension(originalName: string): string {
+  const extension = originalName.includes('.')
+    ? originalName.slice(originalName.lastIndexOf('.')).toLowerCase()
+    : '';
+  return extension.replace(/[^a-z0-9.]/g, '');
+}
+
 export function buildStorageKey(
   projectId: number,
   originalName: string,
 ): string {
-  const extension = originalName.includes('.')
-    ? originalName.slice(originalName.lastIndexOf('.')).toLowerCase()
-    : '';
-  const safeExtension = extension.replace(/[^a-z0-9.]/g, '');
-  return `projects/${projectId}/${randomUUID()}${safeExtension}`;
+  return `projects/${projectId}/${randomUUID()}${safeFileExtension(
+    originalName,
+  )}`;
+}
+
+/** Clave de un archivo del catálogo de guías: `guides/<uuid>.<ext>`. */
+export function buildGuideStorageKey(originalName: string): string {
+  return `guides/${randomUUID()}${safeFileExtension(originalName)}`;
 }
 
 export function projectStoragePrefix(projectId: number): string {

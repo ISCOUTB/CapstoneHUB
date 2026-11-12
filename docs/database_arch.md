@@ -17,6 +17,7 @@ Ver también: [Arquitectura del backend](./backend_arch.md).
 - `ProjectSource`: `external_entity`, `research`, `internal_need`,
   `social_impact`.
 - `ProjectPhase`: `semester_1`, `semester_2`.
+- `GuideCategory`: `format`, `template`, `guide`.
 
 ## Entidades
 
@@ -212,6 +213,16 @@ hitos. El hito no se puede completar hasta que todas sus entregas vinculadas
 estén `accepted`. Al eliminar el hito o la entrega, sus filas de enlace caen en
 cascada y la otra parte queda intacta (`milestone_report`).
 
+### GuideDocument
+
+Documento del catálogo de guías y formatos de apoyo. Guarda `title`,
+`description` opcional, `category` (`GuideCategory`), `audiences` (roles
+destinatarios; un arreglo vacío significa **todos**), `isPublished` y el autor de
+la última carga (`uploadedByUserId`, opcional). La fuente del documento es un
+archivo (`storageKey` único, `originalName`, `mimeType` y `sizeBytes`) o un
+`externalUrl`; ambos son opcionales y se excluyen entre sí. Un documento sin
+archivo ni enlace se muestra como «Próximamente» en la página pública.
+
 ## Diagrama de clases UML
 
 ```mermaid
@@ -392,6 +403,23 @@ classDiagram
         +DateTime createdAt
     }
 
+    class GuideDocument {
+        +Int id
+        +String title
+        +String description
+        +GuideCategory category
+        +UserRole[] audiences
+        +String externalUrl
+        +String storageKey
+        +String originalName
+        +String mimeType
+        +Int sizeBytes
+        +Boolean isPublished
+        +Int uploadedByUserId
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
     class RubricTemplate {
         +Int id
         +String name
@@ -463,6 +491,13 @@ classDiagram
         semester_2
     }
 
+    class GuideCategory {
+        <<enumeration>>
+        format
+        template
+        guide
+    }
+
     class UserRole {
         <<enumeration>>
         admin
@@ -508,6 +543,7 @@ classDiagram
     User "0..1" --> "0..*" ProjectReportContent : reportContents
     User "0..1" --> "0..*" Project : proposedProjects
     User "0..1" --> "0..*" ProjectPhaseApproval : phaseApprovals
+    User "0..1" --> "0..*" GuideDocument : uploadedGuideDocuments
 
     Project "1" *-- "0..*" ProjectSchool : schools
     Project "1" *-- "0..*" ProjectDeliverable : deliverables
@@ -544,6 +580,8 @@ classDiagram
     ProjectPhaseApproval ..> ProjectPhase
     ProjectReport ..> ReportStatus
     ProjectReportContent ..> ReportContentKind
+    GuideDocument ..> GuideCategory
+    GuideDocument ..> UserRole
 ```
 
 ## Notas
@@ -561,6 +599,11 @@ classDiagram
 - Hay índices declarados para los filtros comunes: `status`, `startDate` y
   `createdAt` del proyecto, además de claves foráneas y fechas usadas en los
   listados.
+- `GuideDocument` guarda los archivos del catálogo bajo el prefijo `guides/` del
+  almacenamiento. `storageKey` y `externalUrl` se excluyen entre sí; si ambos
+  faltan, el documento se muestra como «Próximamente». Un `audiences` vacío
+  aplica a todos los roles. El recolector de objetos huérfanos también revisa
+  este prefijo.
 - Todo proyecto nuevo incluye por defecto un hito mínimo «Documento final» en
   `semester_2` y una entrega «Documento final» (tipo Archivo) vinculada a él
   (ver [Arquitectura del backend](./backend_arch.md)).

@@ -81,8 +81,9 @@ de datos y mantener estable el contrato de la API aunque cambie el esquema.
 | **Reports** | Entregas por proyecto, su contenido y su revisión. |
 | **Rubrics** | Plantillas de rúbricas por área y asignación de una rúbrica por proyecto/fase. |
 | **Evaluations** | Evaluación semestral del proyecto, notas ponderadas y bloqueo de fase/cierre. |
+| **Guides** | Catálogo de formatos, plantillas y guías; archivos en S3 y enlaces externos. |
 | **Stats** | KPIs para docentes, evaluadores, directivos y admin; panorama por semestre para admin/directivo. |
-| **Storage** | Expone `StorageService` para el módulo de anexos (S3/RustFS). |
+| **Storage** | Expone `StorageService` para los módulos de anexos, entregas y guías (S3/RustFS). |
 
 ## Autenticación y autorización
 
@@ -165,6 +166,8 @@ pasa.
 | Enviar evaluación semestral | no | sí | no | no | sí | no |
 | Crear / editar plantillas de rúbricas | no | sí | sí | no | no | no |
 | Asignar rúbrica a un proyecto/fase | no | sí | sí | no | no | no |
+| Ver / descargar guías publicadas | sí | sí | sí | sí | sí | sí |
+| Gestionar guías y documentos | no | sí | sí | no | no | no |
 | Ver panorama por semestre | no | sí | sí | no | no | no |
 
 - \* El `directivo` y el `evaluator` asignado resuelven las transiciones de la
@@ -290,6 +293,21 @@ falte.
 La asignación de rúbrica se bloquea en cuanto existe una evaluación de esa fase.
 Una plantilla con evaluaciones no se puede editar y una plantilla asignada no se
 puede archivar.
+
+### Guías y documentos
+
+La página pública `/guides` reúne los manuales de uso por rol (contenido estático
+del frontend) y un catálogo de documentos administrado en `guide_document`. Cada
+documento tiene título, descripción, categoría (`format`, `template` o `guide`),
+roles destinatarios (`audiences`; vacío significa todos), estado de publicación y
+una fuente: un archivo en S3/RustFS bajo `guides/` o un `externalUrl`. Un
+documento sin archivo ni enlace se muestra como «Próximamente».
+
+`GET /guides/documents` y `GET /guides/documents/:id` son públicos y solo
+devuelven documentos publicados; la descarga de un borrador queda limitada a
+admin/directivo. La administración (`/guides/admin/documents` y las mutaciones)
+requiere admin o directivo. Los archivos aceptan PDF, Word, Excel, PowerPoint y
+ZIP hasta `MAX_GUIDE_FILE_SIZE_BYTES` (25 MB por defecto).
 
 ### Hitos y entregas
 
@@ -427,6 +445,7 @@ rutas que la necesitan.
 | `INITIAL_ADMIN_*`                                            | Email, contraseña y nombre del admin inicial.                                                    |
 | `MAX_FILE_SIZE_BYTES`                                        | Límite de tamaño de anexos (por defecto 10 MB).                                                  |
 | `MAX_REPORT_FILE_SIZE_BYTES`                                 | Límite de tamaño de archivos de una entrega (100 MB por defecto).                                |
+| `MAX_GUIDE_FILE_SIZE_BYTES`                                  | Límite de tamaño de archivos del catálogo de guías (25 MB por defecto).                          |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Almacenamiento de archivos.                                                                      |
 | `S3_REGION`, `S3_FORCE_PATH_STYLE`                           | Ajustes del cliente S3 (`true` para RustFS/S3 path-style).                                       |
 | `LOG_LEVEL`                                                  | Nivel mínimo del log de peticiones (`error`, `warn`, `log`/`info` o `debug`; `log` por defecto). |
@@ -440,12 +459,13 @@ En `prisma/`:
 - `fixtures/` — datos JSON y archivos de anexos.
 
 Comandos: `npx prisma migrate dev`, `npm run seed` (y variantes como
-`seed:users`, `seed:projects`, etc.).
+`seed:users`, `seed:projects`, `seed:guides`, etc.).
 
 ## Mantenimiento
 
 - `npm run storage:gc` — borra del almacenamiento los objetos sin
-  `ProjectAttachment` (guardados que no llegaron a confirmarse). Flags:
+  `ProjectAttachment` o `GuideDocument` (guardados que no llegaron a
+  confirmarse). Recorre los prefijos `projects/` y `guides/`. Flags:
   `--dry-run` y `--max-age-hours=N` (24 h por defecto). Entrada en
   `src/storage/gc-cli.ts`; lógica en `src/storage/storage-gc.service.ts`.
 
@@ -498,6 +518,14 @@ Comandos: `npx prisma migrate dev`, `npm run seed` (y variantes como
 | `PATCH` | `/rubrics/templates/:id/archive` | Archivar una plantilla no asignada (admin/directivo). |
 | `PUT` | `/projects/:id/rubric-assignments/:phase` | Asignar una plantilla a un proyecto/fase (admin/directivo). |
 | `DELETE` | `/projects/:id/rubric-assignments/:phase` | Volver a la rúbrica general (admin/directivo). |
+| `GET` | `/guides/documents` | Listar los documentos publicados (público). |
+| `GET` | `/guides/documents/:id` | Detalle de un documento publicado (público). |
+| `GET` | `/guides/documents/:id/download` | Descargar el archivo (público si está publicado). |
+| `GET` | `/guides/admin/documents` | Listar todos los documentos, incluidos borradores (admin/directivo). |
+| `GET` | `/guides/admin/documents/:id` | Detalle completo de un documento (admin/directivo). |
+| `POST/PATCH/DELETE` | `/guides/documents[/:id]` | Crear, editar o borrar documentos (admin/directivo). |
+| `POST` | `/guides/documents/:id/file` | Subir o reemplazar el archivo (multipart, admin/directivo). |
+| `DELETE` | `/guides/documents/:id/file` | Quitar el archivo adjunto (admin/directivo). |
 | `GET` | `/projects/:id/evaluations` | Rúbricas, evaluaciones, promedio y evaluadores pendientes (admin, directivo o evaluador asignado). |
 | `PUT` | `/projects/:id/evaluations/:phase` | Crear o actualizar la evaluación propia (admin o evaluador asignado). |
 | `GET` | `/stats/kpis` | Indicadores agregados: pendientes, distribución de proyectos y actividad de revisión (admin, directivo, docente o evaluador; el alcance es global para admin/directivo y los proyectos asignados o propuestos para el resto). |

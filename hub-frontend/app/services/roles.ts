@@ -32,6 +32,11 @@ export function canManageRubrics(roles: readonly string[]): boolean {
   return roles.includes("admin") || roles.includes("directivo");
 }
 
+/** Mantener el catálogo de guías y documentos: admin y directivo. */
+export function canManageGuides(roles: readonly string[]): boolean {
+  return roles.includes("admin") || roles.includes("directivo");
+}
+
 /**
  * Roles de proyecto que puede recibir un usuario según sus roles globales.
  * Un docente puede participar como docente o como evaluador; un evaluador de

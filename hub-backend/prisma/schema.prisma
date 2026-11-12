@@ -71,6 +71,15 @@ enum ProjectPhase {
   semester_2
 }
 
+/**
+ * Categoría del catálogo de guías y documentos de apoyo.
+ */
+enum GuideCategory {
+  format
+  template
+  guide
+}
+
 model User {
   id              Int          @id @default(autoincrement())
   fullName        String       @map("full_name") @db.VarChar(255)
@@ -85,22 +94,23 @@ model User {
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 
-  roleAssignments        UserRoleAssignment[]
-  projectAssignments     ProjectActorAssignment[]
-  projectStatusHistories ProjectStatusHistory[]
-  projectChangeHistories ProjectChangeHistory[]
-  authoredObservations   ProjectObservation[]
-  uploadedAttachments    ProjectAttachment[]
-  createdReports         ProjectReport[]           @relation("ReportCreatedBy")
-  reviewedReports        ProjectReport[]           @relation("ReportReviewedBy")
-  reportContents         ProjectReportContent[]    @relation("ReportContentCreatedBy")
-  proposedProjects       Project[]                 @relation("ProjectProposedBy")
-  projectInterests       ProjectInterest[]
-  phaseApprovals         ProjectPhaseApproval[]
-  createdRubricTemplates RubricTemplate[]          @relation("RubricTemplateCreatedBy")
-  rubricAssignments      ProjectRubricAssignment[] @relation("RubricAssignmentAssignedBy")
-  projectEvaluations     ProjectEvaluation[]       @relation("ProjectEvaluationEvaluator")
+  roleAssignments         UserRoleAssignment[]
+  projectAssignments      ProjectActorAssignment[]
+  projectStatusHistories  ProjectStatusHistory[]
+  projectChangeHistories  ProjectChangeHistory[]
+  authoredObservations    ProjectObservation[]
+  uploadedAttachments     ProjectAttachment[]
+  createdReports          ProjectReport[]           @relation("ReportCreatedBy")
+  reviewedReports         ProjectReport[]           @relation("ReportReviewedBy")
+  reportContents          ProjectReportContent[]    @relation("ReportContentCreatedBy")
+  proposedProjects        Project[]                 @relation("ProjectProposedBy")
+  projectInterests        ProjectInterest[]
+  phaseApprovals          ProjectPhaseApproval[]
+  createdRubricTemplates  RubricTemplate[]          @relation("RubricTemplateCreatedBy")
+  rubricAssignments       ProjectRubricAssignment[] @relation("RubricAssignmentAssignedBy")
+  projectEvaluations      ProjectEvaluation[]       @relation("ProjectEvaluationEvaluator")
   milestoneRubricsUpdated ProjectMilestoneRubric[]
+  uploadedGuideDocuments  GuideDocument[]           @relation("GuideDocumentUploadedBy")
 
   @@index([fullName], map: "idx_user_full_name")
   @@map("user")
@@ -154,23 +164,23 @@ model Project {
   monetaryResourcesDescription String?       @map("monetary_resources_description") @db.Text
   facultyAdvisors              String[]      @default([]) @map("faculty_advisors")
 
-  proposer          User?                     @relation("ProjectProposedBy", fields: [proposerUserId], references: [id], onDelete: SetNull)
-  schools           ProjectSchool[]
+  proposer            User?                       @relation("ProjectProposedBy", fields: [proposerUserId], references: [id], onDelete: SetNull)
+  schools             ProjectSchool[]
   programRequirements ProjectProgramRequirement[]
-  naturalProposer   ProjectNaturalProposer?
-  actorAssignments  ProjectActorAssignment[]
-  interests         ProjectInterest[]
-  observations      ProjectObservation[]
-  statusHistory     ProjectStatusHistory[]
-  milestones        ProjectMilestones[]
-  attachments       ProjectAttachment[]
-  reports           ProjectReport[]
-  deliverables      ProjectDeliverable[]
-  changeHistory     ProjectChangeHistory[]
-  phaseApprovals    ProjectPhaseApproval[]
-  rubricAssignments ProjectRubricAssignment[]
-  evaluations       ProjectEvaluation[]
-  milestoneRubrics  ProjectMilestoneRubric[]
+  naturalProposer     ProjectNaturalProposer?
+  actorAssignments    ProjectActorAssignment[]
+  interests           ProjectInterest[]
+  observations        ProjectObservation[]
+  statusHistory       ProjectStatusHistory[]
+  milestones          ProjectMilestones[]
+  attachments         ProjectAttachment[]
+  reports             ProjectReport[]
+  deliverables        ProjectDeliverable[]
+  changeHistory       ProjectChangeHistory[]
+  phaseApprovals      ProjectPhaseApproval[]
+  rubricAssignments   ProjectRubricAssignment[]
+  evaluations         ProjectEvaluation[]
+  milestoneRubrics    ProjectMilestoneRubric[]
 
   @@index([status], map: "idx_project_status")
   @@index([startDate], map: "idx_project_start_date")
@@ -337,7 +347,6 @@ model ProjectMilestones {
   @@map("project_milestones")
 }
 
-
 model ProjectMilestoneRubric {
   id              Int      @id @default(autoincrement())
   projectId       Int      @map("project_id")
@@ -346,8 +355,8 @@ model ProjectMilestoneRubric {
   updatedByUserId Int?     @map("updated_by_user_id")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  updatedBy User? @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  updatedBy User?   @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
   @@unique([projectId, programId], map: "uk_project_milestone_rubric_project_program")
   @@index([programId], map: "idx_project_milestone_rubric_program_id")
@@ -552,4 +561,34 @@ model MilestoneReportLink {
   @@index([reportId], map: "idx_milestone_report_report_id")
   @@index([milestoneId], map: "idx_milestone_report_milestone_id")
   @@map("milestone_report")
+}
+
+/**
+ * Documento del catálogo de guías. El binario, si existe, vive en S3/RustFS;
+ * `externalUrl` permite enlazar un recurso alojado fuera de la plataforma.
+ * Un documento sin archivo ni enlace se muestra como «Próximamente».
+ * `audiences` vacío significa que aplica a todos los roles.
+ */
+model GuideDocument {
+  id               Int           @id @default(autoincrement())
+  title            String        @db.VarChar(255)
+  description      String?       @db.Text
+  category         GuideCategory @default(format)
+  audiences        UserRole[]    @default([])
+  externalUrl      String?       @map("external_url") @db.Text
+  storageKey       String?       @unique(map: "uk_guide_document_storage_key") @map("storage_key") @db.VarChar(512)
+  originalName     String?       @map("original_name") @db.VarChar(255)
+  mimeType         String?       @map("mime_type") @db.VarChar(150)
+  sizeBytes        Int?          @map("size_bytes")
+  isPublished      Boolean       @default(true) @map("is_published")
+  uploadedByUserId Int?          @map("uploaded_by_user_id")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  uploadedBy User? @relation("GuideDocumentUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([category], map: "idx_guide_document_category")
+  @@index([isPublished], map: "idx_guide_document_is_published")
+  @@index([uploadedByUserId], map: "idx_guide_document_uploaded_by_user_id")
+  @@map("guide_document")
 }

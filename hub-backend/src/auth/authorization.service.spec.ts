@@ -994,6 +994,34 @@ describe('AuthorizationService', () => {
       ).toThrow(ForbiddenException);
     });
 
+    it.each([UserRole.admin, UserRole.directivo])(
+      'allows %s users to manage guides',
+      (role) => {
+        const service = new AuthorizationService({} as never);
+
+        expect(() => service.assertCanManageGuides(user([role]))).not.toThrow();
+        expect(service.canManageGuides(user([role]))).toBe(true);
+      },
+    );
+
+    it('rejects teachers, evaluators and students from managing guides', () => {
+      const service = new AuthorizationService({} as never);
+
+      for (const role of [
+        UserRole.teacher,
+        UserRole.evaluator,
+        UserRole.student,
+        UserRole.proposer,
+      ]) {
+        expect(() => service.assertCanManageGuides(user([role]))).toThrow(
+          ForbiddenException,
+        );
+        expect(service.canManageGuides(user([role]))).toBe(false);
+      }
+
+      expect(service.canManageGuides(undefined)).toBe(false);
+    });
+
     it('lets directivos view evaluations without a project assignment', async () => {
       const { service, findAssignment } = createService();
 

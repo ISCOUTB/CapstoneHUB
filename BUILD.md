@@ -56,7 +56,7 @@ INITIAL_ADMIN_NAME
 # para generar datos de prueba
 
 Prisma seeds genera usuarios, proyectos, actores, hitos, observaciones, historial de
-estados y anexos de ejemplo. Todo en `hub-backend/prisma`:
+estados, anexos de ejemplo y documentos del catálogo de guías. Todo en `hub-backend/prisma`:
 
 ```
 prisma/seed.ts          # CLI principal
@@ -78,6 +78,7 @@ npm run seed:milestones      # solo hitos
 npm run seed:observations    # solo observaciones
 npm run seed:status          # solo transiciones de estado
 npm run seed:attachments     # solo anexos
+npm run seed:guides          # solo documentos del catálogo de guías
 npm run seed:reset           # borra los datos sembrados y los vuelve a crear
 ```
 
@@ -99,7 +100,8 @@ npx prisma db seed
 
 si se corre varias veces no duplica registros, solo
 actualiza lo que ya existe. `npm run seed:reset` elimina únicamente los datos
-sembrados (por nombre de proyecto y email del fixture) antes de recrearlos.
+sembrados (por nombre de proyecto, email del fixture y título de los documentos
+de guía) antes de recrearlos.
 
 ## Tests
 
@@ -132,8 +134,9 @@ DATABASE_URL="postgresql://<usuario>:<contraseña>@localhost:5432/capstonehub_te
   npm run test:e2e
 ```
 
-Los specs están en `test/` (`auth.e2e-spec.ts`, `projects.e2e-spec.ts`) y crean
-sus propios datos con correos únicos, así que no dependen de seeds.
+Los specs están en `test/` (`auth.e2e-spec.ts`, `projects.e2e-spec.ts`,
+`guides.e2e-spec.ts` y el resto de dominios) y crean sus propios datos con
+correos únicos, así que no dependen de seeds.
 
 ### Frontend e2e (Playwright)
 
@@ -151,7 +154,7 @@ DATABASE_URL="postgresql://<usuario>:<contraseña>@localhost:5432/capstonehub_te
 ```
 
 Los specs están en `e2e/` (`auth.spec.ts`, `project-detail.spec.ts`,
-`register.spec.ts`).
+`register.spec.ts`, `guides.spec.ts`).
 
 Para depurar con el navegador visible o la interfaz interactiva:
 
@@ -243,12 +246,24 @@ en una transacción. Todos los archivos de una entrega pueden pesar hasta
 se listan en Anexos. Como la subida pasa por la API, el almacenamiento no necesita
 `S3_PUBLIC_ENDPOINT` ni CORS.
 
+## Catálogo de guías
+
+La página pública `/guides` muestra los manuales de uso por rol y el catálogo de
+formatos, plantillas y guías. Los documentos se administran desde
+`/admin/guides` (solo admin/directivo) y viven en la tabla `guide_document`; los
+archivos se guardan en S3/RustFS bajo el prefijo `guides/`. Un documento puede
+tener un archivo, un enlace externo o ninguno (se muestra como «Próximamente»).
+
+Los archivos aceptan PDF, Word, Excel, PowerPoint y ZIP, con un máximo de
+`MAX_GUIDE_FILE_SIZE_BYTES` (25 MB por defecto).
+
 ## Limpieza de objetos huérfanos (storage gc)
 
 Si un guardado falla entre el almacenamiento y la base de datos, el objeto puede
-quedar sin fila en `project_attachment` (huérfano). El recolector recorre el
-prefijo `projects/`, lo compara con los `storageKey` registrados y borra los
-objetos sin fila que superan la antigüedad mínima (24 h por defecto).
+quedar sin fila en `project_attachment` o `guide_document` (huérfano). El
+recolector recorre los prefijos `projects/` y `guides/`, los compara con los
+`storageKey` registrados y borra los objetos sin fila que superan la antigüedad
+mínima (24 h por defecto).
 
 ```bash
 npm run storage:gc                    # borra huérfanos de más de 24 h

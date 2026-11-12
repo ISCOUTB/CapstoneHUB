@@ -15,6 +15,7 @@ import { seedObservations } from './seed/observations';
 import { seedProjectStatus } from './seed/status';
 import { seedAttachments } from './seed/attachments';
 import { seedReports } from './seed/reports';
+import { seedGuides } from './seed/guides';
 import { resetSeed } from './seed/reset';
 
 const SECTION_RUNNERS: Record<
@@ -29,6 +30,7 @@ const SECTION_RUNNERS: Record<
   status: seedProjectStatus,
   attachments: seedAttachments,
   reports: seedReports,
+  guides: seedGuides,
 };
 
 async function main(): Promise<void> {
