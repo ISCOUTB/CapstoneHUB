@@ -27,6 +27,7 @@ test("los roles sin permiso no ven la exportación de proyectos", async ({
     },
   });
   expect(created.ok()).toBe(true);
+  const project = (await created.json()) as { id: number };
 
   await page.goto("/login");
   await page.getByLabel("Correo electrónico").fill(email);
@@ -41,5 +42,13 @@ test("los roles sin permiso no ven la exportación de proyectos", async ({
 
   await expect(
     page.getByRole("button", { name: "Exportar a Excel" }),
+  ).toHaveCount(0);
+
+  await page.goto(`/projects/${project.id}`);
+  await expect(
+    page.getByRole("heading", { name: "Proyecto exportación E2E" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Descargar PDF" }),
   ).toHaveCount(0);
 });

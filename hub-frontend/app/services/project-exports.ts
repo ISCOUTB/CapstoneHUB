@@ -11,3 +11,18 @@ export async function downloadProjectsExcel(): Promise<void> {
   await ensureOk(response, { action: "generar el Excel de proyectos" });
   await downloadResponseFile(response, "capstonehub-proyectos.xlsx");
 }
+
+/** Descarga el PDF de información general de un proyecto. */
+export async function downloadProjectPdf(
+  projectId: string | number,
+): Promise<void> {
+  const response = await fetch(
+    getApiUrl(`/api/projects/${projectId}/export/pdf`),
+    {
+      cache: "no-store",
+    },
+  );
+
+  await ensureOk(response, { action: "generar el PDF del proyecto" });
+  await downloadResponseFile(response, `proyecto-${projectId}.pdf`);
+}
