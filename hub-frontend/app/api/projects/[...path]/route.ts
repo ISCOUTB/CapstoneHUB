@@ -4,7 +4,16 @@ const handlers = createProxyRouteHandlers({
   backendPrefix: "/projects",
   isStreamPath: (path) => {
     const last = path[path.length - 1];
-    return last === "download" || last === "stream";
+
+    if (last === "download" || last === "stream") {
+      return true;
+    }
+
+    if (path.length === 2 && path[0] === "export" && path[1] === "excel") {
+      return true;
+    }
+
+    return path.length === 3 && path[1] === "export" && path[2] === "pdf";
   },
   isMultipartUpload: (path) =>
     (path.length === 2 && path[1] === "attachments") ||

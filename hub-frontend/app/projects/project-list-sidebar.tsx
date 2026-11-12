@@ -1,10 +1,16 @@
 "use client";
 
+import { useState } from "react";
+import { RiFileExcelLine } from "@remixicon/react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../components/auth-provider";
+import { downloadProjectsExcel } from "../services/project-exports";
+import { canExportProjectData } from "../services/roles";
 import { type ProjectListFilters } from "./project-list-config";
 
 type ProjectListSidebarProps = {
@@ -49,6 +55,12 @@ export default function ProjectListSidebar({
   className,
 }: ProjectListSidebarProps) {
   const { session } = useAuth();
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const canExport = session
+    ? canExportProjectData(session.user.roles)
+    : false;
 
   const activeCount = [
     filters.assignedToMe,
@@ -60,6 +72,23 @@ export default function ProjectListSidebar({
 
   function updateFilters(partial: Partial<ProjectListFilters>) {
     onFiltersChange({ ...filters, ...partial });
+  }
+
+  async function handleExport() {
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      await downloadProjectsExcel();
+    } catch (error) {
+      setExportError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo generar el Excel de proyectos.",
+      );
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   return (
@@ -155,6 +184,43 @@ export default function ProjectListSidebar({
             }
           />
         </div>
+
+        {canExport ? (
+          <>
+            <Separator className="my-4" />
+
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.16em] text-muted-foreground uppercase">
+                Exportar
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Listado general de todos los proyectos visibles para tu rol.
+              </p>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3 w-full"
+                onClick={handleExport}
+                disabled={isExporting}
+                aria-busy={isExporting}
+              >
+                {isExporting ? (
+                  <Spinner data-icon="inline-start" />
+                ) : (
+                  <RiFileExcelLine data-icon="inline-start" />
+                )}
+                {isExporting ? "Generando…" : "Exportar a Excel"}
+              </Button>
+
+              {exportError ? (
+                <p className="mt-2 text-xs text-destructive" role="alert">
+                  {exportError}
+                </p>
+              ) : null}
+            </div>
+          </>
+        ) : null}
       </div>
     </aside>
   );
