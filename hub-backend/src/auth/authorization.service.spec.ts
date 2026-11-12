@@ -1101,4 +1101,38 @@ describe('AuthorizationService', () => {
       );
     });
   });
+
+  describe('assertCanExportProjectData', () => {
+    it.each([UserRole.admin, UserRole.directivo, UserRole.teacher])(
+      'allows %s users',
+      (role) => {
+        const service = new AuthorizationService({} as never);
+
+        expect(() =>
+          service.assertCanExportProjectData(user([role])),
+        ).not.toThrow();
+      },
+    );
+
+    it.each([UserRole.evaluator, UserRole.student, UserRole.proposer])(
+      'rejects %s users',
+      (role) => {
+        const service = new AuthorizationService({} as never);
+
+        expect(() => service.assertCanExportProjectData(user([role]))).toThrow(
+          ForbiddenException,
+        );
+      },
+    );
+
+    it('allows a user who holds an authorized role among others', () => {
+      const service = new AuthorizationService({} as never);
+
+      expect(() =>
+        service.assertCanExportProjectData(
+          user([UserRole.evaluator, UserRole.teacher]),
+        ),
+      ).not.toThrow();
+    });
+  });
 });
