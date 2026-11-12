@@ -36,7 +36,7 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 | `/projects/[id]/edit` | Edición de los datos del proyecto (admin, directivo o actor asignado). |
 | `/profile` | Mi perfil: datos de la cuenta, cambio de contraseña y proyectos de interés. |
 | `/submit`, `/submit/natural` | Propuesta de proyecto. |
-| `/profile/kpis` | Panel de indicadores y panorama por semestre (docentes, evaluadores, directivos y admin; el panorama es solo para admin/directivo). |
+| `/profile/kpis` | Panel de indicadores en pestañas (resumen, pendientes, actividad) y panorama por semestre (docentes, evaluadores, directivos y admin; el panorama es solo para admin/directivo). |
 | `/admin/users` | Administración de usuarios y roles. |
 | `/guides` | Guías y documentos: manuales de uso por rol y catálogo público de formatos, plantillas y guías. |
 | `/admin/guides` | Administración del catálogo de guías y documentos (admin/directivo). |
