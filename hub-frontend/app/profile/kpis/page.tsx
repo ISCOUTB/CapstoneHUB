@@ -15,9 +15,7 @@ import {
   getKpis,
   getSemesterStats,
 } from "../../services/stats";
-import KpiActivity from "./kpi-activity";
-import KpiHighlights from "./kpi-highlights";
-import KpiPending from "./kpi-pending";
+import KpiSections from "./kpi-sections";
 import SemesterOverview from "./semester-overview";
 
 export default function KpisPage() {
@@ -106,11 +104,11 @@ export default function KpisPage() {
     );
   } else if (kpis) {
     content = (
-      <>
-        <KpiHighlights kpis={kpis} />
-        <KpiPending kpis={kpis} />
-        <KpiActivity myReviews={kpis.myReviews} />
-      </>
+      <KpiSections
+        kpis={kpis}
+        semesterBody={semesterBody}
+        showSemesters={canSeeSemesters}
+      />
     );
   } else {
     content = null;
@@ -124,7 +122,7 @@ export default function KpisPage() {
     >
       {content}
 
-      {ready && isAuthenticated && canSeeSemesters ? (
+      {!kpis && ready && isAuthenticated && canSeeSemesters ? (
         <section className="mt-6">
           <h2 className="text-lg font-semibold tracking-tight">
             Panorama por semestre
