@@ -26,13 +26,9 @@ const PDFDocument = PDFDocumentModule as unknown as PDFDocumentConstructor;
 const PAGE_MARGIN = 48;
 
 const COLORS = {
-  deepBlue: '#05174a',
-  blue: '#0a41f5',
-  pale: '#93b4ff',
-  text: '#1e293b',
-  muted: '#64748b',
-  border: '#e2e8f0',
-  soft: '#f8fafc',
+  black: '#000000',
+  gray: '#555555',
+  border: '#999999',
 };
 
 function ensureSpace(doc: PDFDocumentInstance, needed: number): void {
@@ -42,22 +38,16 @@ function ensureSpace(doc: PDFDocumentInstance, needed: number): void {
 }
 
 function sectionTitle(doc: PDFDocumentInstance, title: string): void {
-  ensureSpace(doc, 42);
+  ensureSpace(doc, 30);
   doc.moveDown(0.7);
+  doc.x = PAGE_MARGIN;
   doc
     .font('Helvetica-Bold')
     .fontSize(11)
-    .fillColor(COLORS.blue)
+    .fillColor(COLORS.black)
     .text(safePdfText(title));
 
-  doc.moveDown(0.2);
-  doc
-    .moveTo(PAGE_MARGIN, doc.y)
-    .lineTo(doc.page.width - PAGE_MARGIN, doc.y)
-    .strokeColor(COLORS.border)
-    .lineWidth(0.8)
-    .stroke();
-  doc.moveDown(0.45);
+  doc.moveDown(0.3);
 }
 
 function paragraph(doc: PDFDocumentInstance, text: string): void {
@@ -65,7 +55,7 @@ function paragraph(doc: PDFDocumentInstance, text: string): void {
   doc
     .font('Helvetica')
     .fontSize(9.5)
-    .fillColor(COLORS.text)
+    .fillColor(COLORS.black)
     .text(safePdfText(text), { lineGap: 2 });
 }
 
@@ -78,11 +68,11 @@ function labelValue(
   doc
     .font('Helvetica-Bold')
     .fontSize(9)
-    .fillColor(COLORS.muted)
+    .fillColor(COLORS.gray)
     .text(`${label}: `, { continued: true });
   doc
     .font('Helvetica')
-    .fillColor(COLORS.text)
+    .fillColor(COLORS.black)
     .text(safePdfText(value), { lineGap: 1 });
 }
 
@@ -92,19 +82,107 @@ function bulletList(doc: PDFDocumentInstance, items: string[]): void {
     doc
       .font('Helvetica')
       .fontSize(9.5)
-      .fillColor(COLORS.text)
+      .fillColor(COLORS.black)
       .text(`• ${safePdfText(item)}`, { indent: 10, lineGap: 1 });
   }
+}
+
+const TABLE_FONT_SIZE = 9;
+const TABLE_CELL_PADDING = 4;
+
+function tableRowHeight(
+  doc: PDFDocumentInstance,
+  cells: string[],
+  widths: number[],
+  bold: boolean,
+): number {
+  doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(TABLE_FONT_SIZE);
+  const tallest = Math.max(
+    ...cells.map((cell, index) =>
+      doc.heightOfString(safePdfText(cell), {
+        width: widths[index],
+        lineGap: 1,
+      }),
+    ),
+  );
+  return tallest + TABLE_CELL_PADDING * 2;
+}
+
+function renderTableRow(
+  doc: PDFDocumentInstance,
+  cells: string[],
+  widths: number[],
+  bold: boolean,
+  y: number,
+): void {
+  let x = PAGE_MARGIN;
+  doc
+    .font(bold ? 'Helvetica-Bold' : 'Helvetica')
+    .fontSize(TABLE_FONT_SIZE)
+    .fillColor(COLORS.black);
+
+  cells.forEach((cell, index) => {
+    doc.text(safePdfText(cell), x, y + TABLE_CELL_PADDING, {
+      width: widths[index],
+      lineGap: 1,
+    });
+    x += widths[index];
+  });
+}
+
+/**
+ * Tabla simple en blanco y negro: encabezados en negrita, sin fondo, con una
+ * línea divisoria bajo el encabezado.
+ */
+function drawTable(
+  doc: PDFDocumentInstance,
+  headers: string[],
+  rows: string[][],
+  columnRatios: number[],
+): void {
+  const contentWidth = doc.page.width - PAGE_MARGIN * 2;
+  const widths = columnRatios.map((ratio) => contentWidth * ratio);
+
+  const renderHeader = (): void => {
+    const height = tableRowHeight(doc, headers, widths, true);
+    const y = doc.y;
+    renderTableRow(doc, headers, widths, true, y);
+    doc.y = y + height;
+
+    doc
+      .moveTo(PAGE_MARGIN, doc.y)
+      .lineTo(PAGE_MARGIN + contentWidth, doc.y)
+      .strokeColor(COLORS.border)
+      .lineWidth(0.6)
+      .stroke();
+  };
+
+  renderHeader();
+
+  for (const row of rows) {
+    const height = tableRowHeight(doc, row, widths, false);
+
+    if (doc.y + height > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      renderHeader();
+    }
+
+    const y = doc.y;
+    renderTableRow(doc, row, widths, false, y);
+    doc.y = y + height;
+  }
+
+  // Restablece el cursor al margen izquierdo para que el contenido siguiente
+  // no herede la posición de la última celda.
+  doc.x = PAGE_MARGIN;
 }
 
 function drawHeader(
   doc: PDFDocumentInstance,
   project: ProjectDetailResponse,
 ): void {
-  doc.rect(0, 0, doc.page.width, 118).fill(COLORS.deepBlue);
-
   doc
-    .fillColor('#ffffff')
+    .fillColor(COLORS.black)
     .font('Helvetica-Bold')
     .fontSize(18)
     .text('CapstoneHUB', PAGE_MARGIN, 30);
@@ -112,13 +190,13 @@ function drawHeader(
   doc
     .font('Helvetica')
     .fontSize(9)
-    .fillColor(COLORS.pale)
+    .fillColor(COLORS.gray)
     .text('Universidad Tecnológica de Bolívar', PAGE_MARGIN, 54);
 
   doc
     .font('Helvetica-Bold')
     .fontSize(14)
-    .fillColor('#ffffff')
+    .fillColor(COLORS.black)
     .text(safePdfText(project.name), PAGE_MARGIN, 74, {
       width: doc.page.width - PAGE_MARGIN * 2,
       height: 22,
@@ -128,13 +206,20 @@ function drawHeader(
   doc
     .font('Helvetica')
     .fontSize(8.5)
-    .fillColor(COLORS.pale)
+    .fillColor(COLORS.gray)
     .text(
       `Proyecto #${project.id} · ${statusLabel(project.status)} · Generado el ${formatDateTime(new Date())}`,
       PAGE_MARGIN,
       100,
       { width: doc.page.width - PAGE_MARGIN * 2 },
     );
+
+  doc
+    .moveTo(PAGE_MARGIN, 118)
+    .lineTo(doc.page.width - PAGE_MARGIN, 118)
+    .strokeColor(COLORS.border)
+    .lineWidth(0.8)
+    .stroke();
 
   doc.y = 136;
 }
@@ -295,14 +380,6 @@ function drawProjectSections(
     paragraph(doc, project.projectScope);
   }
 
-  sectionTitle(doc, 'Proceso de legalización');
-  paragraph(
-    doc,
-    project.requiresLegalization
-      ? 'El proyecto requiere proceso de legalización (contrato de confidencialidad, convenio u otros trámites con el proponente).'
-      : 'El proyecto no requiere proceso de legalización.',
-  );
-
   sectionTitle(doc, 'Fechas, ubicación y costos');
   labelValue(doc, 'Inicio', formatDate(project.startDate));
   labelValue(doc, 'Fin', formatDate(project.endDate));
@@ -320,24 +397,34 @@ function drawTeamAndMilestones(
 
   if (project.actorAssignments.length > 0) {
     sectionTitle(doc, 'Equipo');
-    bulletList(
+    drawTable(
       doc,
-      project.actorAssignments.map(
-        (assignment) =>
-          `${assignment.user.fullName} — ${actorRoleLabel(assignment.role)} — ${assignment.user.email}`,
-      ),
+      ['Nombre', 'Rol', 'Correo'],
+      project.actorAssignments.map((assignment) => [
+        assignment.user.fullName,
+        actorRoleLabel(assignment.role),
+        assignment.user.email,
+      ]),
+      [0.36, 0.24, 0.4],
     );
+    doc.moveDown(0.4);
   }
 
   if (project.milestones.length > 0) {
     sectionTitle(doc, 'Hitos');
-    bulletList(
+    drawTable(
       doc,
-      project.milestones.map(
-        (milestone) =>
-          `${milestone.title} — ${phaseLabel(milestone.phase)} — vence ${formatDate(milestone.dueDate)} — mínimo: ${formatBoolean(milestone.isMinimum)} — completado: ${formatBoolean(milestone.completed)}`,
-      ),
+      ['Hito', 'Fase', 'Vence', 'Mínimo', 'Completado'],
+      project.milestones.map((milestone) => [
+        milestone.title,
+        phaseLabel(milestone.phase),
+        formatDate(milestone.dueDate),
+        formatBoolean(milestone.isMinimum),
+        formatBoolean(milestone.completed),
+      ]),
+      [0.4, 0.18, 0.16, 0.12, 0.14],
     );
+    doc.moveDown(0.4);
   }
 }
 
@@ -356,7 +443,7 @@ function drawFooter(doc: PDFDocumentInstance): void {
     doc
       .font('Helvetica')
       .fontSize(7.5)
-      .fillColor(COLORS.muted)
+      .fillColor(COLORS.gray)
       .text(`Generado el ${generated} · CapstoneHUB`, PAGE_MARGIN, y, {
         width: doc.page.width - PAGE_MARGIN * 2,
         align: 'left',
@@ -403,7 +490,7 @@ export async function buildProjectPdf(
     doc
       .font('Helvetica-Bold')
       .fontSize(8)
-      .fillColor(COLORS.muted)
+      .fillColor(COLORS.gray)
       .text('CapstoneHUB · Información del proyecto', PAGE_MARGIN, 24, {
         lineBreak: false,
       });
@@ -415,6 +502,7 @@ export async function buildProjectPdf(
       .lineWidth(0.6)
       .stroke();
 
+    doc.x = PAGE_MARGIN;
     doc.y = 48;
   });
 
