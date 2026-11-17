@@ -1,7 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { RiEditLine } from "@remixicon/react";
+import { RiEditLine, RiFilePdfLine } from "@remixicon/react";
 import ProjectStatusDialog from "../../components/project-status-dialog";
 import ProjectCategoriesPanel from "./project-categories-panel";
 import ProjectDetailsBadges from "./project-details-badges";
@@ -20,11 +21,14 @@ import { useIsProjectMember } from "./use-is-project-member";
 import { useProjectDetails } from "./use-project-details";
 import { useAuth } from "../../components/auth-provider";
 import { canViewProjectEvaluations } from "../../services/project-permissions";
+import { downloadProjectPdf } from "../../services/project-exports";
+import { canExportProjectData } from "../../services/roles";
 import PageFrame from "../../components/page-frame";
 import ServiceUnavailable from "../../components/service-unavailable";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isServiceUnavailableStatus } from "@/lib/http";
 
@@ -55,6 +59,37 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
     useProjectDetails(id);
   const isMember = useIsProjectMember(project);
   const canEdit = useCanEditProject(project);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  const canExport = session
+    ? canExportProjectData(session.user.roles)
+    : false;
+
+  useEffect(() => {
+    setPdfError(null);
+  }, [id]);
+
+  async function handleDownloadPdf() {
+    if (!project) {
+      return;
+    }
+
+    setIsDownloadingPdf(true);
+    setPdfError(null);
+
+    try {
+      await downloadProjectPdf(project.id);
+    } catch (error) {
+      setPdfError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo generar el PDF del proyecto.",
+      );
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  }
 
   if (loading) {
     return <ProjectDetailsSkeleton />;
@@ -140,6 +175,23 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
                 />
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {canExport ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadPdf}
+                      disabled={isDownloadingPdf}
+                      aria-busy={isDownloadingPdf}
+                    >
+                      {isDownloadingPdf ? (
+                        <Spinner data-icon="inline-start" />
+                      ) : (
+                        <RiFilePdfLine data-icon="inline-start" />
+                      )}
+                      {isDownloadingPdf ? "Generando…" : "Descargar PDF"}
+                    </Button>
+                  ) : null}
+
                   {isMember ? (
                     <ProjectStatusDialog
                       projectId={project.id}
@@ -166,6 +218,12 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
                   ) : null}
                 </div>
               </div>
+
+              {pdfError ? (
+                <Alert variant="destructive" className="mt-3">
+                  <AlertDescription>{pdfError}</AlertDescription>
+                </Alert>
+              ) : null}
 
               <ProjectPhaseApprovals
                 project={project}

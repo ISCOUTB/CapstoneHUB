@@ -50,6 +50,9 @@ import {
 export * from './projects.select';
 export * from './projects.phase';
 
+/** Tope de seguridad para la exportación completa en Excel. */
+export const MAX_EXPORT_PROJECTS = 10_000;
+
 export function isValidProjectStatusTransition(
   previousStatus: ProjectStatus,
   nextStatus: ProjectStatus,
@@ -394,6 +397,30 @@ export class ProjectsService {
       },
       viewer,
     );
+  }
+
+  /**
+   * Listado completo (sin filtros ni paginación) para la exportación general.
+   * La visibilidad se aplica igual que en el listado normal.
+   */
+  async listProjectsForExport(
+    viewer: AuthenticatedUser,
+  ): Promise<ProjectListResponse[]> {
+    const projects = await this.projects(
+      {
+        take: MAX_EXPORT_PROJECTS + 1,
+        orderBy: this.buildProjectOrderBy('name-asc'),
+      },
+      viewer,
+    );
+
+    if (projects.length > MAX_EXPORT_PROJECTS) {
+      throw new BadRequestException(
+        `La exportación supera el máximo de ${MAX_EXPORT_PROJECTS} proyectos`,
+      );
+    }
+
+    return projects;
   }
 
   private buildProjectFiltersWhere(

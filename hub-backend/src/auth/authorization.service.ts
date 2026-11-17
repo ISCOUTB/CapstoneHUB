@@ -320,6 +320,27 @@ export class AuthorizationService {
     );
   }
 
+  /**
+   * La exportación de datos de proyectos (Excel general y PDF de detalle) está
+   * reservada a docentes, directivos y administradores. La visibilidad de cada
+   * proyecto se valida aparte con `projectVisibilityWhere`/`project`.
+   */
+  assertCanExportProjectData(user: AuthenticatedUser): void {
+    const allowed = [
+      UserRole.admin,
+      UserRole.directivo,
+      UserRole.teacher,
+    ] as const;
+
+    if (allowed.some((role) => user.roles.includes(role))) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'A teacher, directivo or admin role is required to export project data',
+    );
+  }
+
   async assertCanManageProject(
     user: AuthenticatedUser,
     projectId: number,

@@ -13,11 +13,17 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { OptionalCurrentUser } from '../auth/optional-current-user.decorator';
 import { Public } from '../auth/public.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
+import { contentDisposition } from '../common/http';
+import { ProjectExportsService } from './project-exports.service';
 import {
   Project as ProjectModel,
   ProjectSource,
@@ -66,7 +72,10 @@ function normalizeOptionalText(value: string | null): string | null {
 
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projectService: ProjectsService) {}
+  constructor(
+    private readonly projectService: ProjectsService,
+    private readonly projectExports: ProjectExportsService,
+  ) {}
 
   @Public()
   @Get('catalog/programs')
@@ -88,6 +97,24 @@ export class ProjectsController {
     return this.projectService.projectsForUserInterests(user);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Get('export/excel')
+  async exportProjectsExcel(
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const file = await this.projectExports.exportProjectsExcel(user);
+
+    response.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': contentDisposition(file.fileName),
+      'Content-Length': String(file.buffer.length),
+    });
+
+    return new StreamableFile(file.buffer);
+  }
+
   @Public()
   @Get(':id')
   async getProjectById(
@@ -101,6 +128,24 @@ export class ProjectsController {
     }
 
     return project;
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Get(':id/export/pdf')
+  async exportProjectPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const file = await this.projectExports.exportProjectPdf(user, id);
+
+    response.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': contentDisposition(file.fileName),
+      'Content-Length': String(file.buffer.length),
+    });
+
+    return new StreamableFile(file.buffer);
   }
 
   @Public()

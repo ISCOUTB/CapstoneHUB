@@ -74,7 +74,7 @@ de datos y mantener estable el contrato de la API aunque cambie el esquema.
 | Módulo | Descripción |
 | --- | --- |
 | **Auth** | Registro público, login, gestión de usuarios y asignación de roles. Crea el primer admin. |
-| **Projects** | CRUD de proyectos, asignación de actores y transición de estados. |
+| **Projects** | CRUD de proyectos, asignación de actores, transición de estados y exportación Excel/PDF. |
 | **Observations** | Observaciones de texto libre asociadas a un proyecto. |
 | **Milestones** | Entregables programados por proyecto. |
 | **Attachments** | Subida, listado, descarga y borrado de archivos. |
@@ -475,6 +475,32 @@ Comandos: `npx prisma migrate dev`, `npm run seed` (y variantes como
 - Watch / cobertura: `npm run test:watch`, `npm run test:cov`.
 - End-to-end: `npm run test:e2e` (Supertest).
 
+### Exportaciones de proyectos
+
+Solo `admin`, `directivo` y `teacher` pueden generar exportaciones; `evaluator`,
+`student` y `proposer` reciben `403`. La comprobación vive en
+`AuthorizationService.assertCanExportProjectData` y se ejecuta antes de consultar
+datos. Las rutas tienen un límite de 10 peticiones por minuto.
+
+- `GET /projects/export/excel` genera un libro XLSX con **todos los proyectos
+  visibles** para el solicitante (no aplica los filtros de la lista). La hoja
+  `Proyectos` incluye ID, nombre, estado, fase, fuente, proponente, fecha de
+  inicio, ubicación, legalización, privacidad, equipo y programas requeridos; la
+  hoja `Resumen` agrega totales por estado y fase. Se usa `exceljs`, se congelan
+  cabeceras, se aplica autofiltro y se neutralizan fórmulas en texto de usuario.
+  Hay un tope de seguridad de 10.000 proyectos.
+- `GET /projects/:id/export/pdf` genera el PDF de un proyecto visible. Reutiliza
+  `ProjectsService.project()` para que la visibilidad y el redactado de datos
+  sensibles coincidan con el detalle. Incluye información general, equipo e
+  hitos; estos dos últimos solo si el solicitante puede ver datos sensibles.
+  Excluye observaciones, anexos, entregas, evaluaciones e historial. Se usa
+  `pdfkit` con fuente Helvetica y se sanea el texto no representable.
+
+En ambos casos el proyecto privado solo se exporta si el solicitante ya puede
+verlo: los directivos y administradores ven todos; los docentes, los suyos o los
+públicos. Las respuestas son `StreamableFile` con `Content-Disposition` y
+`Content-Length`.
+
 ## Endpoints principales
 
 | Método | Ruta | Descripción |
@@ -490,6 +516,8 @@ Comandos: `npx prisma migrate dev`, `npm run seed` (y variantes como
 | `GET` | `/projects/mine` | Proyectos propuestos y asignados al usuario. |
 | `GET` | `/projects/mine/interests` | Proyectos en los que el usuario expresó interés. |
 | `GET` | `/projects/:id` | Detalle (404 si el proyecto es privado y el solicitante no es miembro; los estudiantes ven los aprobados en vista previa). Incluye `evaluationGate` para miembros y `viewerInterest`/`canExpressInterest` para estudiantes. |
+| `GET` | `/projects/export/excel` | Descargar el libro general de proyectos visibles (admin, directivo o docente). |
+| `GET` | `/projects/:id/export/pdf` | Descargar el PDF de información general del proyecto (misma visibilidad que el detalle; admin, directivo o docente). |
 | `POST` | `/projects/:id/interests` | Expresar interés en un proyecto aprobado con mensaje opcional (estudiante, no proponente ni asignado). Devuelve el detalle actualizado. |
 | `DELETE` | `/projects/:id/interests/me` | Retirar el interés propio (`204`). |
 | `GET` | `/projects/:id/interests` | Listar estudiantes interesados (admin, directivo o docente asignado). |

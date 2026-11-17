@@ -21,6 +21,7 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
   formularios).
 - `components/ui/` — componentes base de shadcn/ui.
 - `lib/utils.ts` — utilidades (por ejemplo `cn`).
+- `lib/download.ts` — descarga de respuestas binarias y lectura de `Content-Disposition`.
 - `app/globals.css` — tokens de diseño y utilidades propias.
 
 ## Rutas
@@ -55,6 +56,9 @@ Los binarios de las entregas también pasan por el proxy: se suben como multipar
 (`.../contents/files`) con `XMLHttpRequest` (para mostrar progreso) y el BFF los
 reenvía por streaming al backend, que los guarda en el almacenamiento. La
 descarga/reproducción sigue pasando por el proxy `stream`, que reenvía `Range`.
+Las exportaciones de proyectos también se transmiten sin bufferizar: el BFF
+reconoce `projects/export/excel` y `projects/:id/export/pdf` y reenvía
+`Content-Type`, `Content-Length` y `Content-Disposition`.
 
 `app/api/auth/proxy.ts` es un helper reutilizable para login y usuarios.
 `app/api/rubrics/[...path]/route.ts` hace lo mismo para las plantillas de
@@ -73,6 +77,9 @@ subidas multipart del archivo del documento.
   entregas (texto, enlaces y archivos) e intereses de los estudiantes, incluida
   la configuración de tipo, MIME permitidos y máximo de archivos, y la edición
   de los datos del proyecto.
+- `project-exports.ts` — descarga del Excel general y del PDF de detalle; usa
+  `lib/download.ts` para interpretar `Content-Disposition` y disparar la
+  descarga en el navegador.
 - `schemas.ts` — tipos TypeScript compartidos (`ProjectDetails`, etc.).
 - `roles.ts` — vocabulario de roles globales (`UserRole`) y de proyecto
   (`ActorRole`), y qué roles de proyecto habilita cada rol global.
@@ -103,6 +110,15 @@ por `PUT` y la pestaña **Historial** muestra, junto al historial de estados, un
 entrada por cada campo modificado con su valor anterior y nuevo. Al desmarcar
 «Proyecto privado» se muestra una advertencia y una confirmación antes de
 publicarlo.
+
+### Exportaciones
+
+La lista de proyectos ofrece **Exportar a Excel** en la barra de filtros rápidos.
+El botón descarga el panorama general de todos los proyectos visibles para el
+rol, sin aplicar los filtros activos. El detalle ofrece **Descargar PDF** junto a
+las acciones de estado y edición. Ambos botones solo se renderizan para `admin`,
+`directivo` y `teacher` (`canExportProjectData`) y muestran el progreso y los
+errores en línea.
 
 La pestaña **Evaluación** es visible para administradores, directivos y
 evaluadores asignados. Muestra la rúbrica de cada semestre, el estado de

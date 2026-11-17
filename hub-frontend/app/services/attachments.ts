@@ -1,6 +1,7 @@
 import { ProjectAttachmentItem } from "./schemas";
 import { apiRequest, apiRequestVoid, ensureOk } from "@/lib/http";
 import { getApiUrl } from "@/lib/api";
+import { downloadResponseFile } from "@/lib/download";
 
 export function getProjectAttachments(
   id: string,
@@ -55,18 +56,5 @@ export async function downloadProjectAttachment(
   );
 
   await ensureOk(response, { action: "descargar el anexo" });
-
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-
-  try {
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = fileName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
+  await downloadResponseFile(response, fileName);
 }

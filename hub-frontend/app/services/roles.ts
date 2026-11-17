@@ -37,6 +37,15 @@ export function canManageGuides(roles: readonly string[]): boolean {
   return roles.includes("admin") || roles.includes("directivo");
 }
 
+/** Exportar el Excel general y el PDF de detalle de proyectos. */
+export function canExportProjectData(roles: readonly string[]): boolean {
+  return (
+    roles.includes("admin") ||
+    roles.includes("directivo") ||
+    roles.includes("teacher")
+  );
+}
+
 /**
  * Roles de proyecto que puede recibir un usuario según sus roles globales.
  * Un docente puede participar como docente o como evaluador; un evaluador de
