@@ -6,7 +6,6 @@ import { useApiResource } from "@/lib/use-api-resource";
 import { getProjects } from "../services/projects";
 import { buildYearOptions } from "../projects/project-list-config";
 import { useRemoteProjects } from "../projects/use-remote-projects";
-import GalleryFilterSidebar from "./gallery-filter-sidebar";
 import {
   GALLERY_BASE_QUERY,
   createDefaultGalleryFilters,
@@ -140,36 +139,23 @@ export default function GalleryExplorer() {
     <div className="flex flex-col gap-6">
       <GalleryToolbar
         filters={filters}
+        yearOptions={yearOptions}
         onFiltersChange={handleFiltersChange}
         hasActiveFilters={hasActiveFilters}
         onClearFilters={clearFilters}
       />
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div className="order-2 min-w-0 flex-1 lg:order-1">
-          <GalleryResults
-            projects={projects}
-            loading={loading}
-            status={status}
-            error={error}
-            hasActiveFilters={hasActiveFilters}
-            pageIndex={pageIndex}
-            onPageChange={setPageIndex}
-            onClearFilters={clearFilters}
-            onRetry={() => setReloadKey((key) => key + 1)}
-          />
-        </div>
-
-        <GalleryFilterSidebar
-          className="order-1 lg:order-2"
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          yearOptions={yearOptions}
-          yearsLoading={baseLoading}
-          hasActiveFilters={hasActiveFilters}
-          onClearFilters={clearFilters}
-        />
-      </div>
+      <GalleryResults
+        projects={projects}
+        loading={loading}
+        status={status}
+        error={error}
+        hasActiveFilters={hasActiveFilters}
+        pageIndex={pageIndex}
+        onPageChange={setPageIndex}
+        onClearFilters={clearFilters}
+        onRetry={() => setReloadKey((key) => key + 1)}
+      />
     </div>
   );
 }

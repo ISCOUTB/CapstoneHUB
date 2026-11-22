@@ -84,6 +84,12 @@ test("muestra los proyectos finalizados públicos sin sesión", async ({
   await expect(
     page.getByText("Descripción del proyecto uno.", { exact: true }),
   ).toBeVisible();
+  await expect(
+    page.getByText("Filtros rápidos", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Fuente", exact: true }),
+  ).toBeVisible();
 
   const params = new URL(requestedUrls[0]).searchParams;
 
@@ -167,10 +173,13 @@ test("filtra por fuente y restaura el filtro desde la URL", async ({
 
   await page.goto("/gallery?fuente=research");
 
+  await page.getByRole("button", { name: /Fuente/ }).click();
+
   const sourceFilter = page.getByRole("checkbox", {
     name: "Investigación",
   });
   await expect(sourceFilter).toBeChecked();
+  await page.keyboard.press("Escape");
   await expect(
     page.getByRole("link", { name: "Ver el proyecto Cacao Blockchain" }),
   ).toBeVisible();
@@ -195,7 +204,9 @@ test("filtra por año y refleja la selección en la URL", async ({ page }) => {
   const requestedUrls = await mockProjects(page, projects);
 
   await page.goto("/gallery");
+  await page.getByRole("button", { name: "Año", exact: true }).click();
   await page.getByRole("checkbox", { name: "2024" }).click();
+  await page.keyboard.press("Escape");
 
   await expect(
     page.getByRole("link", { name: "Ver el proyecto Proyecto 2024" }),

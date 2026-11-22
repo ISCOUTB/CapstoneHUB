@@ -99,12 +99,6 @@ export function createDefaultFilters(): ProjectListFilters {
   };
 }
 
-export function toggleFilterValue(values: string[], value: string): string[] {
-  return values.includes(value)
-    ? values.filter((currentValue) => currentValue !== value)
-    : [...values, value];
-}
-
 export function getProjectYear(project: ProjectItem): string | null {
   if (!project.startDate) {
     return null;

@@ -150,10 +150,10 @@ izquierda y un **topbar** claro (`bg-card`) sticky sobre el contenido.
   izquierda y deja el formulario a ancho completo.
 - La galería pública (`/gallery`) tampoco monta sidebar: usa el topbar con la
   marca y el widget de sesión. Lista los proyectos finalizados y públicos en
-  tarjetas enlazadas al detalle, con búsqueda, orden, filtros rápidos de fuente
-  y año, y paginación de nueve tarjetas. En móvil los filtros se apilan antes de
-  los resultados, y la descripción se recorta a tres líneas. Reutiliza los
-  controles compartidos de listados y los estados de carga, vacío y error.
+  tarjetas enlazadas al detalle, con búsqueda, filtros de fuente y año
+  integrados en la barra de búsqueda, orden y paginación de nueve tarjetas. En
+  móvil la barra se apila y la descripción se recorta a tres líneas. Reutiliza
+  los controles compartidos de listados y los estados de carga, vacío y error.
 - La landing pública (`/`) no monta sidebar ni topbar. El acceso a la sesión
   vive en el CTA **Iniciar sesión** del hero.
 

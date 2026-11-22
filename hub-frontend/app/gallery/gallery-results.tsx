@@ -108,7 +108,7 @@ export default function GalleryResults({
         {projects.length === 1 ? "proyecto" : "proyectos"}
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {paginatedProjects.map((project, index) => (
           <GalleryCard key={project.id} project={project} index={index} />
         ))}
