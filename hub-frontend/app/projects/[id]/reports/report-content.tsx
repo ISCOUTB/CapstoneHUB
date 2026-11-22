@@ -43,6 +43,7 @@ import {
   RiFileTextLine,
   RiImageLine,
   RiLinkM,
+  RiLockLine,
   RiPencilLine,
   RiVideoLine,
 } from "@remixicon/react";
@@ -520,6 +521,18 @@ export function ReportContents({
   const [deleteTarget, setDeleteTarget] =
     useState<ProjectReportContentItem | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  if (!report.canViewContents) {
+    return (
+      <Alert>
+        <RiLockLine />
+        <AlertDescription>
+          El contenido solo está visible para los estudiantes asignados mientras
+          la entrega esté pendiente o no aceptada.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   function confirmDelete() {
     const content = deleteTarget;

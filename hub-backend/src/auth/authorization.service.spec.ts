@@ -1,5 +1,10 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { ActorRole, ProjectStatus, UserRole } from '../generated/prisma/client';
+import {
+  ActorRole,
+  ProjectStatus,
+  ReportStatus,
+  UserRole,
+} from '../generated/prisma/client';
 import { AuthorizationService } from './authorization.service';
 
 describe('AuthorizationService', () => {
@@ -622,6 +627,51 @@ describe('AuthorizationService', () => {
       where: { projectId: 10, userId: 7, role: ActorRole.student },
       select: { id: true },
     });
+  });
+
+  it('allows assigned students to view pending report contents', async () => {
+    const { service, findAssignment } = createService({ id: 5 });
+
+    await expect(
+      service.assertCanViewReportContents(user([UserRole.student]), 10, {
+        status: ReportStatus.pending,
+      }),
+    ).resolves.toBeUndefined();
+    expect(findAssignment).toHaveBeenCalledWith({
+      where: { projectId: 10, userId: 7, role: ActorRole.student },
+      select: { id: true },
+    });
+  });
+
+  it('rejects pending report contents for users without a student assignment', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.assertCanViewReportContents(user([UserRole.teacher]), 10, {
+        status: ReportStatus.pending,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('hides rejected report contents again until they are resubmitted', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.assertCanViewReportContents(user([UserRole.teacher]), 10, {
+        status: ReportStatus.rejected,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('shows submitted report contents without checking the assignment', async () => {
+    const { service, findAssignment } = createService();
+
+    await expect(
+      service.assertCanViewReportContents(user([UserRole.teacher]), 10, {
+        status: ReportStatus.submitted,
+      }),
+    ).resolves.toBeUndefined();
+    expect(findAssignment).not.toHaveBeenCalled();
   });
 
   describe('project visibility', () => {

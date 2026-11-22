@@ -165,6 +165,8 @@ export type ProjectReportItem = {
     email: string;
   } | null;
   milestones?: { id: number; title: string }[];
+  canViewContents: boolean;
+  hasContents: boolean;
   contents: ProjectReportContentItem[];
 };
 

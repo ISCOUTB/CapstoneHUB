@@ -1,6 +1,4 @@
-import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { App } from 'supertest/types';
 import { useTestApp } from './helpers/e2e';
 import {
   adminSession,
@@ -10,8 +8,14 @@ import {
   userWithRole,
 } from './helpers/auth';
 import {
+  addReportTextContent,
+  createTextReport,
+  submitReport,
+} from './helpers/reports';
+import {
   assignProjectActor,
   createProjectWithProposer,
+  createProjectWithTeacherAndStudent,
   futureIsoDate,
   transitionProjectStatus,
 } from './helpers/projects';
@@ -24,21 +28,6 @@ import {
 describe('Reports (e2e)', () => {
   const getApp = useTestApp();
 
-  /** Crea una entrega de tipo texto y devuelve su id. */
-  async function createReport(
-    app: INestApplication<App>,
-    projectId: number,
-    token: string,
-  ): Promise<number> {
-    const created = await request(app.getHttpServer())
-      .post(`/projects/${projectId}/reports`)
-      .set(bearer(token))
-      .send({ title: 'Informe final', dueDate: futureIsoDate(), type: 'text' })
-      .expect(201);
-
-    return (created.body as { id: number }).id;
-  }
-
   it('un directivo gestiona y revisa entregas y un estudiante asignado las envía', async () => {
     const app = getApp();
     const directivo = await userWithRole(app, UserRole.directivo);
@@ -47,7 +36,11 @@ describe('Reports (e2e)', () => {
 
     // El directivo crea la entrega y asigna al estudiante sin estar asignado al
     // proyecto.
-    const reportId = await createReport(app, projectId, directivo.accessToken);
+    const reportId = await createTextReport(
+      app,
+      projectId,
+      directivo.accessToken,
+    );
     await assignProjectActor(
       app,
       projectId,
@@ -57,16 +50,14 @@ describe('Reports (e2e)', () => {
     );
 
     // El estudiante asignado prepara el contenido y envía la entrega.
-    await request(app.getHttpServer())
-      .post(`/projects/${projectId}/reports/${reportId}/contents`)
-      .set(bearer(student.accessToken))
-      .send({ kind: 'text', textContent: 'Contenido de prueba' })
-      .expect(201);
-
-    await request(app.getHttpServer())
-      .post(`/projects/${projectId}/reports/${reportId}/submit`)
-      .set(bearer(student.accessToken))
-      .expect(201);
+    await addReportTextContent(
+      app,
+      projectId,
+      reportId,
+      student.accessToken,
+      'Contenido de prueba',
+    );
+    await submitReport(app, projectId, reportId, student.accessToken);
 
     // El directivo la revisa sin asignación.
     const reviewed = await request(app.getHttpServer())
@@ -78,13 +69,124 @@ describe('Reports (e2e)', () => {
     expect(reviewed.body).toMatchObject({ id: reportId, status: 'accepted' });
   });
 
+  it('oculta el contenido de entregas sin enviar a docentes y lo muestra a estudiantes asignados', async () => {
+    const app = getApp();
+    const { projectId, admin, teacher, student } =
+      await createProjectWithTeacherAndStudent(app);
+    const reportId = await createTextReport(app, projectId, admin.accessToken);
+
+    await addReportTextContent(
+      app,
+      projectId,
+      reportId,
+      student.accessToken,
+      'Contenido privado',
+    );
+
+    type ReportBody = {
+      id: number;
+      canViewContents: boolean;
+      hasContents: boolean;
+      contents: { textContent: string | null }[];
+    };
+
+    const reportFrom = (body: unknown): ReportBody => {
+      const report = (body as ReportBody[]).find(({ id }) => id === reportId);
+
+      if (!report) {
+        throw new Error(`Report ${reportId} not found in response`);
+      }
+
+      return report;
+    };
+
+    const teacherReports = await request(app.getHttpServer())
+      .get(`/projects/${projectId}/reports`)
+      .set(bearer(teacher.accessToken))
+      .expect(200);
+
+    expect(reportFrom(teacherReports.body)).toMatchObject({
+      status: 'pending',
+      canViewContents: false,
+      hasContents: true,
+      contents: [],
+    });
+
+    const studentReports = await request(app.getHttpServer())
+      .get(`/projects/${projectId}/reports`)
+      .set(bearer(student.accessToken))
+      .expect(200);
+
+    expect(reportFrom(studentReports.body)).toMatchObject({
+      canViewContents: true,
+      hasContents: true,
+      contents: [expect.objectContaining({ textContent: 'Contenido privado' })],
+    });
+
+    const teacherDetail = await request(app.getHttpServer())
+      .get(`/projects/${projectId}`)
+      .set(bearer(teacher.accessToken))
+      .expect(200);
+
+    expect(
+      reportFrom((teacherDetail.body as { reports: unknown }).reports),
+    ).toMatchObject({ contents: [] });
+
+    const studentDetail = await request(app.getHttpServer())
+      .get(`/projects/${projectId}`)
+      .set(bearer(student.accessToken))
+      .expect(200);
+
+    expect(
+      reportFrom((studentDetail.body as { reports: unknown }).reports).contents,
+    ).toHaveLength(1);
+
+    await submitReport(app, projectId, reportId, student.accessToken);
+
+    const teacherSubmitted = await request(app.getHttpServer())
+      .get(`/projects/${projectId}/reports`)
+      .set(bearer(teacher.accessToken))
+      .expect(200);
+
+    expect(reportFrom(teacherSubmitted.body)).toMatchObject({
+      canViewContents: true,
+      contents: [expect.objectContaining({ textContent: 'Contenido privado' })],
+    });
+
+    await request(app.getHttpServer())
+      .post(`/projects/${projectId}/reports/${reportId}/review`)
+      .set(bearer(teacher.accessToken))
+      .send({ decision: 'rejected', comment: 'Falta documentación' })
+      .expect(201);
+
+    const teacherRejected = await request(app.getHttpServer())
+      .get(`/projects/${projectId}/reports`)
+      .set(bearer(teacher.accessToken))
+      .expect(200);
+
+    expect(reportFrom(teacherRejected.body)).toMatchObject({
+      canViewContents: false,
+      contents: [],
+    });
+
+    const studentRejected = await request(app.getHttpServer())
+      .get(`/projects/${projectId}/reports`)
+      .set(bearer(student.accessToken))
+      .expect(200);
+
+    expect(reportFrom(studentRejected.body)).toMatchObject({
+      canViewContents: true,
+      contents: [expect.objectContaining({ textContent: 'Contenido privado' })],
+    });
+  });
+
   it('rechaza preparar o enviar entregas a proponentes y docentes', async () => {
     const app = getApp();
     const admin = await adminSession(app);
     const { proposerToken, projectId } = await createProjectWithProposer(app);
     const teacher = await userWithRole(app, UserRole.teacher);
 
-    const reportId = await createReport(app, projectId, admin.accessToken);
+    const reportId = await createTextReport(app, projectId, admin.accessToken);
     await assignProjectActor(
       app,
       projectId,

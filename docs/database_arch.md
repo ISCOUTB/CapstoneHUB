@@ -203,7 +203,10 @@ debe coincidir con el `type` de su entrega. Los tipos de texto y enlace usan
 `textContent`/`url`/`label`; los de archivo referencian un `ProjectAttachment`
 (`attachmentId`, único) y el binario vive en S3/RustFS. Cada fila guarda su autor
 y su fecha de creación. Solo el estudiante asignado al proyecto (o un
-administrador) puede aportar contenido y enviar la entrega.
+administrador) puede aportar contenido y enviar la entrega. Mientras la entrega
+está `pending` o `rejected`, el contenido solo se expone a los estudiantes
+asignados y a los administradores; tras el envío lo ven todos los miembros del
+proyecto.
 
 ### MilestoneReportLink
 

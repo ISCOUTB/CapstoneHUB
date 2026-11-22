@@ -133,7 +133,9 @@ La pestaña **Hitos** permite marcar hitos como **mínimos**, asignarles una fas
 no se puede completar hasta que todas estén aceptadas. Al elegir el estado
 «Finalizado» se avisa si aún quedan hitos mínimos pendientes o falta la
 evaluación de la fase. En las entregas se muestra a qué hitos están vinculadas y
-se advierte antes de eliminar hitos o entregas que tienen vínculos.
+se advierte antes de eliminar hitos o entregas que tienen vínculos. Cuando una
+entrega aún no se ha enviado, quien no es estudiante asignado ve un aviso de
+contenido privado en lugar de sus textos, enlaces y archivos.
 
 Los estudiantes ven los proyectos privados en `approved` mediante
 `ProjectPrivatePreview`: una vista con aviso de información limitada, descripción,

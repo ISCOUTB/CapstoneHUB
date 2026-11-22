@@ -1,8 +1,19 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { bearer, registerUser, uniqueEmail } from './auth';
-import { ActorRole, ProjectStatus } from '../../src/generated/prisma/client';
+import {
+  AuthSession,
+  adminSession,
+  bearer,
+  registerUser,
+  uniqueEmail,
+  userWithRole,
+} from './auth';
+import {
+  ActorRole,
+  ProjectStatus,
+  UserRole,
+} from '../../src/generated/prisma/client';
 
 /** Crea un proyecto privado como el usuario indicado y devuelve su id. */
 export async function createProject(
@@ -80,6 +91,38 @@ export async function assignProjectActor(
     .expect(201);
 
   return (response.body as { id: number }).id;
+}
+
+/** Crea un proyecto con un docente y un estudiante ya asignados. */
+export async function createProjectWithTeacherAndStudent(
+  app: INestApplication<App>,
+): Promise<{
+  projectId: number;
+  admin: AuthSession;
+  teacher: AuthSession;
+  student: AuthSession;
+}> {
+  const admin = await adminSession(app);
+  const teacher = await userWithRole(app, UserRole.teacher);
+  const student = await userWithRole(app, UserRole.student);
+  const { projectId } = await createProjectWithProposer(app);
+
+  await assignProjectActor(
+    app,
+    projectId,
+    admin.accessToken,
+    teacher.user.id,
+    ActorRole.teacher,
+  );
+  await assignProjectActor(
+    app,
+    projectId,
+    admin.accessToken,
+    student.user.id,
+    ActorRole.student,
+  );
+
+  return { projectId, admin, teacher, student };
 }
 
 /** Envía una evaluación perfecta de la fase actual usando la rúbrica vigente. */
