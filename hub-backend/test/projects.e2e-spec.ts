@@ -18,6 +18,7 @@ import {
   ProjectStatus,
   UserRole,
 } from '../src/generated/prisma/client';
+import { PrismaService } from '../src/prisma.service';
 
 describe('Projects (e2e)', () => {
   const getApp = useTestApp();
@@ -316,5 +317,60 @@ describe('Projects (e2e)', () => {
         (project) => project.id === projectId,
       ),
     ).toBe(false);
+  });
+
+  it('expone al público solo los proyectos finalizados y no privados', async () => {
+    const app = getApp();
+    const prisma = app.get(PrismaService);
+    const { projectId } = await createProjectWithProposer(app, false);
+    const { projectId: privateProjectId } = await createProjectWithProposer(
+      app,
+      true,
+    );
+    const { projectId: pendingProjectId } = await createProjectWithProposer(
+      app,
+      false,
+    );
+
+    await prisma.project.updateMany({
+      where: { id: { in: [projectId, privateProjectId] } },
+      data: { status: ProjectStatus.closed },
+    });
+
+    const list = await request(app.getHttpServer())
+      .get('/projects?status=closed&isPrivate=false&sort=year-desc&limit=100')
+      .expect(200);
+
+    const projects = list.body as {
+      id: number;
+      description: string;
+      canViewSensitiveData: boolean;
+      isPrivatePreview: boolean;
+      actors: unknown[];
+      proposer: {
+        fullName: string;
+        email: string | null;
+        idNumber: string | null;
+      } | null;
+    }[];
+    const ids = projects.map((project) => project.id);
+
+    expect(ids).toContain(projectId);
+    expect(ids).not.toContain(privateProjectId);
+    expect(ids).not.toContain(pendingProjectId);
+
+    const project = projects.find((item) => item.id === projectId);
+
+    expect(project).toMatchObject({
+      description: 'Descripción del proyecto',
+      canViewSensitiveData: false,
+      isPrivatePreview: false,
+    });
+    expect(project?.proposer).toMatchObject({
+      fullName: 'Proponente E2E',
+      email: null,
+      idNumber: null,
+    });
+    expect(project?.actors).toEqual([]);
   });
 });
