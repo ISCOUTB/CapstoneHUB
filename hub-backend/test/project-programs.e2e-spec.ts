@@ -98,16 +98,18 @@ describe('Project programs (e2e)', () => {
     const evaluator = await userWithRole(app, UserRole.evaluator);
     const student = await userWithRole(app, UserRole.student);
 
-    for (const token of [evaluator.accessToken, student.accessToken]) {
-      await request(app.getHttpServer())
-        .put(`/projects/${projectId}/programs`)
-        .set(bearer(token))
-        .send({
-          programRequirements: [
-            { programId: 'ingenieria-industrial', studentCount: 1 },
-          ],
-        })
-        .expect(403);
-    }
+    await Promise.all(
+      [evaluator.accessToken, student.accessToken].map((token) =>
+        request(app.getHttpServer())
+          .put(`/projects/${projectId}/programs`)
+          .set(bearer(token))
+          .send({
+            programRequirements: [
+              { programId: 'ingenieria-industrial', studentCount: 1 },
+            ],
+          })
+          .expect(403),
+      ),
+    );
   });
 });

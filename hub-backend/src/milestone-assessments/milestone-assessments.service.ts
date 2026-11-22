@@ -293,11 +293,12 @@ export class MilestoneAssessmentsService {
     const knownAnswers = template
       ? this.filterKnownAnswers(rawAnswers, template)
       : {};
-    const answers = template
-      ? canManage
+    let answers: MilestoneAssessmentAnswers = {};
+    if (template) {
+      answers = canManage
         ? knownAnswers
-        : this.filterStudentAnswers(knownAnswers)
-      : {};
+        : this.filterStudentAnswers(knownAnswers);
+    }
 
     return {
       id: saved?.id ?? null,

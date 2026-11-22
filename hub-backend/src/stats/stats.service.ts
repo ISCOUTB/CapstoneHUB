@@ -360,9 +360,13 @@ export class StatsService {
       (total, item) => total + item.totalItems,
       0,
     );
-    const pending = items.filter(
-      (item) => item.answeredItems < item.totalItems,
-    );
+    const pending = items
+      .filter((item) => item.answeredItems < item.totalItems)
+      .sort(
+        (left, right) =>
+          left.percent - right.percent ||
+          left.projectName.localeCompare(right.projectName),
+      );
 
     return {
       percent:
@@ -370,13 +374,7 @@ export class StatsService {
       answeredItems,
       totalItems,
       pendingPrograms: pending.length,
-      items: pending
-        .sort(
-          (left, right) =>
-            left.percent - right.percent ||
-            left.projectName.localeCompare(right.projectName),
-        )
-        .slice(0, PENDING_ITEMS_LIMIT),
+      items: pending.slice(0, PENDING_ITEMS_LIMIT),
     };
   }
 

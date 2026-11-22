@@ -18,347 +18,271 @@ export type MilestoneAssessmentTemplate = {
   readonly notes?: readonly string[];
 };
 
+function item(id: string, label: string): MilestoneAssessmentItem {
+  return { id, label };
+}
+
+function section(
+  id: string,
+  title: string,
+  items: readonly MilestoneAssessmentItem[],
+): MilestoneAssessmentSection {
+  return { id, title, items };
+}
+
 export const MILESTONE_ASSESSMENT_TEMPLATES: Readonly<
   Record<string, MilestoneAssessmentTemplate>
 > = {
   'ingenieria-ambiental': {
     programId: 'ingenieria-ambiental',
-    programName: 'Ingeniería Ambiental',
+    programName: 'Ingenier\u00eda Ambiental',
     introduction:
-      'Mecanismos de requerimiento mínimos que cada proyecto de ingeniería ambiental debe contener.',
+      'Mecanismos de requerimiento m\u00ednimos que cada proyecto de ingenier\u00eda ambiental debe contener.',
     overviewItems: [
-      { id: 'overview-1', label: 'Eje temático definido' },
-      { id: 'overview-2', label: 'Diagnóstico del problema' },
-      { id: 'overview-3', label: 'Alternativas de solución' },
-      { id: 'overview-4', label: 'Selección de alternativas' },
-      { id: 'overview-5', label: 'Metodología' },
-      { id: 'overview-6', label: 'Diseño de solución' },
-      { id: 'overview-7', label: 'Entregables' },
+      item('overview-1', 'Eje tem\u00e1tico definido'),
+      item('overview-2', 'Diagn\u00f3stico del problema'),
+      item('overview-3', 'Alternativas de soluci\u00f3n'),
+      item('overview-4', 'Selecci\u00f3n de alternativas'),
+      item('overview-5', 'Metodolog\u00eda'),
+      item('overview-6', 'Dise\u00f1o de soluci\u00f3n'),
+      item('overview-7', 'Entregables'),
     ],
     sections: [
-      {
-        id: '1',
-        title: 'Eje temático claramente definido',
-        items: [
-          { id: '1.1', label: 'Control de la contaminación – matriz agua' },
-          { id: '1.2', label: 'Control de la contaminación – matriz suelo' },
-          { id: '1.3', label: 'Control de la contaminación – matriz aire' },
-          { id: '1.4', label: 'Control de la contaminación – matriz residuos' },
-          { id: '1.5', label: 'Otro' },
-        ],
-      },
-      {
-        id: '2',
-        title: 'Diagnóstico del problema',
-        items: [
-          { id: '2.1', label: 'Definición del problema' },
-          {
-            id: '2.2',
-            label:
-              'Herramientas visuales de análisis (árbol de problemas, diagrama de Ishikawa, etc.)',
-          },
-          { id: '2.3', label: 'Objetivos generales y específicos' },
-          { id: '2.4', label: 'Descripción del ambiente operacional' },
-          {
-            id: '2.5',
-            label:
-              'Listado de requisitos, usos, usuarios, asunciones y limitaciones',
-          },
-        ],
-      },
-      {
-        id: '3',
-        title: 'Alternativas de solución',
-        items: [
-          { id: '3.1', label: 'Revisión de antecedentes' },
-          { id: '3.2', label: 'Marco normativo' },
-          { id: '3.3', label: 'Descomposición del sistema' },
-          { id: '3.4', label: 'Descripción de alternativas' },
-        ],
-      },
-      {
-        id: '4',
-        title: 'Selección de alternativas',
-        items: [
-          { id: '4.1', label: 'Matriz multicriterio' },
-          { id: '4.2', label: 'Matriz de impactos' },
-          { id: '4.3', label: 'Matriz de ciclo de vida' },
-          { id: '4.4', label: 'Matriz de sostenibilidad' },
-          { id: '4.5', label: 'Matriz de riesgos' },
-          { id: '4.6', label: 'Análisis de incertidumbre' },
-          { id: '4.7', label: 'Otros criterios' },
-        ],
-      },
-      {
-        id: '5',
-        title: 'Metodología de desarrollo del proyecto',
-        items: [
-          { id: '5.1', label: 'Metodología de validación' },
-          { id: '5.2', label: 'Trabajo de laboratorio' },
-          { id: '5.3', label: 'Trabajo de campo' },
-          { id: '5.4', label: 'Herramientas de simulación' },
-          { id: '5.5', label: 'Metodología de diseño' },
-        ],
-      },
-      {
-        id: '6',
-        title: 'Diseño de solución',
-        items: [
-          { id: '6.1', label: 'Descripción de la solución' },
-          {
-            id: '6.2',
-            label: 'Cálculo de dimensiones y condiciones de operación',
-          },
-          { id: '6.3', label: 'Diagrama de procesos y planos de la solución' },
-          { id: '6.4', label: 'Verificación de cumplimiento normativo' },
-        ],
-      },
-      {
-        id: '7',
-        title: 'Entregables',
-        items: [
-          {
-            id: '7.1',
-            label:
-              'Avance 1: Definición de problema, estado del arte y marco normativo',
-          },
-          {
-            id: '7.2',
-            label:
-              'Avance 2: Descomposición del sistema, propuesta de alternativas, metodología de selección de alternativas, validación y diseño',
-          },
-          {
-            id: '7.3',
-            label:
-              'Avance 3: Selección de alternativa, validación (experimental, campo, simulación)',
-          },
-          {
-            id: '7.4',
-            label: 'Avance 4: Diseño de solución, memoria de cálculo, planos',
-          },
-          { id: '7.5', label: 'Informe final: integración de avances 1 a 4' },
-        ],
-      },
+      section('1', 'Eje tem\u00e1tico claramente definido', [
+        item('1.1', 'Control de la contaminaci\u00f3n \u2013 matriz agua'),
+        item('1.2', 'Control de la contaminaci\u00f3n \u2013 matriz suelo'),
+        item('1.3', 'Control de la contaminaci\u00f3n \u2013 matriz aire'),
+        item('1.4', 'Control de la contaminaci\u00f3n \u2013 matriz residuos'),
+        item('1.5', 'Otro'),
+      ]),
+      section('2', 'Diagn\u00f3stico del problema', [
+        item('2.1', 'Definici\u00f3n del problema'),
+        item(
+          '2.2',
+          'Herramientas visuales de an\u00e1lisis (\u00e1rbol de problemas, diagrama de Ishikawa, etc.)',
+        ),
+        item('2.3', 'Objetivos generales y espec\u00edficos'),
+        item('2.4', 'Descripci\u00f3n del ambiente operacional'),
+        item(
+          '2.5',
+          'Listado de requisitos, usos, usuarios, asunciones y limitaciones',
+        ),
+      ]),
+      section('3', 'Alternativas de soluci\u00f3n', [
+        item('3.1', 'Revisi\u00f3n de antecedentes'),
+        item('3.2', 'Marco normativo'),
+        item('3.3', 'Descomposici\u00f3n del sistema'),
+        item('3.4', 'Descripci\u00f3n de alternativas'),
+      ]),
+      section('4', 'Selecci\u00f3n de alternativas', [
+        item('4.1', 'Matriz multicriterio'),
+        item('4.2', 'Matriz de impactos'),
+        item('4.3', 'Matriz de ciclo de vida'),
+        item('4.4', 'Matriz de sostenibilidad'),
+        item('4.5', 'Matriz de riesgos'),
+        item('4.6', 'An\u00e1lisis de incertidumbre'),
+        item('4.7', 'Otros criterios'),
+      ]),
+      section('5', 'Metodolog\u00eda de desarrollo del proyecto', [
+        item('5.1', 'Metodolog\u00eda de validaci\u00f3n'),
+        item('5.2', 'Trabajo de laboratorio'),
+        item('5.3', 'Trabajo de campo'),
+        item('5.4', 'Herramientas de simulaci\u00f3n'),
+        item('5.5', 'Metodolog\u00eda de dise\u00f1o'),
+      ]),
+      section('6', 'Dise\u00f1o de soluci\u00f3n', [
+        item('6.1', 'Descripci\u00f3n de la soluci\u00f3n'),
+        item(
+          '6.2',
+          'C\u00e1lculo de dimensiones y condiciones de operaci\u00f3n',
+        ),
+        item('6.3', 'Diagrama de procesos y planos de la soluci\u00f3n'),
+        item('6.4', 'Verificaci\u00f3n de cumplimiento normativo'),
+      ]),
+      section('7', 'Entregables', [
+        item(
+          '7.1',
+          'Avance 1: Definici\u00f3n de problema, estado del arte y marco normativo',
+        ),
+        item(
+          '7.2',
+          'Avance 2: Descomposici\u00f3n del sistema, propuesta de alternativas, metodolog\u00eda de selecci\u00f3n de alternativas, validaci\u00f3n y dise\u00f1o',
+        ),
+        item(
+          '7.3',
+          'Avance 3: Selecci\u00f3n de alternativa, validaci\u00f3n (experimental, campo, simulaci\u00f3n)',
+        ),
+        item(
+          '7.4',
+          'Avance 4: Dise\u00f1o de soluci\u00f3n, memoria de c\u00e1lculo, planos',
+        ),
+        item('7.5', 'Informe final: integraci\u00f3n de avances 1 a 4'),
+      ]),
     ],
     notes: [
-      'Los entregables Avance 1 y Avance 2 hacen parte de Proyecto de Ingeniería I. Los entregables Avance 3 y Avance 4 hacen parte de Proyecto de Ingeniería II. El informe final se deposita en el repositorio de biblioteca.',
+      'Los entregables Avance 1 y Avance 2 hacen parte de Proyecto de Ingenier\u00eda I. Los entregables Avance 3 y Avance 4 hacen parte de Proyecto de Ingenier\u00eda II. El informe final se deposita en el repositorio de biblioteca.',
     ],
   },
   'ingenieria-industrial': {
     programId: 'ingenieria-industrial',
-    programName: 'Ingeniería Industrial',
+    programName: 'Ingenier\u00eda Industrial',
     introduction:
-      'Mecanismos de requerimiento mínimos que cada proyecto de ingeniería industrial debe contener.',
+      'Mecanismos de requerimiento m\u00ednimos que cada proyecto de ingenier\u00eda industrial debe contener.',
     overviewItems: [
-      { id: 'overview-1', label: 'Eje temático definido' },
-      { id: 'overview-2', label: 'Diagnóstico del problema' },
-      { id: 'overview-3', label: 'Justificación de alternativas de solución' },
-      { id: 'overview-4', label: 'Herramientas de desarrollo' },
-      { id: 'overview-5', label: 'Metodología' },
-      { id: 'overview-6', label: 'Entregables' },
-      { id: 'overview-7', label: 'Aspectos normativos' },
+      item('overview-1', 'Eje tem\u00e1tico definido'),
+      item('overview-2', 'Diagn\u00f3stico del problema'),
+      item('overview-3', 'Justificaci\u00f3n de alternativas de soluci\u00f3n'),
+      item('overview-4', 'Herramientas de desarrollo'),
+      item('overview-5', 'Metodolog\u00eda'),
+      item('overview-6', 'Entregables'),
+      item('overview-7', 'Aspectos normativos'),
     ],
     sections: [
-      {
-        id: '1',
-        title: 'Eje temático claramente definido',
-        items: [
-          {
-            id: '1.1',
-            label: 'Factores humanos (Seguridad y ergonomía, talento humano)',
-          },
-          { id: '1.2', label: 'Logística y cadenas de Suministro' },
-          {
-            id: '1.3',
-            label:
-              'Analítica de procesos y datos, control (Estadísticas, Diseño de Exp, Control de calidad)',
-          },
-          { id: '1.4', label: 'Producción (Diseño, planeación, Programación)' },
-          {
-            id: '1.5',
-            label:
-              'Mejoramiento continuo (Productividad y estandarización, estrategia)',
-          },
-          { id: '1.6', label: 'Otros' },
+      section('1', 'Eje tem\u00e1tico claramente definido', [
+        item(
+          '1.1',
+          'Factores humanos (Seguridad y ergonom\u00eda, talento humano)',
+        ),
+        item('1.2', 'Log\u00edstica y cadenas de Suministro'),
+        item(
+          '1.3',
+          'Anal\u00edtica de procesos y datos, control (Estad\u00edsticas, Dise\u00f1o de Exp, Control de calidad)',
+        ),
+        item(
+          '1.4',
+          'Producci\u00f3n (Dise\u00f1o, planeaci\u00f3n, Programaci\u00f3n)',
+        ),
+        item(
+          '1.5',
+          'Mejoramiento continuo (Productividad y estandarizaci\u00f3n, estrategia)',
+        ),
+        item('1.6', 'Otros'),
+      ]),
+      section(
+        '2',
+        'An\u00e1lisis cualitativo y cuantitativo del diagn\u00f3stico del problema',
+        [
+          item('2.1', 'Diagrama de Pareto'),
+          item('2.2', 'Diagrama de Ishikawa'),
+          item('2.3', '\u00c1rbol de problemas'),
+          item('2.4', 'Estad\u00edsticas asociadas (correlaciones, Test)'),
         ],
-      },
-      {
-        id: '2',
-        title:
-          'Análisis cualitativo y cuantitativo del diagnóstico del problema',
-        items: [
-          { id: '2.1', label: 'Diagrama de Pareto' },
-          { id: '2.2', label: 'Diagrama de Ishikawa' },
-          { id: '2.3', label: 'Árbol de problemas' },
-          { id: '2.4', label: 'Estadísticas asociadas (correlaciones, Test)' },
-        ],
-      },
-      {
-        id: '3',
-        title: 'Justificación de las alternativas de solución',
-        items: [
-          { id: '3.1', label: 'Revisión de la literatura' },
-          { id: '3.2', label: 'Análisis bibliométrico' },
-        ],
-      },
-      {
-        id: '4',
-        title: 'Herramientas de desarrollo',
-        items: [
-          { id: '4.1', label: 'Prototipo mínimo viable de mejora' },
-          {
-            id: '4.2',
-            label: 'Modelos matemáticos (optimización) y/o estadísticos',
-          },
-          { id: '4.3', label: 'Simulación (sistemas, Discreta, Game)' },
-          { id: '4.4', label: 'Desarrollo (web, app, tableros digitales)' },
-        ],
-      },
-      {
-        id: '5',
-        title: 'Metodología de desarrollo del proyecto',
-        items: [
-          { id: '5.1', label: 'Metodología definida y aplicada' },
-          { id: '5.2', label: 'LEAN (PHVA – DEMAIC)' },
-          { id: '5.3', label: 'ETL u otro de análisis de datos' },
-          { id: '5.4', label: 'PMI-SCRUM (Ágiles)' },
-          { id: '5.5', label: 'Optimización (MC)' },
-          { id: '5.6', label: 'Otros' },
-        ],
-      },
-      {
-        id: '6',
-        title: 'Entregables (4 documentos)',
-        items: [
-          { id: '6.1', label: 'Diagnóstico' },
-          { id: '6.2', label: 'Diseño y desarrollo' },
-          { id: '6.3', label: 'Validación' },
-          { id: '6.4', label: 'Análisis de costos e ingeniería económica' },
-        ],
-      },
-      {
-        id: '7',
-        title: 'Aspectos normativos',
-        items: [
-          { id: '7.1', label: 'Normas ISO' },
-          { id: '7.2', label: 'Desarrollo de aplicaciones web' },
-          { id: '7.3', label: 'Estándares para análisis de datos' },
-          {
-            id: '7.4',
-            label: 'Normas técnicas asociadas al área del proyecto',
-          },
-        ],
-      },
+      ),
+      section('3', 'Justificaci\u00f3n de las alternativas de soluci\u00f3n', [
+        item('3.1', 'Revisi\u00f3n de la literatura'),
+        item('3.2', 'An\u00e1lisis bibliom\u00e9trico'),
+      ]),
+      section('4', 'Herramientas de desarrollo', [
+        item('4.1', 'Prototipo m\u00ednimo viable de mejora'),
+        item(
+          '4.2',
+          'Modelos matem\u00e1ticos (optimizaci\u00f3n) y/o estad\u00edsticos',
+        ),
+        item('4.3', 'Simulaci\u00f3n (sistemas, Discreta, Game)'),
+        item('4.4', 'Desarrollo (web, app, tableros digitales)'),
+      ]),
+      section('5', 'Metodolog\u00eda de desarrollo del proyecto', [
+        item('5.1', 'Metodolog\u00eda definida y aplicada'),
+        item('5.2', 'LEAN (PHVA \u2013 DEMAIC)'),
+        item('5.3', 'ETL u otro de an\u00e1lisis de datos'),
+        item('5.4', 'PMI-SCRUM (\u00c1giles)'),
+        item('5.5', 'Optimizaci\u00f3n (MC)'),
+        item('5.6', 'Otros'),
+      ]),
+      section('6', 'Entregables (4 documentos)', [
+        item('6.1', 'Diagn\u00f3stico'),
+        item('6.2', 'Dise\u00f1o y desarrollo'),
+        item('6.3', 'Validaci\u00f3n'),
+        item('6.4', 'An\u00e1lisis de costos e ingenier\u00eda econ\u00f3mica'),
+      ]),
+      section('7', 'Aspectos normativos', [
+        item('7.1', 'Normas ISO'),
+        item('7.2', 'Desarrollo de aplicaciones web'),
+        item('7.3', 'Est\u00e1ndares para an\u00e1lisis de datos'),
+        item('7.4', 'Normas t\u00e9cnicas asociadas al \u00e1rea del proyecto'),
+      ]),
     ],
     notes: [
-      'Se recomienda usar tecnologías como Industria 4.0, Machine Learning, Green Lean Manufacturing, Manufactura Aditiva, Economía Circular y visión artificial.',
-      'El entregable 1 hace parte de Proyecto de Ingeniería I. Los entregables 2, 3 y 4 hacen parte de Proyecto de Ingeniería II. El informe final se deposita en el repositorio de biblioteca.',
+      'Se recomienda usar tecnolog\u00edas como Industria 4.0, Machine Learning, Green Lean Manufacturing, Manufactura Aditiva, Econom\u00eda Circular y visi\u00f3n artificial.',
+      'El entregable 1 hace parte de Proyecto de Ingenier\u00eda I. Los entregables 2, 3 y 4 hacen parte de Proyecto de Ingenier\u00eda II. El informe final se deposita en el repositorio de biblioteca.',
     ],
   },
   'ingenieria-mecatronica': {
     programId: 'ingenieria-mecatronica',
-    programName: 'Ingeniería Mecatrónica',
+    programName: 'Ingenier\u00eda Mecatr\u00f3nica',
     introduction:
-      'Requisitos mínimos orientados al diseño, construcción e integración de un prototipo que responda a una necesidad o problema de ingeniería.',
+      'Requisitos m\u00ednimos orientados al dise\u00f1o, construcci\u00f3n e integraci\u00f3n de un prototipo que responda a una necesidad o problema de ingenier\u00eda.',
     overviewItems: [
-      { id: 'overview-1', label: 'Eje temático definido' },
-      { id: 'overview-2', label: 'Diagnóstico del problema' },
-      { id: 'overview-3', label: 'Justificación de alternativas de solución' },
-      { id: 'overview-4', label: 'Diseño y construcción del prototipo' },
-      { id: 'overview-5', label: 'Metodología' },
-      { id: 'overview-6', label: 'Entregables' },
-      { id: 'overview-7', label: 'Aspectos normativos' },
+      item('overview-1', 'Eje tem\u00e1tico definido'),
+      item('overview-2', 'Diagn\u00f3stico del problema'),
+      item('overview-3', 'Justificaci\u00f3n de alternativas de soluci\u00f3n'),
+      item('overview-4', 'Dise\u00f1o y construcci\u00f3n del prototipo'),
+      item('overview-5', 'Metodolog\u00eda'),
+      item('overview-6', 'Entregables'),
+      item('overview-7', 'Aspectos normativos'),
     ],
     sections: [
-      {
-        id: '1',
-        title: 'Eje temático claramente definido',
-        items: [
-          { id: '1.1', label: 'Automatización y control' },
-          { id: '1.2', label: 'Robótica y sistemas autónomos' },
-          { id: '1.3', label: 'Diseño de máquinas y sistemas mecatrónicos' },
-          { id: '1.4', label: 'Instrumentación y sistemas de medición' },
-          { id: '1.5', label: 'Sistemas embebidos y electrónica aplicada' },
-          { id: '1.6', label: 'Manufactura avanzada' },
-          { id: '1.7', label: 'Otros' },
-        ],
-      },
-      {
-        id: '2',
-        title: 'Diagnóstico del problema',
-        items: [
-          { id: '2.1', label: 'Caracterización del problema y sus causas' },
-          { id: '2.2', label: 'Mediciones y datos que sustenten la necesidad' },
-          { id: '2.3', label: 'Requisitos de funcionamiento y desempeño' },
-          { id: '2.4', label: 'Alcance y restricciones del proyecto' },
-        ],
-      },
-      {
-        id: '3',
-        title: 'Justificación de las alternativas de solución',
-        items: [
-          {
-            id: '3.1',
-            label: 'Revisión de literatura y soluciones existentes',
-          },
-          { id: '3.2', label: 'Análisis bibliométrico' },
-          {
-            id: '3.3',
-            label: 'Comparación técnica y económica de alternativas',
-          },
-          { id: '3.4', label: 'Selección justificada de la solución' },
-        ],
-      },
-      {
-        id: '4',
-        title: 'Diseño y construcción del prototipo',
-        items: [
-          { id: '4.1', label: 'Diseño mecánico y selección de materiales' },
-          { id: '4.2', label: 'Diseño eléctrico y electrónico' },
-          { id: '4.3', label: 'Selección de sensores y actuadores' },
-          { id: '4.4', label: 'Modelado y estrategia de control' },
-          { id: '4.5', label: 'Programación del sistema (HMI)' },
-          { id: '4.6', label: 'Construcción e integración del prototipo' },
-        ],
-      },
-      {
-        id: '5',
-        title: 'Metodología de desarrollo del proyecto',
-        items: [
-          { id: '5.1', label: 'Metodología definida y aplicada' },
-          { id: '5.2', label: 'Etapas de diseño, construcción e integración' },
-          { id: '5.3', label: 'Plan de pruebas y criterios de aceptación' },
-          {
-            id: '5.4',
-            label: 'Evaluación de resultados y ajustes del prototipo',
-          },
-        ],
-      },
-      {
-        id: '6',
-        title: 'Entregables (4 documentos)',
-        items: [
-          { id: '6.1', label: 'Diagnóstico y requisitos del sistema' },
-          { id: '6.2', label: 'Diseño y construcción del prototipo' },
-          { id: '6.3', label: 'Validación experimental del prototipo' },
-          { id: '6.4', label: 'Análisis de costos e ingeniería económica' },
-        ],
-      },
-      {
-        id: '7',
-        title: 'Aspectos normativos',
-        items: [
-          { id: '7.1', label: 'Normas técnicas aplicables al proyecto' },
-          { id: '7.2', label: 'Seguridad mecánica y eléctrica' },
-          { id: '7.3', label: 'Seguridad de operación del prototipo' },
-          { id: '7.4', label: 'Aspectos ambientales y éticos aplicables' },
-        ],
-      },
+      section('1', 'Eje tem\u00e1tico claramente definido', [
+        item('1.1', 'Automatizaci\u00f3n y control'),
+        item('1.2', 'Rob\u00f3tica y sistemas aut\u00f3nomos'),
+        item(
+          '1.3',
+          'Dise\u00f1o de m\u00e1quinas y sistemas mecatr\u00f3nicos',
+        ),
+        item('1.4', 'Instrumentaci\u00f3n y sistemas de medici\u00f3n'),
+        item('1.5', 'Sistemas embebidos y electr\u00f3nica aplicada'),
+        item('1.6', 'Manufactura avanzada'),
+        item('1.7', 'Otros'),
+      ]),
+      section('2', 'Diagn\u00f3stico del problema', [
+        item('2.1', 'Caracterizaci\u00f3n del problema y sus causas'),
+        item('2.2', 'Mediciones y datos que sustenten la necesidad'),
+        item('2.3', 'Requisitos de funcionamiento y desempe\u00f1o'),
+        item('2.4', 'Alcance y restricciones del proyecto'),
+      ]),
+      section('3', 'Justificaci\u00f3n de las alternativas de soluci\u00f3n', [
+        item('3.1', 'Revisi\u00f3n de literatura y soluciones existentes'),
+        item('3.2', 'An\u00e1lisis bibliom\u00e9trico'),
+        item(
+          '3.3',
+          'Comparaci\u00f3n t\u00e9cnica y econ\u00f3mica de alternativas',
+        ),
+        item('3.4', 'Selecci\u00f3n justificada de la soluci\u00f3n'),
+      ]),
+      section('4', 'Dise\u00f1o y construcci\u00f3n del prototipo', [
+        item('4.1', 'Dise\u00f1o mec\u00e1nico y selecci\u00f3n de materiales'),
+        item('4.2', 'Dise\u00f1o el\u00e9ctrico y electr\u00f3nico'),
+        item('4.3', 'Selecci\u00f3n de sensores y actuadores'),
+        item('4.4', 'Modelado y estrategia de control'),
+        item('4.5', 'Programaci\u00f3n del sistema (HMI)'),
+        item('4.6', 'Construcci\u00f3n e integraci\u00f3n del prototipo'),
+      ]),
+      section('5', 'Metodolog\u00eda de desarrollo del proyecto', [
+        item('5.1', 'Metodolog\u00eda definida y aplicada'),
+        item(
+          '5.2',
+          'Etapas de dise\u00f1o, construcci\u00f3n e integraci\u00f3n',
+        ),
+        item('5.3', 'Plan de pruebas y criterios de aceptaci\u00f3n'),
+        item('5.4', 'Evaluaci\u00f3n de resultados y ajustes del prototipo'),
+      ]),
+      section('6', 'Entregables (4 documentos)', [
+        item('6.1', 'Diagn\u00f3stico y requisitos del sistema'),
+        item('6.2', 'Dise\u00f1o y construcci\u00f3n del prototipo'),
+        item('6.3', 'Validaci\u00f3n experimental del prototipo'),
+        item('6.4', 'An\u00e1lisis de costos e ingenier\u00eda econ\u00f3mica'),
+      ]),
+      section('7', 'Aspectos normativos', [
+        item('7.1', 'Normas t\u00e9cnicas aplicables al proyecto'),
+        item('7.2', 'Seguridad mec\u00e1nica y el\u00e9ctrica'),
+        item('7.3', 'Seguridad de operaci\u00f3n del prototipo'),
+        item('7.4', 'Aspectos ambientales y \u00e9ticos aplicables'),
+      ]),
     ],
     notes: [
-      'Todo proyecto debe incluir la construcción, integración y validación de un prototipo físico. La simulación podrá apoyar el diseño y las pruebas. Los componentes específicos se evaluarán según el alcance, manteniendo la integración mecatrónica como requisito.',
-      'El prototipo debe evidenciar la integración de los componentes mecánicos, electrónicos, de control y programación pertinentes. Su validación debe demostrar el cumplimiento de los requisitos establecidos mediante pruebas y resultados medibles.',
-      'Se podrán incorporar tecnologías como visión artificial, Internet de las cosas, inteligencia artificial o manufactura aditiva cuando contribuyan a la solución del problema.',
+      'Todo proyecto debe incluir la construcci\u00f3n, integraci\u00f3n y validaci\u00f3n de un prototipo f\u00edsico. La simulaci\u00f3n podr\u00e1 apoyar el dise\u00f1o y las pruebas. Los componentes espec\u00edficos se evaluar\u00e1n seg\u00fan el alcance, manteniendo la integraci\u00f3n mecatr\u00f3nica como requisito.',
+      'El prototipo debe evidenciar la integraci\u00f3n de los componentes mec\u00e1nicos, electr\u00f3nicos, de control y programaci\u00f3n pertinentes. Su validaci\u00f3n debe demostrar el cumplimiento de los requisitos establecidos mediante pruebas y resultados medibles.',
+      'Se podr\u00e1n incorporar tecnolog\u00edas como visi\u00f3n artificial, Internet de las cosas, inteligencia artificial o manufactura aditiva cuando contribuyan a la soluci\u00f3n del problema.',
     ],
   },
 };
