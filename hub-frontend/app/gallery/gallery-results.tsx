@@ -10,9 +10,11 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { isServiceUnavailableStatus } from "@/lib/http";
+import ListPagination from "../components/list-pagination";
 import ServiceUnavailable from "../components/service-unavailable";
 import type { ProjectItem } from "../services/schemas";
 import GalleryCard from "./gallery-card";
+import { GALLERY_PAGE_SIZE } from "./gallery-filters";
 import GallerySkeleton from "./gallery-skeleton";
 
 type GalleryResultsProps = {
@@ -21,6 +23,8 @@ type GalleryResultsProps = {
   readonly status?: number;
   readonly error: string | null;
   readonly hasActiveFilters: boolean;
+  readonly pageIndex: number;
+  readonly onPageChange: (pageIndex: number) => void;
   readonly onClearFilters: () => void;
   readonly onRetry: () => void;
 };
@@ -31,6 +35,8 @@ export default function GalleryResults({
   status,
   error,
   hasActiveFilters,
+  pageIndex,
+  onPageChange,
   onClearFilters,
   onRetry,
 }: GalleryResultsProps) {
@@ -85,6 +91,16 @@ export default function GalleryResults({
     );
   }
 
+  const pageCount = Math.max(
+    1,
+    Math.ceil(projects.length / GALLERY_PAGE_SIZE),
+  );
+  const safePageIndex = Math.min(pageIndex, pageCount - 1);
+  const paginatedProjects = projects.slice(
+    safePageIndex * GALLERY_PAGE_SIZE,
+    (safePageIndex + 1) * GALLERY_PAGE_SIZE,
+  );
+
   return (
     <>
       <p className="px-1 pb-2 text-xs text-muted-foreground">
@@ -93,10 +109,19 @@ export default function GalleryResults({
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {projects.map((project, index) => (
+        {paginatedProjects.map((project, index) => (
           <GalleryCard key={project.id} project={project} index={index} />
         ))}
       </div>
+
+      {pageCount > 1 ? (
+        <ListPagination
+          id="gallery-page-input"
+          pageIndex={safePageIndex}
+          pageCount={pageCount}
+          onPageChange={onPageChange}
+        />
+      ) : null}
     </>
   );
 }

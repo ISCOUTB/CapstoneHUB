@@ -26,6 +26,7 @@ export default function GalleryExplorer() {
       new URLSearchParams(searchParams.toString()),
     ),
   );
+  const [pageIndex, setPageIndex] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
 
   const {
@@ -102,6 +103,7 @@ export default function GalleryExplorer() {
           new URLSearchParams(window.location.search),
         ),
       );
+      setPageIndex(0);
     }
 
     window.addEventListener("popstate", handlePopState);
@@ -126,10 +128,12 @@ export default function GalleryExplorer() {
 
   function handleFiltersChange(nextFilters: GalleryFilters) {
     setFilters(nextFilters);
+    setPageIndex(0);
   }
 
   function clearFilters() {
     setFilters(createDefaultGalleryFilters());
+    setPageIndex(0);
   }
 
   return (
@@ -149,6 +153,8 @@ export default function GalleryExplorer() {
             status={status}
             error={error}
             hasActiveFilters={hasActiveFilters}
+            pageIndex={pageIndex}
+            onPageChange={setPageIndex}
             onClearFilters={clearFilters}
             onRetry={() => setReloadKey((key) => key + 1)}
           />
