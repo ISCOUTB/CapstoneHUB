@@ -38,7 +38,7 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 | `/projects/[id]/edit` | Edición de los datos del proyecto (admin, directivo o actor asignado). |
 | `/profile` | Mi perfil: datos de la cuenta, cambio de contraseña y proyectos de interés. |
 | `/submit`, `/submit/natural` | Propuesta de proyecto. |
-| `/profile/kpis` | Panel de indicadores en pestañas (resumen, pendientes, actividad) y panorama por semestre (docentes, evaluadores, directivos y admin; el panorama es solo para admin/directivo). |
+| `/profile/kpis` | Panel de indicadores en pestañas (resumen, pendientes, actividad), con avance de evaluación de hitos y panorama por semestre (docentes, evaluadores, directivos y admin; el panorama es solo para admin/directivo). |
 | `/admin/users` | Administración de usuarios y roles. |
 | `/guides` | Guías y documentos: manuales de uso por rol y catálogo público de formatos, plantillas y guías. |
 | `/admin/guides` | Administración del catálogo de guías y documentos (admin/directivo). |
@@ -74,10 +74,12 @@ subidas multipart del archivo del documento.
 
 - `auth.ts` — sesión en `localStorage` (`capstonehub.auth.session`) y funciones
   de login, registro y usuarios.
-- `projects.ts` — proyectos, hitos, observaciones, anexos, contenido de las
+- `projects.ts` — proyectos, observaciones, anexos, contenido de las
   entregas (texto, enlaces y archivos) e intereses de los estudiantes, incluida
   la configuración de tipo, MIME permitidos y máximo de archivos, y la edición
   de los datos del proyecto.
+- `milestone-assessments.ts` — evaluación de hitos por programa y sus
+  respuestas.
 - `project-exports.ts` — descarga del Excel general y del PDF de detalle; usa
   `lib/download.ts` para interpretar `Content-Disposition` y disparar la
   descarga en el navegador.
@@ -85,7 +87,7 @@ subidas multipart del archivo del documento.
 - `roles.ts` — vocabulario de roles globales (`UserRole`) y de proyecto
   (`ActorRole`), y qué roles de proyecto habilita cada rol global.
 - `project-permissions.ts` — reglas de permisos del cliente (editar, gestionar,
-  hitos, estados), espejo de `AuthorizationService`.
+  evaluación de hitos, estados), espejo de `AuthorizationService`.
 - `rubrics.ts` — plantillas de rúbricas y su administración.
 - `guides.ts` — catálogo de guías y documentos: tipos, etiquetas de categoría y
   tipo de archivo, listado público, CRUD administrativo y subida de archivos.
@@ -99,9 +101,9 @@ Cada petición autenticada lee el token de `auth.ts` y agrega
 
 En el detalle del proyecto, debajo de las pestañas, hay una barra persistente
 visible desde cualquier pestaña. A la izquierda, los administradores y docentes
-asignados ven el control compacto **Fase** con el botón para
-avanzar de semestre; se habilita cuando los hitos mínimos de la fase actual
-están completos (al pulsarlo con pendientes, avisa cuáles faltan). A la derecha,
+asignados ven el control compacto **Fase** con el botón para avanzar de
+semestre; se habilita cuando la fase está evaluada y cuenta con los vistos
+buenos requeridos. A la derecha,
 quienes pueden editar (administradores, directivos, docentes y evaluadores
 asignados al proyecto y el proponente mientras la propuesta siga en revisión)
 ven
@@ -128,12 +130,12 @@ rúbrica criterio por criterio (nota 0.0–5.0 y comentario opcional); el direct
 solo consulta y asigna la plantilla de cada fase. La fase no se puede avanzar ni
 el proyecto cerrar sin las evaluaciones exigidas.
 
-La pestaña **Hitos** permite marcar hitos como **mínimos**, asignarles una fase
-(semestre) y vincularles entregas del proyecto; un hito con entregas vinculadas
-no se puede completar hasta que todas estén aceptadas. Al elegir el estado
-«Finalizado» se avisa si aún quedan hitos mínimos pendientes o falta la
-evaluación de la fase. En las entregas se muestra a qué hitos están vinculadas y
-se advierte antes de eliminar hitos o entregas que tienen vínculos. Cuando una
+La pestaña **Hitos** muestra la **evaluación de hitos** por programa académico:
+docentes/evaluadores asignados y directivos registran Sí/No/N/A y observaciones
+por requisito. Es informativa y no bloquea el avance de fase ni el cierre; los
+estudiantes ven un resumen filtrado. Los administradores, directivos y docentes
+asignados pueden añadir o quitar programas del proyecto desde esta misma
+pestaña, lo que permite habilitar formatos en proyectos antiguos. Cuando una
 entrega aún no se ha enviado, quien no es estudiante asignado ve un aviso de
 contenido privado en lugar de sus textos, enlaces y archivos.
 

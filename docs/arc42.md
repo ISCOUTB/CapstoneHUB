@@ -16,7 +16,7 @@ CapstoneHUB es un sistema web de gestión integral para proyectos Capstone que f
 | 1 | **Gestión de postulaciones** | Postulación de proyectos de ingeniería y consultoría con formato flexible (origen: entidad externa, investigación, necesidad interna o impacto social). Flujo de revisión por directivos y evaluadores. | Implementado |
 | 2 | **Banco de proyectos** | Listado y detalle de proyectos, estados, galería de proyectos finalizados no privados, vista previa de proyectos aprobados para estudiantes e interés de estudiantes en proyectos. | Implementado |
 | 3 | **Asignación de actores** | Asignación de docentes, evaluadores y estudiantes a cada proyecto (una persona solo tiene un rol por proyecto). | Implementado |
-| 4 | **Hitos y entregas** | Hitos por proyecto y por fase (semestre), hitos mínimos, entregas (reportes) con contenido de tipo texto, enlace, imagen, video o archivo, y revisión (aceptar/rechazar). | Implementado |
+| 4 | **Hitos y entregas** | Evaluación informativa de hitos por programa, entregas (reportes) con contenido de tipo texto, enlace, imagen, video o archivo, y revisión (aceptar/rechazar). | Implementado |
 | 5 | **Anexos y guías** | Anexos por proyecto y catálogo de formatos, plantillas y guías descargables. | Implementado |
 | 6 | **Observaciones e historial** | Observaciones del proyecto, historial de estados e historial de cambios. | Implementado |
 | 7 | **Evaluación** | Rúbricas por área, asignación de rúbrica por proyecto y fase, evaluación semestral con notas ponderadas, visto bueno de fase y bloqueo de avance/cierre. | Implementado |
@@ -216,7 +216,7 @@ flowchart TB
 |--------|-----------------|
 | **Auth** | Registro, login, usuarios, roles; guards y `AuthorizationService` |
 | **Projects** | CRUD de proyectos, actores, estados, fases, intereses, historial |
-| **Milestones** | Hitos por proyecto y por fase |
+| **Milestone assessments** | Evaluación de hitos por programa y proyecto |
 | **Reports** | Entregas, su contenido y revisión |
 | **Observations** | Observaciones del proyecto |
 | **Attachments** | Anexos del proyecto |
@@ -299,7 +299,7 @@ El sistema se divide en cuatro contenedores desacoplados que se comunican median
 | `LoggerMiddleware` | Asigna `request-id` y registra una línea JSON por petición |
 | `AuthGuard` / `AdminGuard` | Validan el token y exigen el rol `admin` donde corresponde |
 | `AuthorizationService` | Centraliza permisos por rol global y por rol dentro del proyecto |
-| Módulos de dominio | Auth, Projects, Milestones, Reports, Observations, Attachments, Rubrics, Evaluations, Guides, Stats, Health |
+| Módulos de dominio | Auth, Projects, Milestone assessments, Reports, Observations, Attachments, Rubrics, Evaluations, Guides, Stats, Health |
 | `PrismaService` | Acceso a datos |
 | `StorageService` / `S3StorageService` | Abstracción de archivos y limpieza de objetos huérfanos (`npm run storage:gc`) |
 | `DatabaseExceptionFilter` | Traduce errores de conexión a PostgreSQL en `503` |
@@ -323,7 +323,7 @@ El diagrama de componentes está en `C4_CapstoneHUB_drawio.md` (nivel 3).
 | Proyecto | `Project`, `ProjectProgramRequirement`, `ProjectSchool`, `ProjectDeliverable`, `ProjectNaturalProposer` |
 | Participación | `ProjectActorAssignment`, `ProjectInterest` |
 | Seguimiento | `ProjectObservation`, `ProjectStatusHistory`, `ProjectChangeHistory`, `ProjectPhaseApproval` |
-| Hitos y entregas | `ProjectMilestones`, `ProjectMilestoneRubric`, `ProjectReport`, `ProjectReportContent`, `MilestoneReportLink`, `ProjectAttachment` |
+| Hitos y entregas | `ProjectMilestoneAssessment`, `ProjectReport`, `ProjectReportContent`, `ProjectAttachment` |
 | Evaluación | `RubricTemplate`, `RubricCriterion`, `ProjectRubricAssignment`, `ProjectEvaluation`, `ProjectEvaluationCriterion` |
 | Catálogo | `GuideDocument` |
 
@@ -381,7 +381,6 @@ sequenceDiagram
   participant API as Backend
   T->>API: POST /projects/:id/phase/advance
   API->>API: ¿in_progress?
-  API->>API: ¿Hitos mínimos de la fase completos?
   API->>API: ¿Visto bueno del proponente y de cada evaluador?
   API->>API: ¿Evaluaciones de la fase actual enviadas?
   alt Falta alguna condición
@@ -486,7 +485,7 @@ PostgreSQL para datos y RustFS para binarios, detrás de `StorageService`. Lími
 
 ## Pruebas
 - **Unitarias:** Jest, junto al código (`*.spec.ts`).
-- **End-to-end del backend:** Supertest (`test/*.e2e-spec.ts`: auth, evaluaciones, guías, hitos, observaciones).
+- **End-to-end del backend:** Supertest (`test/*.e2e-spec.ts`: auth, evaluaciones, guías, evaluación de hitos, observaciones).
 - **End-to-end del frontend:** Playwright.
 - Todo se ejecuta en CI.
 
@@ -510,7 +509,7 @@ Sistema de diseño UTB con shadcn/ui y Tailwind v4. Interfaz en español.
 | **009** | Next.js como BFF con sesión en cookie `httpOnly` | Evita CORS, oculta la URL del backend y el navegador nunca guarda el token. | Todo el tráfico pasa por el BFF, incluidas las subidas (streaming). |
 | **010** | Roles globales más rol por proyecto, con permisos centralizados | Permite que docentes y evaluadores actúen solo en sus proyectos. | Los permisos viven en `AuthorizationService` y la matriz debe mantenerse al día. |
 | **011** | Estado y fase del proyecto independientes | Un proyecto `in_progress` puede avanzar de semestre sin cambiar de estado. | Dos máquinas de estado que validar. |
-| **012** | Avance de fase y cierre bloqueados por hitos y evaluaciones, sin excepción para `admin` | Garantiza que se cumpla el proceso académico. | El admin no puede saltarse el proceso; hay que resolver los pendientes. |
+| **012** | Avance de fase y cierre bloqueados por evaluaciones y vistos buenos, sin excepción para `admin` | Garantiza que se cumpla el proceso académico. | El admin no puede saltarse el proceso; hay que resolver los pendientes. |
 | **013** | Despliegue con GitHub Actions, GHCR y Dokploy (Traefik + Let's Encrypt) | Entrega reproducible por tags y TLS automático. | Depende de un servidor con Dokploy y de secretos del registry. |
 
 ---
@@ -558,8 +557,8 @@ Sistema de diseño UTB con shadcn/ui y Tailwind v4. Interfaz en español.
 | **OIDC** | OpenID Connect - Protocolo de identidad sobre OAuth 2.0 |
 | **Entra ID** | Servicio de identidad de Microsoft (antes Azure AD) |
 | **BFF** | Backend for Frontend - Capa del frontend que hace de proxy hacia la API |
-| **Hito** | Entrega parcial programada en el cronograma del proyecto |
-| **Hito mínimo** | Hito obligatorio de una fase que debe estar completo para avanzar |
+| **Hito** | Requisito evaluable del proyecto según su programa académico |
+| **Evaluación de hitos** | Registro informativo Sí/No/N/A y observaciones por requisito; no bloquea el proyecto |
 | **Fase** | Semestre del proyecto (`semester_1`, `semester_2`), independiente del estado |
 | **Visto bueno de fase** | Aprobación del proponente y de cada evaluador para avanzar de fase |
 | **Rúbrica** | Plantilla de criterios ponderados para evaluar un proyecto en una fase |

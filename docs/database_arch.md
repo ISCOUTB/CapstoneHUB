@@ -51,7 +51,7 @@ Es dueña de todos los registros relacionados mediante borrado en cascada.
 en `semester_1` y solo puede avanzar a `semester_2`; cada avance se registra en
 `ProjectChangeHistory` con `field = "phase"`.
 
-El avance exige, además de los hitos mínimos, el **visto bueno de fase**: el
+El avance exige la evaluación de la fase y el **visto bueno de fase**: el
 proponente del proyecto y cada evaluador asignado deben aprobar la fase destino
 en `ProjectPhaseApproval`. Sin esas aprobaciones el avance responde `409`
 listando quién falta; el bloqueo también aplica al `admin`.
@@ -81,8 +81,8 @@ listando quién falta; el bloqueo también aplica al `admin`.
   - `admin` y `directivo` ven todos los proyectos. Un `evaluator` sin
     asignación solo ve los públicos y los que propuso.
 - A los visitantes que solo pueden ver la información pública se les ocultan las
-  secciones sensibles (equipo, observaciones, hitos, entregas, anexos e
-  historial) tanto en la API como en la interfaz.
+  secciones sensibles (equipo, observaciones, evaluación de hitos, entregas,
+  anexos e historial) tanto en la API como en la interfaz.
 
 
 ### ProjectSchool
@@ -137,12 +137,22 @@ modificado, con `field` (por ejemplo `name`, `isPrivate` o `deliverables`),
 dentro de la misma transacción que la actualización del proyecto; los cambios de
 estado se siguen registrando en `ProjectStatusHistory`.
 
-### ProjectMilestones
+### ProjectProgramRequirement
 
-Entregables programados con `title`, `description` opcional, `dueDate` y un
-flag `completed`. `isMinimum` marca los **hitos mínimos**: los obligatorios para
-avanzar de fase o cerrar el proyecto. `phase` (`ProjectPhase` opcional) indica a
-qué semestre pertenece el hito; un hito mínimo sin fase se considera global.
+Programas académicos que requiere el proyecto, con `programId` y
+`studentCount`. Se definen al crear la propuesta y pueden reemplazarse después
+con `PUT /projects/:id/programs`; cada cambio queda en `ProjectChangeHistory`
+(`field = "programRequirements"`). También deciden qué formatos de evaluación de
+hitos aparecen.
+
+### ProjectMilestoneAssessment
+
+Evaluación de requisitos por programa académico. Guarda `programId`, las
+respuestas del formato en `answers` (JSON con `status` `yes`/`no`/`na` y
+`observation` por ítem), `updatedByUserId` y `updatedAt`. La clave única
+`(projectId, programId)` garantiza una evaluación por programa. Es informativa:
+no bloquea el avance de fase ni el cierre del proyecto. Los cambios se registran
+en `ProjectChangeHistory` con `field = "milestone_assessment"`.
 
 ### ProjectPhaseApproval
 
@@ -207,14 +217,6 @@ administrador) puede aportar contenido y enviar la entrega. Mientras la entrega
 está `pending` o `rejected`, el contenido solo se expone a los estudiantes
 asignados y a los administradores; tras el envío lo ven todos los miembros del
 proyecto.
-
-### MilestoneReportLink
-
-Tabla intermedia que vincula hitos con entregas (relación muchos a muchos). Un
-hito puede exigir varias entregas y una entrega puede estar vinculada a varios
-hitos. El hito no se puede completar hasta que todas sus entregas vinculadas
-estén `accepted`. Al eliminar el hito o la entrega, sus filas de enlace caen en
-cascada y la otra parte queda intacta (`milestone_report`).
 
 ### GuideDocument
 
@@ -338,16 +340,13 @@ classDiagram
         +DateTime changedAt
     }
 
-    class ProjectMilestones {
+    class ProjectMilestoneAssessment {
         +Int id
         +Int projectId
-        +String title
-        +String description
-        +DateTime dueDate
-        +Boolean completed
-        +Boolean isMinimum
-        +ProjectPhase phase
-        +DateTime createdAt
+        +String programId
+        +Json answers
+        +Int updatedByUserId
+        +DateTime updatedAt
     }
 
     class ProjectPhaseApproval {
@@ -397,12 +396,6 @@ classDiagram
         +String textContent
         +String url
         +String label
-        +DateTime createdAt
-    }
-
-    class MilestoneReportLink {
-        +Int milestoneId
-        +Int reportId
         +DateTime createdAt
     }
 
@@ -546,6 +539,7 @@ classDiagram
     User "0..1" --> "0..*" ProjectReportContent : reportContents
     User "0..1" --> "0..*" Project : proposedProjects
     User "0..1" --> "0..*" ProjectPhaseApproval : phaseApprovals
+    User "0..1" --> "0..*" ProjectMilestoneAssessment : milestoneAssessments
     User "0..1" --> "0..*" GuideDocument : uploadedGuideDocuments
 
     Project "1" *-- "0..*" ProjectSchool : schools
@@ -556,14 +550,12 @@ classDiagram
     Project "1" *-- "0..*" ProjectObservation : observations
     Project "1" *-- "0..*" ProjectStatusHistory : statusHistory
     Project "1" *-- "0..*" ProjectChangeHistory : changeHistory
-    Project "1" *-- "0..*" ProjectMilestones : milestones
+    Project "1" *-- "0..*" ProjectMilestoneAssessment : milestoneAssessments
     Project "1" *-- "0..*" ProjectPhaseApproval : phaseApprovals
     Project "1" *-- "0..*" ProjectAttachment : attachments
     Project "1" *-- "0..*" ProjectReport : reports
     ProjectReport "1" *-- "0..*" ProjectReportContent : contents
     ProjectReportContent "0..1" --> "0..1" ProjectAttachment : attachment
-    ProjectMilestones "1" *-- "0..*" MilestoneReportLink : reportLinks
-    ProjectReport "1" *-- "0..*" MilestoneReportLink : milestoneLinks
     RubricTemplate "1" *-- "1..*" RubricCriterion : criteria
     RubricTemplate "1" *-- "0..*" ProjectRubricAssignment : assignments
     Project "1" *-- "0..*" ProjectRubricAssignment : rubricAssignments
@@ -579,7 +571,6 @@ classDiagram
     Project ..> ProjectStatus
     Project ..> ProjectPhase
     ProjectStatusHistory ..> ProjectStatus
-    ProjectMilestones ..> ProjectPhase
     ProjectPhaseApproval ..> ProjectPhase
     ProjectReport ..> ReportStatus
     ProjectReportContent ..> ReportContentKind
@@ -607,6 +598,6 @@ classDiagram
   faltan, el documento se muestra como «Próximamente». Un `audiences` vacío
   aplica a todos los roles. El recolector de objetos huérfanos también revisa
   este prefijo.
-- Todo proyecto nuevo incluye por defecto un hito mínimo «Documento final» en
-  `semester_2` y una entrega «Documento final» (tipo Archivo) vinculada a él
-  (ver [Arquitectura del backend](./backend_arch.md)).
+- Todo proyecto nuevo incluye por defecto una entrega «Documento final» (tipo
+  Archivo), sin vínculo con la evaluación de hitos (ver
+  [Arquitectura del backend](./backend_arch.md)).
