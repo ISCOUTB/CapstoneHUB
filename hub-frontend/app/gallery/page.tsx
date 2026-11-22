@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import GalleryExplorer from "./gallery-explorer";
+import GallerySkeleton from "./gallery-skeleton";
 
 const GALLERY_DESCRIPTION =
   "Proyectos finalizados de la Universidad Tecnológica de Bolívar.";
@@ -22,7 +24,9 @@ export default function GalleryPage() {
           </p>
         </div>
 
-        <GalleryExplorer />
+        <Suspense fallback={<GallerySkeleton />}>
+          <GalleryExplorer />
+        </Suspense>
       </section>
     </main>
   );

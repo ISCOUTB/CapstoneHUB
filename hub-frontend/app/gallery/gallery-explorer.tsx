@@ -1,174 +1,169 @@
 "use client";
 
-import Link from "next/link";
-import {
-  RiArrowRightLine,
-  RiMapPinLine,
-  RiUser3Line,
-} from "@remixicon/react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Skeleton } from "@/components/ui/skeleton";
-import { isServiceUnavailableStatus } from "@/lib/http";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useApiResource } from "@/lib/use-api-resource";
-import ServiceUnavailable from "../components/service-unavailable";
 import { getProjects } from "../services/projects";
-import { type ProjectItem } from "../services/schemas";
-import { formatProjectSource, formatStatus } from "../services/utils";
-import { getProjectYear } from "../projects/project-list-config";
-
-/** Tope de la API para un único lote; la galería no pagina en esta versión. */
-const GALLERY_LIMIT = 100;
-
-function GalleryCard({
-  project,
-  index,
-}: Readonly<{ project: ProjectItem; index: number }>) {
-  const year = getProjectYear(project);
-
-  return (
-    <Link
-      href={`/projects/${project.id}`}
-      aria-label={`Ver el proyecto ${project.name}`}
-      className="group block h-full rounded-2xl focus-visible:ring-2 focus-visible:ring-utb-blue/50 focus-visible:ring-offset-2 focus-visible:outline-none"
-    >
-      <Card
-        className="utb-rise hover-lift h-full"
-        style={
-          {
-            "--utb-delay": `${Math.min(index, 8) * 60}ms`,
-          } as React.CSSProperties
-        }
-      >
-        <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <Badge variant="secondary">{formatStatus(project.status)}</Badge>
-
-            {year ? (
-              <span className="text-xs text-muted-foreground">{year}</span>
-            ) : null}
-          </div>
-
-          <CardTitle className="line-clamp-2 transition-colors group-hover:text-utb-blue">
-            {project.name}
-          </CardTitle>
-
-          <CardDescription className="line-clamp-3">
-            {project.description || "Sin descripción disponible."}
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="mt-auto">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            {project.proposer?.fullName ? (
-              <span className="inline-flex items-center gap-1">
-                <RiUser3Line className="size-3.5" aria-hidden="true" />
-                {project.proposer.fullName}
-              </span>
-            ) : null}
-
-            {project.location ? (
-              <span className="inline-flex items-center gap-1">
-                <RiMapPinLine className="size-3.5" aria-hidden="true" />
-                {project.location}
-              </span>
-            ) : null}
-
-            {project.source ? (
-              <Badge variant="outline">
-                {formatProjectSource(project.source)}
-              </Badge>
-            ) : null}
-          </div>
-
-          <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-utb-blue opacity-0 transition-opacity group-focus-visible:opacity-100 group-hover:opacity-100">
-            Ver detalle
-            <RiArrowRightLine className="size-3.5" aria-hidden="true" />
-          </span>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
+import { buildYearOptions } from "../projects/project-list-config";
+import { useRemoteProjects } from "../projects/use-remote-projects";
+import GalleryFilterSidebar from "./gallery-filter-sidebar";
+import {
+  GALLERY_BASE_QUERY,
+  createDefaultGalleryFilters,
+  galleryFiltersFromSearchParams,
+  galleryFiltersToApiQuery,
+  galleryFiltersToSearchParams,
+  hasActiveGalleryFilters,
+  type GalleryFilters,
+} from "./gallery-filters";
+import GalleryResults from "./gallery-results";
+import GalleryToolbar from "./gallery-toolbar";
 
 export default function GalleryExplorer() {
-  const { data, loading, error, reload } = useApiResource(
-    () =>
-      getProjects({
-        status: ["closed"],
-        isPrivate: false,
-        sort: "year-desc",
-        limit: GALLERY_LIMIT,
-      }),
-    [],
+  const searchParams = useSearchParams();
+  const [filters, setFilters] = useState<GalleryFilters>(() =>
+    galleryFiltersFromSearchParams(
+      new URLSearchParams(searchParams.toString()),
+    ),
+  );
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const {
+    data: baseData,
+    loading: baseLoading,
+    error: baseError,
+  } = useApiResource(
+    () => getProjects(GALLERY_BASE_QUERY),
+    [reloadKey],
   );
 
-  const projects = data?.projects ?? [];
-  const status = data?.status;
-  const loadError = data?.error ?? error ?? null;
+  const hasActiveFilters = hasActiveGalleryFilters(filters);
+  const apiQuery = useMemo(
+    () => galleryFiltersToApiQuery(filters),
+    [filters],
+  );
+  const queryKey = useMemo(() => JSON.stringify(apiQuery), [apiQuery]);
+  const remoteProjects = useRemoteProjects({
+    enabled: hasActiveFilters,
+    query: apiQuery,
+    queryKey,
+    reloadKey,
+  });
 
-  if (loading) {
-    return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, index) => (
-          <Skeleton key={index} className="h-48 w-full rounded-2xl" />
-        ))}
-      </div>
-    );
+  const currentRemote =
+    remoteProjects?.queryKey === queryKey ? remoteProjects : null;
+  const baseProjects = useMemo(
+    () => baseData?.projects ?? [],
+    [baseData],
+  );
+  const projects = hasActiveFilters
+    ? (remoteProjects?.projects ?? [])
+    : baseProjects;
+
+  const yearOptions = useMemo(() => {
+    const options = buildYearOptions(baseProjects);
+    const values = new Set(options.map((option) => option.value));
+
+    for (const selected of filters.year) {
+      if (!values.has(selected)) {
+        options.push({
+          value: selected,
+          label: selected === "sin-anio" ? "Sin año" : selected,
+        });
+        values.add(selected);
+      }
+    }
+
+    return options.sort((left, right) => {
+      if (left.value === "sin-anio") {
+        return 1;
+      }
+
+      if (right.value === "sin-anio") {
+        return -1;
+      }
+
+      return Number(right.value) - Number(left.value);
+    });
+  }, [baseProjects, filters.year]);
+
+  const loading = hasActiveFilters ? remoteProjects === null : baseLoading;
+  const status = hasActiveFilters
+    ? currentRemote?.status
+    : baseData?.status;
+  const error = hasActiveFilters
+    ? (currentRemote?.error ?? null)
+    : (baseData?.error ?? baseError ?? null);
+
+  useEffect(() => {
+    function handlePopState() {
+      setFilters(
+        galleryFiltersFromSearchParams(
+          new URLSearchParams(window.location.search),
+        ),
+      );
+    }
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const nextSearch = galleryFiltersToSearchParams(filters).toString();
+    const currentSearch = window.location.search.replace(/^\?/, "");
+
+    if (nextSearch === currentSearch) {
+      return;
+    }
+
+    const nextUrl = `${window.location.pathname}${
+      nextSearch ? `?${nextSearch}` : ""
+    }${window.location.hash}`;
+
+    window.history.replaceState(null, "", nextUrl);
+  }, [filters]);
+
+  function handleFiltersChange(nextFilters: GalleryFilters) {
+    setFilters(nextFilters);
   }
 
-  if (isServiceUnavailableStatus(status)) {
-    return <ServiceUnavailable message={loadError} onRetry={reload} />;
-  }
-
-  if (loadError) {
-    return (
-      <Alert variant="destructive">
-        <AlertTitle>No se pudo cargar la galería</AlertTitle>
-        <AlertDescription>
-          {loadError}
-          <div className="mt-3">
-            <Button variant="outline" size="sm" onClick={reload}>
-              Reintentar
-            </Button>
-          </div>
-        </AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (projects.length === 0) {
-    return (
-      <Empty className="rounded-2xl bg-card shadow-sm ring-1 ring-utb-blue/10">
-        <EmptyHeader>
-          <EmptyTitle>Aún no hay proyectos finalizados</EmptyTitle>
-          <EmptyDescription>
-            La galería se llenará a medida que los proyectos cierren su ciclo.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
+  function clearFilters() {
+    setFilters(createDefaultGalleryFilters());
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {projects.map((project, index) => (
-        <GalleryCard key={project.id} project={project} index={index} />
-      ))}
+    <div className="flex flex-col gap-6">
+      <GalleryToolbar
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={clearFilters}
+      />
+
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="order-2 min-w-0 flex-1 lg:order-1">
+          <GalleryResults
+            projects={projects}
+            loading={loading}
+            status={status}
+            error={error}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={clearFilters}
+            onRetry={() => setReloadKey((key) => key + 1)}
+          />
+        </div>
+
+        <GalleryFilterSidebar
+          className="order-1 lg:order-2"
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          yearOptions={yearOptions}
+          yearsLoading={baseLoading}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearFilters}
+        />
+      </div>
     </div>
   );
 }
