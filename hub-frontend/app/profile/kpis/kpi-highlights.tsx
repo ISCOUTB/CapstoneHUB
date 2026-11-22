@@ -1,5 +1,4 @@
 import {
-  RiAlarmWarningLine,
   RiFileList3Line,
   RiFolderLine,
   RiSendPlaneLine,
@@ -48,7 +47,7 @@ function HighlightCard({
   Icon,
 }: {
   readonly label: string;
-  readonly value: number;
+  readonly value: number | string;
   readonly hint: string;
   readonly Icon: typeof RiFolderLine;
 }) {
@@ -184,10 +183,18 @@ export default function KpiHighlights({
         />
 
         <HighlightCard
-          label="Hitos vencidos"
-          value={kpis.overdueMilestones.count}
-          hint="Hitos incompletos con fecha pasada."
-          Icon={RiAlarmWarningLine}
+          label="Avance de hitos"
+          value={
+            kpis.milestoneAssessmentProgress.percent === null
+              ? "—"
+              : `${kpis.milestoneAssessmentProgress.percent}%`
+          }
+          hint={
+            kpis.milestoneAssessmentProgress.totalItems === 0
+              ? "Sin formatos de evaluación configurados."
+              : `${kpis.milestoneAssessmentProgress.answeredItems} de ${kpis.milestoneAssessmentProgress.totalItems} requisitos evaluados.`
+          }
+          Icon={RiFileList3Line}
         />
       </div>
 

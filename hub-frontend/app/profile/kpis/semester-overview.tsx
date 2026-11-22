@@ -223,8 +223,9 @@ function SemesterTable({
       <CardHeader>
         <CardTitle>Desarrollo por semestre</CardTitle>
         <CardDescription>
-          La aceptación se calcula sobre las propuestas ya decididas; los hitos
-          y las entregas, sobre lo registrado en esos proyectos.
+          La aceptación se calcula sobre las propuestas ya decididas; la
+          evaluación de hitos y las entregas, sobre lo registrado en esos
+          proyectos.
         </CardDescription>
       </CardHeader>
 
@@ -237,7 +238,7 @@ function SemesterTable({
               <TableHead>Aceptación</TableHead>
               <TableHead className="text-right">En progreso</TableHead>
               <TableHead className="text-right">Finalizados</TableHead>
-              <TableHead>Hitos mínimos</TableHead>
+              <TableHead>Evaluación de hitos</TableHead>
               <TableHead>Entregas aceptadas</TableHead>
             </TableRow>
           </TableHeader>
@@ -278,8 +279,8 @@ function SemesterTable({
                   <TableCell>
                     <RateBar
                       value={percent(
-                        semester.minimumMilestones.completed,
-                        semester.minimumMilestones.total,
+                        semester.milestoneAssessments.answeredItems,
+                        semester.milestoneAssessments.totalItems,
                       )}
                     />
                   </TableCell>
@@ -323,12 +324,14 @@ function PhaseCard({ phase }: { readonly phase: PhaseSemester }) {
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Hitos mínimos</dt>
+            <dt className="text-xs text-muted-foreground">
+              Evaluación de hitos
+            </dt>
             <dd className="mt-0.5 text-lg font-semibold tabular-nums">
               {formatPercent(
                 percent(
-                  phase.minimumMilestones.completed,
-                  phase.minimumMilestones.total,
+                  phase.milestoneAssessments.answeredItems,
+                  phase.milestoneAssessments.totalItems,
                 ),
               )}
             </dd>
@@ -384,9 +387,10 @@ export default function SemesterOverview({
       decided: acc.decided + semester.decided,
       accepted: acc.accepted + semester.accepted,
       closed: acc.closed + semester.closed,
-      milestonesTotal: acc.milestonesTotal + semester.minimumMilestones.total,
-      milestonesDone:
-        acc.milestonesDone + semester.minimumMilestones.completed,
+      assessmentTotal:
+        acc.assessmentTotal + semester.milestoneAssessments.totalItems,
+      assessmentAnswered:
+        acc.assessmentAnswered + semester.milestoneAssessments.answeredItems,
       reportsTotal: acc.reportsTotal + semester.reports.total,
       reportsAccepted: acc.reportsAccepted + semester.reports.accepted,
     }),
@@ -394,8 +398,8 @@ export default function SemesterOverview({
       decided: 0,
       accepted: 0,
       closed: 0,
-      milestonesTotal: 0,
-      milestonesDone: 0,
+      assessmentTotal: 0,
+      assessmentAnswered: 0,
       reportsTotal: 0,
       reportsAccepted: 0,
     },
@@ -417,11 +421,11 @@ export default function SemesterOverview({
           Icon={RiCheckboxCircleLine}
         />
         <SummaryCard
-          label="Hitos mínimos cumplidos"
+          label="Evaluación de hitos"
           value={formatPercent(
-            percent(totals.milestonesDone, totals.milestonesTotal),
+            percent(totals.assessmentAnswered, totals.assessmentTotal),
           )}
-          hint={`${totals.milestonesDone} de ${totals.milestonesTotal} hitos.`}
+          hint={`${totals.assessmentAnswered} de ${totals.assessmentTotal} requisitos evaluados.`}
           Icon={RiFlagLine}
         />
         <SummaryCard
