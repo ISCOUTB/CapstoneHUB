@@ -197,7 +197,11 @@ pasa.
   ejecución, una asignación como `teacher`.
 - `Preparar y enviar entregas` (contenido y envío) queda reservado al `student`
   asignado o a un `admin`. Docentes, evaluadores, directivos y proponentes solo
-  configuran y revisan la entrega, aunque estén asignados al proyecto.
+  configuran y revisan la entrega, aunque estén asignados al proyecto. Mientras
+  la entrega esté `pending` o `rejected`, su contenido solo lo ven los
+  estudiantes asignados y los administradores; al enviarse queda visible para
+  los miembros del proyecto. La misma regla protege el stream de archivos y la
+  descarga de adjuntos vinculados a la entrega.
 - El `evaluator` de expo no tiene acceso global: solo participa en los
   proyectos donde se le asigna el rol de proyecto `evaluator`. En ellos conserva
   los permisos de revisión y aprobación de fase.
