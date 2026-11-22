@@ -55,8 +55,8 @@ test("muestra las pestañas del detalle sin desborde horizontal", async ({
     await closeMenuButton.click();
   }
 
-  // El proponente es miembro: ve las 8 pestañas internas.
-  await expect(page.locator('[data-slot="tabs-trigger"]')).toHaveCount(8);
+  // El proponente es miembro: ve las 7 pestañas internas.
+  await expect(page.locator('[data-slot="tabs-trigger"]')).toHaveCount(7);
 
   // La lista no debe generar scroll horizontal (fix #80).
   const overflow = await page.evaluate(
