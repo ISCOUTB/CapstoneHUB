@@ -28,6 +28,22 @@ export type FilterOption = {
   label: string;
 };
 
+/** Claves de los filtros en la URL, compartidas por el listado y la galería. */
+export const PROJECT_FILTER_PARAMS = {
+  search: "q",
+  status: "estado",
+  proposer: "proponente",
+  source: "fuente",
+  legalization: "legalizacion",
+  year: "anio",
+  assignedToMe: "asignados",
+  proposedByMe: "propuestos",
+  hasTeam: "equipo",
+  privateOnly: "privados",
+  sort: "orden",
+} as const;
+
+
 export const PROJECT_STATUS_OPTIONS: FilterOption[] = [
   { value: "proposed", label: "Propuesto" },
   { value: "under_review", label: "En revisión" },
@@ -105,6 +121,32 @@ export function getProjectYear(project: ProjectItem): string | null {
   const year = new Date(project.startDate).getFullYear();
 
   return Number.isNaN(year) ? null : String(year);
+}
+
+/** Opciones de año presentes en un conjunto de proyectos. */
+export function buildYearOptions(projects: ProjectItem[]): FilterOption[] {
+  const years = new Set<string>();
+  let hasProjectsWithoutYear = false;
+
+  for (const project of projects) {
+    const year = getProjectYear(project);
+
+    if (year) {
+      years.add(year);
+    } else {
+      hasProjectsWithoutYear = true;
+    }
+  }
+
+  const options = Array.from(years)
+    .sort((left, right) => Number(right) - Number(left))
+    .map((year) => ({ value: year, label: year }));
+
+  if (hasProjectsWithoutYear) {
+    options.push({ value: "sin-anio", label: "Sin año" });
+  }
+
+  return options;
 }
 
 export function isProjectStatus(value: string): boolean {
