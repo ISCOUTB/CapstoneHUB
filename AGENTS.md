@@ -78,12 +78,12 @@ Seed sample data from `hub-backend` (Postgres must be up and migrated):
 Setup y comandos exactos (BD de test, `DATABASE_URL`, Playwright) en
 [BUILD.md](BUILD.md#tests).
 
-## Commit messages — Conventional Commits (required)
+## Commit messages — Conventional Commits in Spanish (required)
 
 Every commit must follow [Conventional Commits](https://www.conventionalcommits.org):
 
 ```
-<type>(<optional scope>): <description>
+<type>(<optional scope>): <descripción>
 ```
 
 **Allowed types**
@@ -107,22 +107,27 @@ Every commit must follow [Conventional Commits](https://www.conventionalcommits.
 
 **Rules**
 
+- **Write commit subjects and bodies in Spanish.** The conventional `type` and
+  `scope` tokens stay in English, but the description and the body are Spanish.
 - Description in the imperative mood, lowercase, no trailing period:
-  `feat(projects): add privacy flag to project detail`.
+  `feat(projects): agregar indicador de privacidad al detalle del proyecto`.
 - Keep the subject under ~72 characters; put the "why" in the body if needed.
 - Reference issues in the body (`Refs #92`), not in the subject.
 - Breaking changes: add `!` after the type/scope and explain in a
-  `BREAKING CHANGE:` footer, e.g. `refactor(auth)!: drop legacy session cookie`.
+  `BREAKING CHANGE:` footer, e.g.
+  `refactor(auth)!: eliminar la cookie de sesión heredada`. Keep the
+  `BREAKING CHANGE:` keyword and write its explanation in Spanish.
 - One logical change per commit; don't mix a refactor with a feature.
-- PR titles should follow the same convention, since merges keep the history.
+- **PR titles and descriptions are also written in Spanish.** Titles follow the
+  same Conventional Commits convention, since merges keep the history.
 
 Examples:
 
 ```
-feat(frontend): open every module with ModuleHeader
-fix(backend): return 404 for private projects to non-members
-refactor(prisma): extract project visibility into AuthorizationService
-docs: document the UTB design system
+feat(frontend): abrir cada módulo con ModuleHeader
+fix(backend): responder 404 para proyectos privados a no miembros
+refactor(prisma): extraer la visibilidad de proyectos a AuthorizationService
+docs: documentar el sistema de diseño UTB
 ```
 
 ## General guidelines
