@@ -18,7 +18,7 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 - `app/api/` — route handlers que actúan como BFF/proxy hacia el backend.
 - `app/services/` — acceso a datos y sesión.
 - `app/components/` — componentes propios (shell, sidebar, navbar, auth,
-  formularios).
+  formularios y controles compartidos de listados).
 - `components/ui/` — componentes base de shadcn/ui.
 - `lib/utils.ts` — utilidades (por ejemplo `cn`).
 - `lib/download.ts` — descarga de respuestas binarias y lectura de `Content-Disposition`.
@@ -29,7 +29,7 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 | Ruta | Pantalla |
 | --- | --- |
 | `/` | Landing pública, sin sidebar ni topbar. |
-| `/gallery` | Galería pública de proyectos finalizados y no privados (`GET /projects` sin sesión), con topbar de marca y sin sidebar. |
+| `/gallery` | Galería pública de proyectos finalizados y no privados (`GET /projects` sin sesión), con búsqueda, filtros rápidos por fuente y año, orden y paginación en cliente; topbar de marca y sin sidebar. |
 | `/home` | Inicio interno (requiere sesión): proyectos propios y asignados del usuario. |
 | `/login` | Inicio de sesión. |
 | `/register` | Registro de proponentes (auto-login). |
