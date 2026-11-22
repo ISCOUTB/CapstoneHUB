@@ -11,13 +11,12 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import AccessNotice from "../components/access-notice";
+import ListPagination from "../components/list-pagination";
 import ServiceUnavailable from "../components/service-unavailable";
 import { isServiceUnavailableStatus } from "@/lib/http";
 import {
-  getProjects,
   type ProjectListQuery,
 } from "../services/projects";
 import { type ProjectItem } from "../services/schemas";
@@ -25,6 +24,7 @@ import ProjectListRow from "./project-list-row";
 import ProjectListSidebar from "./project-list-sidebar";
 import ProjectListToolbar from "./project-list-toolbar";
 import {
+  PROJECT_FILTER_PARAMS,
   createDefaultFilters,
   isLegalizationValue,
   isProjectSort,
@@ -33,33 +33,13 @@ import {
   type ProjectDensity,
   type ProjectListFilters,
 } from "./project-list-config";
+import { useRemoteProjects } from "./use-remote-projects";
 
 type ProjectsListProps = {
   readonly projects: ProjectItem[];
 };
 
-type RemoteProjects = {
-  queryKey: string;
-  projects: ProjectItem[];
-  status?: number;
-  error: string | null;
-};
-
 const PAGE_SIZE = 10;
-
-const FILTER_PARAMS = {
-  search: "q",
-  status: "estado",
-  proposer: "proponente",
-  source: "fuente",
-  legalization: "legalizacion",
-  year: "anio",
-  assignedToMe: "asignados",
-  proposedByMe: "propuestos",
-  hasTeam: "equipo",
-  privateOnly: "privados",
-  sort: "orden",
-} as const;
 
 function isTruthyParam(value: string | null): boolean {
   return value === "1" || value === "true";
@@ -68,32 +48,32 @@ function isTruthyParam(value: string | null): boolean {
 function filtersFromSearchParams(
   searchParams: URLSearchParams,
 ): ProjectListFilters {
-  const sortParam = searchParams.get(FILTER_PARAMS.sort);
+  const sortParam = searchParams.get(PROJECT_FILTER_PARAMS.sort);
 
   return {
-    search: searchParams.get(FILTER_PARAMS.search) ?? "",
+    search: searchParams.get(PROJECT_FILTER_PARAMS.search) ?? "",
     status: searchParams
-      .getAll(FILTER_PARAMS.status)
+      .getAll(PROJECT_FILTER_PARAMS.status)
       .filter(isProjectStatus),
     proposer: searchParams
-      .getAll(FILTER_PARAMS.proposer)
+      .getAll(PROJECT_FILTER_PARAMS.proposer)
       .filter(Boolean),
     source: searchParams
-      .getAll(FILTER_PARAMS.source)
+      .getAll(PROJECT_FILTER_PARAMS.source)
       .filter(isProjectSource),
     legalization: searchParams
-      .getAll(FILTER_PARAMS.legalization)
+      .getAll(PROJECT_FILTER_PARAMS.legalization)
       .filter(isLegalizationValue),
-    year: searchParams.getAll(FILTER_PARAMS.year).filter(Boolean),
+    year: searchParams.getAll(PROJECT_FILTER_PARAMS.year).filter(Boolean),
     assignedToMe: isTruthyParam(
-      searchParams.get(FILTER_PARAMS.assignedToMe),
+      searchParams.get(PROJECT_FILTER_PARAMS.assignedToMe),
     ),
     proposedByMe: isTruthyParam(
-      searchParams.get(FILTER_PARAMS.proposedByMe),
+      searchParams.get(PROJECT_FILTER_PARAMS.proposedByMe),
     ),
-    hasTeam: isTruthyParam(searchParams.get(FILTER_PARAMS.hasTeam)),
+    hasTeam: isTruthyParam(searchParams.get(PROJECT_FILTER_PARAMS.hasTeam)),
     privateOnly: isTruthyParam(
-      searchParams.get(FILTER_PARAMS.privateOnly),
+      searchParams.get(PROJECT_FILTER_PARAMS.privateOnly),
     ),
     sort: isProjectSort(sortParam) ? sortParam : "relevance",
   };
@@ -106,43 +86,43 @@ function filtersToSearchParams(
   const search = filters.search.trim();
 
   if (search) {
-    params.set(FILTER_PARAMS.search, search);
+    params.set(PROJECT_FILTER_PARAMS.search, search);
   }
 
   filters.status.forEach((value) =>
-    params.append(FILTER_PARAMS.status, value),
+    params.append(PROJECT_FILTER_PARAMS.status, value),
   );
   filters.proposer.forEach((value) =>
-    params.append(FILTER_PARAMS.proposer, value),
+    params.append(PROJECT_FILTER_PARAMS.proposer, value),
   );
   filters.source.forEach((value) =>
-    params.append(FILTER_PARAMS.source, value),
+    params.append(PROJECT_FILTER_PARAMS.source, value),
   );
   filters.legalization.forEach((value) =>
-    params.append(FILTER_PARAMS.legalization, value),
+    params.append(PROJECT_FILTER_PARAMS.legalization, value),
   );
   filters.year.forEach((value) =>
-    params.append(FILTER_PARAMS.year, value),
+    params.append(PROJECT_FILTER_PARAMS.year, value),
   );
 
   if (filters.assignedToMe) {
-    params.set(FILTER_PARAMS.assignedToMe, "1");
+    params.set(PROJECT_FILTER_PARAMS.assignedToMe, "1");
   }
 
   if (filters.proposedByMe) {
-    params.set(FILTER_PARAMS.proposedByMe, "1");
+    params.set(PROJECT_FILTER_PARAMS.proposedByMe, "1");
   }
 
   if (filters.hasTeam) {
-    params.set(FILTER_PARAMS.hasTeam, "1");
+    params.set(PROJECT_FILTER_PARAMS.hasTeam, "1");
   }
 
   if (filters.privateOnly) {
-    params.set(FILTER_PARAMS.privateOnly, "1");
+    params.set(PROJECT_FILTER_PARAMS.privateOnly, "1");
   }
 
   if (filters.sort !== "relevance") {
-    params.set(FILTER_PARAMS.sort, filters.sort);
+    params.set(PROJECT_FILTER_PARAMS.sort, filters.sort);
   }
 
   return params;
@@ -224,122 +204,6 @@ function hasActiveFilters(filters: ProjectListFilters): boolean {
     filters.privateOnly ||
     filters.sort !== "relevance"
   );
-}
-
-function ListPagination({
-  pageIndex,
-  pageCount,
-  onPageChange,
-}: {
-  readonly pageIndex: number;
-  readonly pageCount: number;
-  readonly onPageChange: (pageIndex: number) => void;
-}) {
-  const [pageDraft, setPageDraft] = useState<string | null>(null);
-  const currentPage = Math.min(pageIndex + 1, pageCount);
-
-  function commitPage() {
-    const parsed = Number.parseInt(pageDraft ?? "", 10);
-
-    if (Number.isNaN(parsed)) {
-      setPageDraft(null);
-      return;
-    }
-
-    onPageChange(Math.min(Math.max(parsed, 1), pageCount) - 1);
-    setPageDraft(null);
-  }
-
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-2 py-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <label htmlFor="projects-page-input">Página</label>
-
-        <Input
-          id="projects-page-input"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={pageCount}
-          value={pageDraft ?? String(currentPage)}
-          onChange={(event) => setPageDraft(event.target.value)}
-          onBlur={commitPage}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              commitPage();
-            }
-          }}
-          className="h-7 w-14 px-1 text-center"
-        />
-
-        <span>de {pageCount}</span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(pageIndex - 1)}
-          disabled={pageIndex <= 0}
-        >
-          Anterior
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onPageChange(pageIndex + 1)}
-          disabled={pageIndex >= pageCount - 1}
-        >
-          Siguiente
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function useRemoteProjects({
-  enabled,
-  query,
-  queryKey,
-  reloadKey,
-}: {
-  readonly enabled: boolean;
-  readonly query: ProjectListQuery;
-  readonly queryKey: string;
-  readonly reloadKey: number;
-}): RemoteProjects | null {
-  const [remoteProjects, setRemoteProjects] =
-    useState<RemoteProjects | null>(null);
-
-  useEffect(() => {
-    if (!enabled) {
-      return;
-    }
-
-    let active = true;
-    const timer = setTimeout(async () => {
-      const result = await getProjects(query);
-
-      if (!active) {
-        return;
-      }
-
-      setRemoteProjects({
-        queryKey,
-        projects: result.projects,
-        status: result.status,
-        error: result.error ?? null,
-      });
-    }, 250);
-
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [enabled, query, queryKey, reloadKey]);
-
-  return remoteProjects;
 }
 
 type ProjectsResultsProps = {
@@ -447,6 +311,7 @@ function ProjectsResults({
       </div>
 
       <ListPagination
+        id="projects-page-input"
         pageIndex={safePageIndex}
         pageCount={pageCount}
         onPageChange={onPageChange}

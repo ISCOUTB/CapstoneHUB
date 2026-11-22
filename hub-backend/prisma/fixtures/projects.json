@@ -336,7 +336,7 @@
         { "email": "student.valentina@capstonehub.test", "role": "student" },
         { "email": "student.sebastian@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-cacao.jpg", "anteproyecto.pdf"]
+      "attachments": ["anteproyecto.pdf"]
     },
     {
       "name": "Sistema de Alerta Temprana de Deslizamientos",
@@ -369,7 +369,7 @@
         { "email": "student.camila@capstonehub.test", "role": "student" },
         { "email": "student.esteban@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-deslizamientos.jpg", "anteproyecto.pdf"]
+      "attachments": ["anteproyecto.pdf"]
     },
     {
       "name": "Portal de Comercio Justo para Artesanos Salasacas",
@@ -403,7 +403,7 @@
         { "email": "student.daniela@capstonehub.test", "role": "student" },
         { "email": "student.isabela@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-comercio-justo.jpg", "logo-proyecto.png"]
+      "attachments": ["logo-proyecto.png"]
     },
     {
       "name": "Gemelo Digital para Riego de Invernaderos",
@@ -437,7 +437,7 @@
         { "email": "student.martin@capstonehub.test", "role": "student" },
         { "email": "student.mateo@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-invernaderos.jpg", "anteproyecto.pdf"]
+      "attachments": ["anteproyecto.pdf"]
     },
     {
       "name": "Kiosco de Salud Comunitaria Autónomo",
@@ -471,7 +471,7 @@
         { "email": "student.valentina@capstonehub.test", "role": "student" },
         { "email": "student.camila@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-kiosco-salud.jpg", "anteproyecto.pdf"]
+      "attachments": ["anteproyecto.pdf"]
     },
     {
       "name": "Análisis de Flujo Turístico con Datos Abiertos",
@@ -505,7 +505,7 @@
         { "email": "student.daniela@capstonehub.test", "role": "student" },
         { "email": "student.esteban@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-turismo.jpg"]
+      "attachments": []
     },
     {
       "name": "Robot de Inspección para Galerías de Riego",
@@ -539,7 +539,7 @@
         { "email": "student.esteban@capstonehub.test", "role": "student" },
         { "email": "student.martin@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-robot-riego.jpg", "anteproyecto.pdf"]
+      "attachments": ["anteproyecto.pdf"]
     },
     {
       "name": "Optimización Logística de Última Milla",
@@ -573,7 +573,7 @@
         { "email": "student.mateo@capstonehub.test", "role": "student" },
         { "email": "student.valentina@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-ultima-milla.jpg"]
+      "attachments": []
     },
     {
       "name": "Monitoreo Estructural de Puentes con Sensores IoT",
@@ -606,7 +606,7 @@
         { "email": "student.camila@capstonehub.test", "role": "student" },
         { "email": "student.martin@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-puentes.jpg", "anteproyecto.pdf"]
+      "attachments": ["anteproyecto.pdf"]
     },
     {
       "name": "Plataforma de Economía Circular para Mipymes",
@@ -639,7 +639,7 @@
         { "email": "student.isabela@capstonehub.test", "role": "student" },
         { "email": "student.daniela@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-economia-circular.jpg"]
+      "attachments": []
     },
     {
       "name": "Control de Calidad Textil con Visión por Computador",
@@ -673,7 +673,7 @@
         { "email": "student.sebastian@capstonehub.test", "role": "student" },
         { "email": "student.esteban@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-calidad-textil.jpg", "anteproyecto.pdf"]
+      "attachments": ["anteproyecto.pdf"]
     },
     {
       "name": "App de Senderismo Seguro para los Andes",
@@ -706,7 +706,7 @@
         { "email": "student.valentina@capstonehub.test", "role": "student" },
         { "email": "student.camila@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-senderismo.jpg"]
+      "attachments": []
     },
     {
       "name": "Módulo de Firma Electrónica para Trámites Académicos",
@@ -740,7 +740,7 @@
         { "email": "student.daniela@capstonehub.test", "role": "student" },
         { "email": "student.mateo@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-firma-electronica.jpg", "logo-proyecto.png"]
+      "attachments": ["logo-proyecto.png"]
     },
     {
       "name": "Predicción de Demanda Eléctrica con Machine Learning",
@@ -774,7 +774,7 @@
         { "email": "student.esteban@capstonehub.test", "role": "student" },
         { "email": "student.isabela@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-demanda-electrica.jpg", "anteproyecto.pdf"]
+      "attachments": ["anteproyecto.pdf"]
     },
     {
       "name": "Trazabilidad de Donaciones para Fundaciones",
@@ -807,7 +807,7 @@
         { "email": "student.martin@capstonehub.test", "role": "student" },
         { "email": "student.valentina@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-donaciones.jpg"]
+      "attachments": []
     },
     {
       "name": "Auditoría de Seguridad de la Plataforma Académica",
@@ -841,7 +841,7 @@
         { "email": "student.mateo@capstonehub.test", "role": "student" },
         { "email": "student.sebastian@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-auditoria-seguridad.jpg"]
+      "attachments": []
     },
     {
       "name": "Historia Clínica Electrónica para Convenio Hospitalario",
@@ -875,7 +875,7 @@
         { "email": "student.camila@capstonehub.test", "role": "student" },
         { "email": "student.daniela@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-historia-clinica.jpg"]
+      "attachments": []
     },
     {
       "name": "Plataforma de Pasantías y Vinculación",
@@ -908,7 +908,7 @@
         { "email": "student.isabela@capstonehub.test", "role": "student" },
         { "email": "student.martin@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-pasantias.jpg"]
+      "attachments": []
     },
     {
       "name": "Biofertilizantes a partir de Residuos Agroindustriales",
@@ -999,7 +999,7 @@
         { "email": "student.esteban@capstonehub.test", "role": "student" },
         { "email": "student.camila@capstonehub.test", "role": "student" }
       ],
-      "attachments": ["portada-glaciares.jpg", "anteproyecto.pdf"]
+      "attachments": ["anteproyecto.pdf"]
     }
   ]
 }

@@ -217,6 +217,7 @@ export type UpdateProjectPayload = {
 export type ProjectItem = {
   id: string;
   name: string;
+  description?: string;
   location?: string;
   context?: string;
   status: string;

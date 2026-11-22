@@ -8,17 +8,18 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 /**
  * Shell de la plataforma: sidebar fija a la izquierda + topbar sticky. La
- * landing pública (`/`) no monta chrome; login y registro solo muestran el
- * topbar con la marca.
+ * landing pública (`/`) no monta chrome; la galería pública (`/gallery`) y
+ * las pantallas de autenticación solo muestran el topbar con la marca.
  */
 export default function AppShell({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
   const isLanding = pathname === "/";
+  const isGallery = pathname.startsWith("/gallery");
   const isAuthPage =
     pathname.startsWith("/login") || pathname.startsWith("/register");
-  const showSidebar = !isLanding && !isAuthPage;
+  const showSidebar = !isLanding && !isGallery && !isAuthPage;
 
   if (isLanding) {
     return <>{children}</>;

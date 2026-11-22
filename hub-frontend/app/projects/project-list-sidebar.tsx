@@ -4,10 +4,10 @@ import { useState } from "react";
 import { RiFileExcelLine } from "@remixicon/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import FilterCheckbox from "../components/filter-checkbox";
 import { useAuth } from "../components/auth-provider";
 import { downloadProjectsExcel } from "../services/project-exports";
 import { canExportProjectData } from "../services/roles";
@@ -18,35 +18,6 @@ type ProjectListSidebarProps = {
   readonly onFiltersChange: (filters: ProjectListFilters) => void;
   readonly className?: string;
 };
-
-function FilterCheckbox({
-  id,
-  label,
-  checked,
-  onChange,
-}: {
-  readonly id: string;
-  readonly label: string;
-  readonly checked: boolean;
-  readonly onChange: (checked: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <Checkbox
-        id={id}
-        checked={checked}
-        onCheckedChange={(value) => onChange(value === true)}
-      />
-
-      <label
-        htmlFor={id}
-        className="cursor-pointer text-sm text-foreground"
-      >
-        {label}
-      </label>
-    </div>
-  );
-}
 
 /** Filtros rápidos del listado de proyectos. Solo se usa en /projects. */
 export default function ProjectListSidebar({

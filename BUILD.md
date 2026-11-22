@@ -183,8 +183,7 @@ las dos suites (supertest y Playwright).
 - `prisma/fixtures/milestones.json` y `observations.json`: indexados por el
   nombre del proyecto.
 - `prisma/fixtures/attachments/`: archivos de ejemplo que se suben a
-  RustFS. Las portadas `portada-*.jpg` acompañan a los proyectos finalizados;
-  por convención, la primera imagen de un proyecto es su portada.
+  RustFS.
 - El historial de estados reparte las transiciones entre la fecha de inicio y
   la de fin (o "hoy" si el proyecto sigue activo), de modo que los proyectos
   cerrados quedan con una cronología coherente.

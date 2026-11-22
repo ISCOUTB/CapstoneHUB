@@ -104,6 +104,15 @@ export default function Home() {
                 Iniciar sesión
               </Link>
             </div>
+
+            <Link
+              href="/gallery"
+              className="utb-rise inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-utb-blue-pale transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-utb-blue-pale/60 focus-visible:outline-none"
+              style={{ "--utb-delay": "380ms" } as React.CSSProperties}
+            >
+              Explorar la galería de proyectos finalizados
+              <RiArrowRightLine className="size-4" aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </section>

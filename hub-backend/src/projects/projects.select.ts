@@ -122,6 +122,7 @@ export type ProjectProposerResponse = {
 export type ProjectListResponse = {
   id: number;
   name: string;
+  description: string;
   status: ProjectStatus;
   phase: ProjectPhase;
   startDate: Date | null;
@@ -422,6 +423,7 @@ export function mapProjectListResponse(
   return {
     id: project.id,
     name: project.name,
+    description: project.description,
     status: project.status,
     phase: project.phase,
     startDate: isPrivatePreview ? null : project.startDate,

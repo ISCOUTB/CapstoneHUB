@@ -24,6 +24,7 @@ const user: AuthenticatedUser = {
 const listProject: ProjectListResponse = {
   id: 1,
   name: 'Proyecto Demo',
+  description: 'Descripción del proyecto',
   status: ProjectStatus.approved,
   phase: ProjectPhase.semester_1,
   startDate: new Date('2026-01-15T00:00:00Z'),
