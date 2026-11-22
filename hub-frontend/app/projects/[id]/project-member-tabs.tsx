@@ -1,7 +1,7 @@
 import { ProjectDetails } from "../../services/schemas";
 import ProjectActorAssignmentPanel from "./project-actor-assignment-panel";
 import ProjectObservationsPanel from "./project-observations-panel";
-import ProjectMilestonesPanel from "./project-milestones-panel";
+import ProjectMilestoneAssessmentsPanel from "./project-milestone-assessments-panel";
 import ProjectReportsPanel from "./project-reports-panel";
 import ProjectAttachmentsPanel from "./project-attachments-panel";
 import ProjectStatusHistoryPanel from "./project-status-history-panel";
@@ -48,10 +48,11 @@ export default function ProjectMemberTabs({
       </TabsContent>
 
       <TabsContent value="hitos" className="mt-6">
-        <ProjectMilestonesPanel
+        <ProjectMilestoneAssessmentsPanel
           projectId={project.id}
           actorAssignments={assignments}
           programRequirements={project.programRequirements ?? []}
+          onProjectChange={onProjectChange}
         />
       </TabsContent>
 

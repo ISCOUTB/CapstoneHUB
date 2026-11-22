@@ -5,10 +5,7 @@ import { RiFlagLine } from "@remixicon/react";
 import { useAuth } from "./auth-provider";
 import ProjectStatusEditForm from "./project-status-edit-form";
 import { canManageStatus } from "../services/project-permissions";
-import {
-  ProjectEvaluationGate,
-  ProjectMilestoneItem,
-} from "../services/schemas";
+import { ProjectEvaluationGate } from "../services/schemas";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +24,6 @@ type ProjectStatusDialogProps = {
   projectId: number;
   currentStatus: string;
   assignments: ProjectAssignment[];
-  milestones?: ProjectMilestoneItem[];
   evaluationGate?: ProjectEvaluationGate | null;
   onProjectChange?: () => Promise<void>;
 };
@@ -37,7 +33,6 @@ export default function ProjectStatusDialog({
   projectId,
   currentStatus,
   assignments,
-  milestones = [],
   evaluationGate = null,
   onProjectChange,
 }: ProjectStatusDialogProps) {
@@ -79,7 +74,6 @@ export default function ProjectStatusDialog({
           projectId={projectId}
           currentStatus={currentStatus}
           assignments={assignments}
-          milestones={milestones}
           evaluationGate={evaluationGate}
           onProjectChange={handleProjectChange}
         />

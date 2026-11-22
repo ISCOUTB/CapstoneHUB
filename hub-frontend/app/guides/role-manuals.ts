@@ -89,7 +89,7 @@ export const ROLE_MANUALS: Record<UserRole, RoleManual> = {
     role: "teacher",
     title: "Manual del docente",
     summary:
-      "Gestiona los proyectos que supervisas, el equipo, los hitos, las entregas y el avance de fase.",
+      "Gestiona los proyectos que supervisas, el equipo, la evaluación de hitos, las entregas y el avance de fase.",
     sections: [
       {
         title: "Proyectos asignados",
@@ -108,10 +108,11 @@ export const ROLE_MANUALS: Record<UserRole, RoleManual> = {
         ],
       },
       {
-        title: "Hitos y entregas",
+        title: "Evaluación de hitos y entregas",
         paragraphs: [
-          "Crea hitos con título, descripción, fecha y fase. Marca como mínimo los obligatorios para avanzar de fase o cerrar el proyecto.",
-          "Puedes vincular una o varias entregas a un hito. El hito no se completa hasta que todas sus entregas vinculadas estén aceptadas.",
+          "En la pestaña Hitos registra Sí, No o N/A y observaciones para cada requisito del programa. Es una evaluación de seguimiento y no bloquea el avance ni el cierre.",
+          "Los administradores, directivos y docentes asignados pueden agregar o quitar programas del proyecto desde la misma pestaña; esto habilita sus formatos de evaluación en proyectos antiguos.",
+          "Las entregas son independientes de la evaluación de hitos. Configúralas con su tipo y revisa las enviadas por los estudiantes.",
         ],
         bullets: [
           "Configura cada entrega con su tipo: texto, enlace o archivo.",
@@ -122,8 +123,8 @@ export const ROLE_MANUALS: Record<UserRole, RoleManual> = {
       {
         title: "Avance de fase y cierre",
         paragraphs: [
-          "La barra Fase del detalle permite avanzar del semestre 1 al semestre 2 cuando todos los hitos mínimos de la fase actual están completos, la fase está evaluada y el proponente y los evaluadores dieron su visto bueno.",
-          "El cierre también exige los hitos mínimos completos y la evaluación de la fase actual. Los avisos indican qué falta antes de continuar.",
+          "La barra Fase del detalle permite avanzar del semestre 1 al semestre 2 cuando la fase está evaluada y el proponente y los evaluadores dieron su visto bueno.",
+          "El cierre también exige la evaluación de la fase actual. Los avisos indican qué falta antes de continuar.",
         ],
       },
       {
@@ -212,13 +213,14 @@ export const ROLE_MANUALS: Record<UserRole, RoleManual> = {
       {
         title: "Indicadores y panorama",
         paragraphs: [
-          "El panel de Indicadores resume pendientes, distribución de proyectos y actividad de revisión. El panorama por semestre muestra proyectos, aceptación, hitos mínimos y entregas por fase.",
+          "El panel de Indicadores resume pendientes, distribución de proyectos, avance de la evaluación de hitos y actividad de revisión. El panorama por semestre muestra proyectos, aceptación, evaluación de hitos y entregas por fase.",
         ],
       },
       {
         title: "Alcance de tus permisos",
         bullets: [
-          "Para gestionar hitos o aprobar una fase necesitas una asignación como evaluador.",
+          "Puedes agregar o quitar programas y editar la evaluación de hitos de cualquier proyecto sin asignarte.",
+          "Para aprobar una fase necesitas una asignación como evaluador.",
           "Para avanzar de fase o realizar transiciones de ejecución necesitas una asignación como docente.",
           "El cierre y el avance de fase tienen bloqueos duros, incluso para administradores.",
         ],

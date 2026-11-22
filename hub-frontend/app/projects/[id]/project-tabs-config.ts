@@ -6,7 +6,6 @@ import {
   RiFlagLine,
   RiHistoryLine,
   RiInformationLine,
-  RiPriceTag3Line,
   RiTeamLine,
 } from "@remixicon/react";
 
@@ -32,12 +31,6 @@ export const PROJECT_TABS: ProjectTab[] = [
     value: "general",
     label: "General",
     Icon: RiInformationLine,
-    memberOnly: false,
-  },
-  {
-    value: "categorias",
-    label: "Categorías",
-    Icon: RiPriceTag3Line,
     memberOnly: false,
   },
   {

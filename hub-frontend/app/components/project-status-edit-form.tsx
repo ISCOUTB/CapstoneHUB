@@ -2,16 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { updateProjectStatus } from "../services/projects";
-import {
-  ProjectEvaluationGate,
-  ProjectMilestoneItem,
-} from "../services/schemas";
+import { ProjectEvaluationGate } from "../services/schemas";
 import {
   canManageStatus,
   getAvailableStatuses,
   PROJECT_STATUS_OPTIONS,
 } from "../services/project-permissions";
-import { formatDate } from "../services/utils";
 import { useAuth } from "./auth-provider";
 import AccessNotice from "./access-notice";
 import {
@@ -36,7 +32,6 @@ type ProjectStatusEditFormProps = {
   projectId: number;
   currentStatus: string;
   assignments: ProjectAssignment[];
-  milestones?: ProjectMilestoneItem[];
   evaluationGate?: ProjectEvaluationGate | null;
   onProjectChange?: () => Promise<void>;
 };
@@ -58,52 +53,33 @@ function isSubmitDisabled(params: Readonly<{
 }
 
 function CloseBlockedAlert({
-  pendingMinimums,
   isEvaluationBlocked,
   missingEvaluators,
 }: Readonly<{
-  pendingMinimums: ProjectMilestoneItem[];
   isEvaluationBlocked: boolean;
   missingEvaluators: { userId: number; fullName: string }[];
 }>) {
-  if (pendingMinimums.length === 0 && !isEvaluationBlocked) {
+  if (!isEvaluationBlocked) {
     return null;
   }
 
   return (
     <Alert variant="destructive">
       <AlertDescription>
-        {pendingMinimums.length > 0 ? (
-          <>
-            No puedes cerrar el proyecto hasta completar sus hitos mínimos:
-            <ul className="mt-2 list-disc pl-5">
-              {pendingMinimums.map((milestone) => (
-                <li key={milestone.id}>
-                  {milestone.title} · vence {formatDate(milestone.dueDate)}
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : null}
-
-        {isEvaluationBlocked ? (
-          <>
-            No puedes cerrar el proyecto hasta que la fase actual esté evaluada.
-            {missingEvaluators.length > 0 ? (
-              <ul className="mt-2 list-disc pl-5">
-                {missingEvaluators.map((evaluator) => (
-                  <li key={evaluator.userId}>
-                    Falta la evaluación de {evaluator.fullName}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2">
-                Todavía no hay ninguna evaluación registrada para la fase actual.
-              </p>
-            )}
-          </>
-        ) : null}
+        No puedes cerrar el proyecto hasta que la fase actual esté evaluada.
+        {missingEvaluators.length > 0 ? (
+          <ul className="mt-2 list-disc pl-5">
+            {missingEvaluators.map((evaluator) => (
+              <li key={evaluator.userId}>
+                Falta la evaluación de {evaluator.fullName}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2">
+            Todavía no hay ninguna evaluación registrada para la fase actual.
+          </p>
+        )}
       </AlertDescription>
     </Alert>
   );
@@ -198,12 +174,9 @@ function isEvaluationBlockedStatus(
 
 function isCloseBlockedStatus(
   status: string,
-  pendingMinimums: ProjectMilestoneItem[],
   evaluationBlocked: boolean,
 ): boolean {
-  return (
-    status === "closed" && (pendingMinimums.length > 0 || evaluationBlocked)
-  );
+  return status === "closed" && evaluationBlocked;
 }
 
 function StatusReasonField({
@@ -247,7 +220,6 @@ export default function ProjectStatusEditForm({
   projectId,
   currentStatus,
   assignments,
-  milestones = [],
   evaluationGate = null,
   onProjectChange,
 }: ProjectStatusEditFormProps) {
@@ -291,16 +263,9 @@ export default function ProjectStatusEditForm({
   const isAdmin = session.user.roles.includes("admin");
   const isReasonRequired = !isAdmin;
   const trimmedReason = reason.trim();
-  const pendingMinimums = milestones.filter(
-    (milestone) => milestone.isMinimum && !milestone.completed,
-  );
   const missingEvaluators = missingEvaluatorsFor(evaluationGate);
   const isEvaluationBlocked = isEvaluationBlockedStatus(status, evaluationGate);
-  const isCloseBlocked = isCloseBlockedStatus(
-    status,
-    pendingMinimums,
-    isEvaluationBlocked,
-  );
+  const isCloseBlocked = isCloseBlockedStatus(status, isEvaluationBlocked);
   const submitDisabled = isSubmitDisabled({
     isPending,
     isCloseBlocked,
@@ -355,7 +320,6 @@ export default function ProjectStatusEditForm({
 
             {status === "closed" ? (
               <CloseBlockedAlert
-                pendingMinimums={pendingMinimums}
                 isEvaluationBlocked={isEvaluationBlocked}
                 missingEvaluators={missingEvaluators}
               />

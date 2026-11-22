@@ -70,31 +70,6 @@ export type ProjectObservationItem = {
   } | null;
 };
 
-export type ProjectCategory = {
-  id: number;
-  name: string;
-  color?: string | null;
-};
-
-export type ProjectMilestoneReport = {
-  id: number;
-  title: string;
-  status: ProjectReportStatus;
-};
-
-export type ProjectMilestoneItem = {
-  id: number;
-  projectId: number;
-  title: string;
-  description: string | null;
-  dueDate: string;
-  completed: boolean;
-  isMinimum: boolean;
-  phase: ProjectPhase | null;
-  reports?: ProjectMilestoneReport[];
-  createdAt?: string;
-};
-
 export type ProjectAttachmentItem = {
   id: number;
   projectId: number;
@@ -164,7 +139,6 @@ export type ProjectReportItem = {
     fullName: string;
     email: string;
   } | null;
-  milestones?: { id: number; title: string }[];
   canViewContents: boolean;
   hasContents: boolean;
   contents: ProjectReportContentItem[];
@@ -349,10 +323,6 @@ export type ProjectDetails = {
   updatedAt: string;
   observations: ProjectObservationItem[];
   actorAssignments: ProjectActor[];
-  // Opcionales: el backend aún no los expone en todos los ambientes.
-  // Cuando existan, se muestran automáticamente en la pestaña "Categorías".
-  categories?: ProjectCategory[];
-  milestones?: ProjectMilestoneItem[];
   statusHistory?: ProjectStatusHistoryItem[];
   changeHistory?: ProjectChangeHistoryItem[];
   attachments?: ProjectAttachmentItem[];

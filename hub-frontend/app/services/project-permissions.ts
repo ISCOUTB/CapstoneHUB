@@ -162,12 +162,23 @@ export function canAssignActors(
   return reviewsAnyProject(viewer) || isAssignedTeacher(viewer, assignments);
 }
 
-/** Gestionar hitos. */
-export function canManageMilestones(
+/** Añadir o quitar programas del proyecto: admin, directivo o docente asignado. */
+export function canManageProjectPrograms(
   viewer: ProjectViewer,
   assignments: readonly ProjectAssignment[],
 ): boolean {
-  return isAdmin(viewer) || isAssignedWith(viewer, assignments, MANAGEMENT_ROLES);
+  return reviewsAnyProject(viewer) || isAssignedTeacher(viewer, assignments);
+}
+
+/** Editar la evaluación de hitos: admin, directivo o docente/evaluador asignado. */
+export function canManageMilestoneAssessments(
+  viewer: ProjectViewer,
+  assignments: readonly ProjectAssignment[],
+): boolean {
+  return (
+    reviewsAnyProject(viewer) ||
+    isAssignedWith(viewer, assignments, MANAGEMENT_ROLES)
+  );
 }
 
 /** Gestionar y revisar entregas: admin, directivo o docentes/evaluadores asignados. */

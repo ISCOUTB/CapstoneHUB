@@ -30,7 +30,7 @@ type ProjectPhaseActionsProps = {
 /**
  * Control compacto para avanzar el proyecto al siguiente semestre. Solo se
  * muestra a administradores y docentes asignados mientras el proyecto está en
- * progreso; exige que los hitos mínimos de la fase actual estén completos.
+ * progreso; exige evaluación y vistos buenos de la fase actual.
  */
 export default function ProjectPhaseActions({
   project,
@@ -48,17 +48,6 @@ export default function ProjectPhaseActions({
   );
 
   const currentPhase = project.phase ?? null;
-
-  const pendingMinimums = useMemo(
-    () =>
-      (project.milestones ?? []).filter(
-        (milestone) =>
-          milestone.isMinimum &&
-          !milestone.completed &&
-          (milestone.phase === currentPhase || milestone.phase == null),
-      ),
-    [project.milestones, currentPhase],
-  );
 
   const pendingApprovals = useMemo(
     () =>
@@ -95,15 +84,6 @@ export default function ProjectPhaseActions({
               .map((evaluator) => evaluator.fullName)
               .join(", ")}.`
           : "No puedes avanzar de fase: la fase actual todavía no tiene evaluaciones.",
-      );
-      return;
-    }
-
-    if (pendingMinimums.length > 0) {
-      setErrorMessage(
-        `No puedes avanzar de fase: hay hitos mínimos pendientes (${pendingMinimums
-          .map((milestone) => milestone.title)
-          .join(", ")}).`,
       );
       return;
     }
