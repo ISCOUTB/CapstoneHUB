@@ -99,8 +99,8 @@ function buildProjectsQuery(query: ProjectListQuery): string {
     params.set("hasTeam", "true");
   }
 
-  if (query.isPrivate) {
-    params.set("isPrivate", "true");
+  if (query.isPrivate !== undefined) {
+    params.set("isPrivate", String(query.isPrivate));
   }
 
   if (query.sort && query.sort !== "relevance") {
