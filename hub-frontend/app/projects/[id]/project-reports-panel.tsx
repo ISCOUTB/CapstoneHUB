@@ -590,7 +590,10 @@ export default function ProjectReportsPanel({
   const reviewDialogTitle =
     reviewDecision === "accepted" ? "Aceptar entrega" : "No aceptar entrega";
   const editingTextContent = contentEdit?.content.kind === "text";
-  const configLocked = isPending || Boolean(editingReport?.contents.length);
+  const configLocked =
+    isPending ||
+    (editingReport !== null &&
+      (editingReport.status !== "pending" || editingReport.hasContents));
 
   return (
     <Card className="mt-6">
