@@ -4,8 +4,13 @@ import { adminSession, bearer, userWithRole } from './helpers/auth';
 import {
   assignProjectActor,
   createProjectWithProposer,
-  futureIsoDate,
+  createProjectWithTeacherAndStudent,
 } from './helpers/projects';
+import {
+  addReportTextContent,
+  createTextReport,
+  submitReport,
+} from './helpers/reports';
 import {
   ActorRole,
   ProjectStatus,
@@ -109,42 +114,22 @@ describe('Stats (e2e)', () => {
 
   it('cuenta las entregas pendientes de revisión de sus proyectos', async () => {
     const app = getApp();
-    const admin = await adminSession(app);
-    const teacher = await userWithRole(app, UserRole.teacher);
-    const student = await userWithRole(app, UserRole.student);
-    const { projectId } = await createProjectWithProposer(app);
-    await assignProjectActor(
+    const { projectId, teacher, student } =
+      await createProjectWithTeacherAndStudent(app);
+    const reportId = await createTextReport(
       app,
       projectId,
-      admin.accessToken,
-      teacher.user.id,
-      ActorRole.teacher,
+      teacher.accessToken,
     );
-    await assignProjectActor(
+
+    await addReportTextContent(
       app,
       projectId,
-      admin.accessToken,
-      student.user.id,
-      ActorRole.student,
+      reportId,
+      student.accessToken,
+      'Contenido',
     );
-
-    const created = await request(app.getHttpServer())
-      .post(`/projects/${projectId}/reports`)
-      .set(bearer(admin.accessToken))
-      .send({ title: 'Informe', dueDate: futureIsoDate(), type: 'text' })
-      .expect(201);
-    const reportId = (created.body as { id: number }).id;
-
-    await request(app.getHttpServer())
-      .post(`/projects/${projectId}/reports/${reportId}/contents`)
-      .set(bearer(student.accessToken))
-      .send({ kind: 'text', textContent: 'Contenido' })
-      .expect(201);
-
-    await request(app.getHttpServer())
-      .post(`/projects/${projectId}/reports/${reportId}/submit`)
-      .set(bearer(student.accessToken))
-      .expect(201);
+    await submitReport(app, projectId, reportId, student.accessToken);
 
     const response = await request(app.getHttpServer())
       .get('/stats/kpis')
