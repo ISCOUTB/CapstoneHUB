@@ -166,10 +166,6 @@ describe('Evaluations (e2e)', () => {
       where: { id: projectId },
       data: { phase: ProjectPhase.semester_2 },
     });
-    await prisma.projectMilestones.updateMany({
-      where: { projectId },
-      data: { completed: true },
-    });
 
     await request(app.getHttpServer())
       .patch(`/projects/${projectId}/status`)

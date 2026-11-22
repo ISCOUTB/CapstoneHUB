@@ -9,8 +9,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2026-05-08T17:30:00.000Z",
-      "reviewComment": "Entregable completo y bien documentado.",
-      "milestoneTitles": ["Desarrollo del backend e ingesta"]
+      "reviewComment": "Entregable completo y bien documentado."
     },
     {
       "title": "Pruebas de campo",
@@ -19,8 +18,7 @@
       "type": "file",
       "allowedMimeTypes": ["application/pdf"],
       "maxFiles": 1,
-      "status": "pending",
-      "milestoneTitles": ["Pruebas de campo"]
+      "status": "pending"
     }
   ],
   "Sistema de Telemedicina para Zonas Rurales": [
@@ -32,8 +30,7 @@
       "allowedMimeTypes": ["application/pdf", "image/png", "image/jpeg"],
       "maxFiles": 3,
       "status": "submitted",
-      "submittedAt": "2026-04-18T15:00:00.000Z",
-      "milestoneTitles": ["Validación con personal médico"]
+      "submittedAt": "2026-04-18T15:00:00.000Z"
     }
   ],
   "Asistente Virtual de Orientación Vocacional": [
@@ -44,8 +41,7 @@
       "type": "file",
       "allowedMimeTypes": ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
       "maxFiles": 1,
-      "status": "pending",
-      "milestoneTitles": ["Modelo de recomendación"]
+      "status": "pending"
     },
     {
       "title": "Documento final",
@@ -54,8 +50,7 @@
       "type": "file",
       "allowedMimeTypes": ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
       "maxFiles": 1,
-      "status": "pending",
-      "milestoneTitles": ["Documento final"]
+      "status": "pending"
     }
   ],
   "Red de Monitoreo de Calidad del Aire": [
@@ -68,16 +63,14 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2025-12-18T20:00:00.000Z",
-      "reviewComment": "Despliegue verificado y datos consistentes.",
-      "milestoneTitles": ["Despliegue de nodos piloto"]
+      "reviewComment": "Despliegue verificado y datos consistentes."
     },
     {
       "title": "Panel de datos abiertos",
       "description": "Visualización pública de la calidad del aire.",
       "dueDate": "2026-04-01",
       "type": "link",
-      "status": "pending",
-      "milestoneTitles": ["Panel de datos abiertos"]
+      "status": "pending"
     },
     {
       "title": "Documento final",
@@ -86,8 +79,7 @@
       "type": "file",
       "allowedMimeTypes": ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
       "maxFiles": 1,
-      "status": "pending",
-      "milestoneTitles": ["Documento final"]
+      "status": "pending"
     }
   ],
   "Sistema de Trazabilidad para Productos Agrícolas": [
@@ -99,8 +91,7 @@
       "allowedMimeTypes": ["application/pdf", "image/png", "image/jpeg"],
       "maxFiles": 3,
       "status": "submitted",
-      "submittedAt": "2026-01-28T16:45:00.000Z",
-      "milestoneTitles": ["Prototipo de trazabilidad"]
+      "submittedAt": "2026-01-28T16:45:00.000Z"
     },
     {
       "title": "Documento final",
@@ -109,8 +100,7 @@
       "type": "file",
       "allowedMimeTypes": ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
       "maxFiles": 1,
-      "status": "pending",
-      "milestoneTitles": ["Documento final"]
+      "status": "pending"
     }
   ],
   "Plataforma de Tutorías Académicas": [
@@ -121,8 +111,7 @@
       "type": "link",
       "status": "accepted",
       "submittedAt": "2024-12-09T14:00:00.000Z",
-      "reviewComment": "MVP funcional y bien presentado.",
-      "milestoneTitles": ["MVP de tutorías"]
+      "reviewComment": "MVP funcional y bien presentado."
     },
     {
       "title": "Documento final",
@@ -133,8 +122,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2025-06-28T18:30:00.000Z",
-      "reviewComment": "Documento final aprobado.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Documento final aprobado."
     }
   ],
   "Trazabilidad de Cacao Fino de Aroma con Blockchain": [
@@ -147,8 +135,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2022-07-12T16:40:00.000Z",
-      "reviewComment": "Prototipo funcional; se recomienda documentar el manejo de claves.",
-      "milestoneTitles": ["Prototipo de trazabilidad por lotes"]
+      "reviewComment": "Prototipo funcional; se recomienda documentar el manejo de claves."
     },
     {
       "title": "Documento final",
@@ -159,8 +146,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2022-11-28T18:10:00.000Z",
-      "reviewComment": "El piloto demuestra trazabilidad completa de una cosecha.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "El piloto demuestra trazabilidad completa de una cosecha."
     }
   ],
   "Sistema de Alerta Temprana de Deslizamientos": [
@@ -173,8 +159,7 @@
       "maxFiles": 3,
       "status": "accepted",
       "submittedAt": "2022-12-07T19:20:00.000Z",
-      "reviewComment": "Instalación verificada; las alertas comunitarias funcionan sin internet.",
-      "milestoneTitles": ["Instalación en la ladera piloto"]
+      "reviewComment": "Instalación verificada; las alertas comunitarias funcionan sin internet."
     },
     {
       "title": "Documento final",
@@ -185,8 +170,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2023-02-07T15:45:00.000Z",
-      "reviewComment": "Informe completo con datos de la temporada lluviosa.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Informe completo con datos de la temporada lluviosa."
     }
   ],
   "Portal de Comercio Justo para Artesanos Salasacas": [
@@ -197,8 +181,7 @@
       "type": "link",
       "status": "accepted",
       "submittedAt": "2023-08-15T14:30:00.000Z",
-      "reviewComment": "Pasarela de pagos operativa y catálogo cargado.",
-      "milestoneTitles": ["Plataforma de ventas y pagos"]
+      "reviewComment": "Pasarela de pagos operativa y catálogo cargado."
     },
     {
       "title": "Documento final",
@@ -209,8 +192,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2023-12-01T17:05:00.000Z",
-      "reviewComment": "Ventas de prueba documentadas con veinte artesanos activos.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Ventas de prueba documentadas con veinte artesanos activos."
     }
   ],
   "Gemelo Digital para Riego de Invernaderos": [
@@ -223,8 +205,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2024-02-27T16:15:00.000Z",
-      "reviewComment": "Controlador estable durante las pruebas de carga.",
-      "milestoneTitles": ["Controlador de riego integrado"]
+      "reviewComment": "Controlador estable durante las pruebas de carga."
     },
     {
       "title": "Documento final",
@@ -235,8 +216,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2024-06-25T18:00:00.000Z",
-      "reviewComment": "Ahorro hídrico demostrado y documentado.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Ahorro hídrico demostrado y documentado."
     }
   ],
   "Kiosco de Salud Comunitaria Autónomo": [
@@ -249,8 +229,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2023-10-02T15:10:00.000Z",
-      "reviewComment": "Flujo validado con el personal médico del distrito.",
-      "milestoneTitles": ["Módulo de teleconsulta asíncrona"]
+      "reviewComment": "Flujo validado con el personal médico del distrito."
     },
     {
       "title": "Documento final",
@@ -261,8 +240,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2024-01-09T17:40:00.000Z",
-      "reviewComment": "Piloto comunitario documentado con derivaciones registradas.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Piloto comunitario documentado con derivaciones registradas."
     }
   ],
   "Análisis de Flujo Turístico con Datos Abiertos": [
@@ -273,8 +251,7 @@
       "type": "link",
       "status": "accepted",
       "submittedAt": "2024-09-06T14:50:00.000Z",
-      "reviewComment": "Panel claro y alimentado con datos actualizados.",
-      "milestoneTitles": ["Panel de indicadores turísticos"]
+      "reviewComment": "Panel claro y alimentado con datos actualizados."
     },
     {
       "title": "Documento final",
@@ -285,8 +262,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2024-12-03T16:30:00.000Z",
-      "reviewComment": "Estimaciones contrastadas con los registros municipales.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Estimaciones contrastadas con los registros municipales."
     }
   ],
   "Robot de Inspección para Galerías de Riego": [
@@ -299,8 +275,7 @@
       "maxFiles": 3,
       "status": "accepted",
       "submittedAt": "2024-10-11T18:25:00.000Z",
-      "reviewComment": "Video y telemetría cumplen con lo planificado.",
-      "milestoneTitles": ["Sistema de telemetría y video"]
+      "reviewComment": "Video y telemetría cumplen con lo planificado."
     },
     {
       "title": "Documento final",
@@ -311,8 +286,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2025-01-21T17:00:00.000Z",
-      "reviewComment": "Inspección piloto completa, con hallazgos priorizados.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Inspección piloto completa, con hallazgos priorizados."
     }
   ],
   "Optimización Logística de Última Milla": [
@@ -323,8 +297,7 @@
       "type": "link",
       "status": "accepted",
       "submittedAt": "2024-09-17T15:35:00.000Z",
-      "reviewComment": "Aplicación operativa y adoptada por los repartidores.",
-      "milestoneTitles": ["Aplicación de despacho"]
+      "reviewComment": "Aplicación operativa y adoptada por los repartidores."
     },
     {
       "title": "Documento final",
@@ -335,8 +308,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2024-11-25T18:15:00.000Z",
-      "reviewComment": "Reducción de kilómetros medida y contrastada.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Reducción de kilómetros medida y contrastada."
     }
   ],
   "Monitoreo Estructural de Puentes con Sensores IoT": [
@@ -347,8 +319,7 @@
       "type": "link",
       "status": "accepted",
       "submittedAt": "2025-03-06T16:45:00.000Z",
-      "reviewComment": "Umbrales de alerta configurados y probados.",
-      "milestoneTitles": ["Plataforma de monitoreo"]
+      "reviewComment": "Umbrales de alerta configurados y probados."
     },
     {
       "title": "Documento final",
@@ -359,8 +330,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2025-06-06T17:20:00.000Z",
-      "reviewComment": "Línea base de comportamiento estructural documentada.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Línea base de comportamiento estructural documentada."
     }
   ],
   "Plataforma de Economía Circular para Mipymes": [
@@ -371,8 +341,7 @@
       "type": "link",
       "status": "accepted",
       "submittedAt": "2025-09-02T15:50:00.000Z",
-      "reviewComment": "Emparejamiento automático probado con casos reales.",
-      "milestoneTitles": ["Plataforma de matchmaking"]
+      "reviewComment": "Emparejamiento automático probado con casos reales."
     },
     {
       "title": "Documento final",
@@ -383,8 +352,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2025-11-26T18:05:00.000Z",
-      "reviewComment": "Intercambios concretados superan la meta planteada.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Intercambios concretados superan la meta planteada."
     }
   ],
   "Control de Calidad Textil con Visión por Computador": [
@@ -397,8 +365,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2025-10-16T17:30:00.000Z",
-      "reviewComment": "Precisión superior al 90% en el conjunto de validación.",
-      "milestoneTitles": ["Modelo de visión por computador"]
+      "reviewComment": "Precisión superior al 90% en el conjunto de validación."
     },
     {
       "title": "Documento final",
@@ -409,8 +376,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2026-01-13T18:40:00.000Z",
-      "reviewComment": "Estación en línea validada en producción.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Estación en línea validada en producción."
     }
   ],
   "App de Senderismo Seguro para los Andes": [
@@ -421,8 +387,7 @@
       "type": "link",
       "status": "accepted",
       "submittedAt": "2025-09-22T14:20:00.000Z",
-      "reviewComment": "Seguimiento GPS y botón de emergencia operativos.",
-      "milestoneTitles": ["Aplicación móvil con botón de emergencia"]
+      "reviewComment": "Seguimiento GPS y botón de emergencia operativos."
     },
     {
       "title": "Documento final",
@@ -433,8 +398,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2025-11-20T17:55:00.000Z",
-      "reviewComment": "Rutas verificadas y protocolo validado con los guías.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Rutas verificadas y protocolo validado con los guías."
     }
   ],
   "Módulo de Firma Electrónica para Trámites Académicos": [
@@ -447,8 +411,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2023-03-10T16:05:00.000Z",
-      "reviewComment": "Verificación pública funcionando con sellado de tiempo.",
-      "milestoneTitles": ["Validador de documentos"]
+      "reviewComment": "Verificación pública funcionando con sellado de tiempo."
     },
     {
       "title": "Documento final",
@@ -459,8 +422,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2023-06-20T17:30:00.000Z",
-      "reviewComment": "Piloto de secretaría documentado con métricas de uso.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Piloto de secretaría documentado con métricas de uso."
     }
   ],
   "Predicción de Demanda Eléctrica con Machine Learning": [
@@ -473,8 +435,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2023-10-05T15:25:00.000Z",
-      "reviewComment": "Comparación metodológicamente sólida.",
-      "milestoneTitles": ["Modelos de pronóstico comparados"]
+      "reviewComment": "Comparación metodológicamente sólida."
     },
     {
       "title": "Documento final",
@@ -485,8 +446,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2024-01-04T17:10:00.000Z",
-      "reviewComment": "Error de pronóstico dentro de la meta planteada.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Error de pronóstico dentro de la meta planteada."
     }
   ],
   "Trazabilidad de Donaciones para Fundaciones": [
@@ -497,8 +457,7 @@
       "type": "link",
       "status": "accepted",
       "submittedAt": "2024-10-16T15:00:00.000Z",
-      "reviewComment": "Reportes automáticos por donante funcionando.",
-      "milestoneTitles": ["Portal de transparencia"]
+      "reviewComment": "Reportes automáticos por donante funcionando."
     },
     {
       "title": "Documento final",
@@ -509,8 +468,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2024-12-30T17:45:00.000Z",
-      "reviewComment": "Campaña completa trazada de punta a punta.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Campaña completa trazada de punta a punta."
     }
   ],
   "Auditoría de Seguridad de la Plataforma Académica": [
@@ -523,8 +481,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2024-03-06T16:20:00.000Z",
-      "reviewComment": "Plan claro y priorizado por riesgo.",
-      "milestoneTitles": ["Plan de remediación priorizado"]
+      "reviewComment": "Plan claro y priorizado por riesgo."
     },
     {
       "title": "Documento final",
@@ -535,8 +492,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2024-05-21T16:50:00.000Z",
-      "reviewComment": "Mitigaciones validadas con el área de TI.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Mitigaciones validadas con el área de TI."
     }
   ],
   "Historia Clínica Electrónica para Convenio Hospitalario": [
@@ -549,8 +505,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2024-09-11T17:15:00.000Z",
-      "reviewComment": "Auditoría de accesos verificada con el personal médico.",
-      "milestoneTitles": ["Módulo de historia clínica"]
+      "reviewComment": "Auditoría de accesos verificada con el personal médico."
     },
     {
       "title": "Documento final",
@@ -561,8 +516,7 @@
       "maxFiles": 1,
       "status": "accepted",
       "submittedAt": "2024-12-10T18:20:00.000Z",
-      "reviewComment": "Piloto hospitalario conforme a la normativa de datos de salud.",
-      "milestoneTitles": ["Documento final"]
+      "reviewComment": "Piloto hospitalario conforme a la normativa de datos de salud."
     }
   ],
   "Plataforma de Pasantías y Vinculación": [
@@ -575,8 +529,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2026-05-12T16:00:00.000Z",
-      "reviewComment": "Flujo de postulación probado con dos coordinaciones.",
-      "milestoneTitles": ["Módulo de oferta y postulación"]
+      "reviewComment": "Flujo de postulación probado con dos coordinaciones."
     },
     {
       "title": "Gestión de convenios y horas",
@@ -586,8 +539,7 @@
       "allowedMimeTypes": ["application/pdf", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
       "maxFiles": 2,
       "status": "submitted",
-      "submittedAt": "2026-08-25T17:35:00.000Z",
-      "milestoneTitles": ["Gestión de convenios y horas"]
+      "submittedAt": "2026-08-25T17:35:00.000Z"
     }
   ],
   "Biofertilizantes a partir de Residuos Agroindustriales": [
@@ -599,8 +551,7 @@
       "allowedMimeTypes": ["application/pdf", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
       "maxFiles": 2,
       "status": "submitted",
-      "submittedAt": "2026-05-18T16:30:00.000Z",
-      "milestoneTitles": ["Caracterización de residuos"]
+      "submittedAt": "2026-05-18T16:30:00.000Z"
     }
   ],
   "Asistente de Lengua de Señas con Visión Artificial": [
@@ -611,8 +562,7 @@
       "type": "file",
       "allowedMimeTypes": ["application/pdf", "video/mp4"],
       "maxFiles": 3,
-      "status": "pending",
-      "milestoneTitles": ["Conjunto de datos de señas"]
+      "status": "pending"
     }
   ],
   "Red de Monitoreo de Glaciares Andinos": [
@@ -625,8 +575,7 @@
       "maxFiles": 2,
       "status": "accepted",
       "submittedAt": "2025-11-06T17:10:00.000Z",
-      "reviewComment": "Diseño consistente con las condiciones del glaciar piloto.",
-      "milestoneTitles": ["Diseño de los nodos de medición"]
+      "reviewComment": "Diseño consistente con las condiciones del glaciar piloto."
     }
   ]
 }

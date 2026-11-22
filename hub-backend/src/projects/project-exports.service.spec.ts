@@ -118,20 +118,6 @@ const detailProject: ProjectDetailResponse = {
       },
     },
   ],
-  milestones: [
-    {
-      id: 1,
-      projectId: 1,
-      title: 'Hito principal',
-      description: null,
-      dueDate: new Date('2026-06-15T00:00:00Z'),
-      completed: false,
-      isMinimum: true,
-      phase: ProjectPhase.semester_1,
-      createdAt: new Date('2026-01-01T00:00:00Z'),
-      reports: [],
-    },
-  ],
   statusHistory: [],
   changeHistory: [],
   attachments: [],
@@ -189,7 +175,7 @@ describe('ProjectExportsService', () => {
     expect(sheet?.getCell('C4').value).toBe('Aprobado');
   });
 
-  it('genera el PDF del proyecto con datos generales, equipo e hitos', async () => {
+  it('genera el PDF del proyecto con datos generales y equipo', async () => {
     const { service, project, assertCanExportProjectData } = createService();
 
     const file = await service.exportProjectPdf(user, 1);

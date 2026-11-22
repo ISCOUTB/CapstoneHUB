@@ -43,6 +43,7 @@ import { CreateProjectActorAssignmentDTO } from './dto/create-project-actor-assi
 import { CreateProjectInterestDTO } from './dto/create-project-interest.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDTO } from './dto/update-project.dto';
+import { ReplaceProjectProgramsDto } from './dto/project-program-requirement.dto';
 import { TransitionProjectStatusDTO } from './dto/transition-project-status.dto';
 import { ProjectListQueryDto } from './dto/project-list-query.dto';
 import { PROJECT_PROGRAMS } from './project-programs.constants';
@@ -360,6 +361,19 @@ export class ProjectsController {
       user,
       projectId: id,
       interestId,
+    });
+  }
+
+  @Put(':id/programs')
+  async replaceProjectPrograms(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: ReplaceProjectProgramsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.projectService.replaceProjectPrograms({
+      user,
+      projectId: id,
+      programRequirements: data.programRequirements,
     });
   }
 

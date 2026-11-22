@@ -10,6 +10,8 @@ import { AuthenticatedUser } from '../auth/auth.types';
 import { AuthorizationService } from '../auth/authorization.service';
 import { PrismaService } from '../prisma.service';
 import { buildSemesterStats, SemesterStatsResponse } from './semester-stats';
+import { findMilestoneAssessmentTemplate } from '../milestone-assessments/milestone-assessment-templates';
+import { summarizeMilestoneAssessment } from '../milestone-assessments/milestone-assessment-progress';
 
 /** Máximo de pendientes listados por sección. */
 const PENDING_ITEMS_LIMIT = 5;
@@ -19,7 +21,7 @@ const LAST_WEEK_DAYS = 7;
 const LAST_MONTH_DAYS = 30;
 const MS_PER_HOUR = 60 * 60 * 1000;
 
-/** Estados con ejecución vigente para los que se vigilan hitos vencidos. */
+/** Estados con ejecución vigente incluidos en el avance de evaluación de hitos. */
 const ACTIVE_PROJECT_STATUSES: ProjectStatus[] = [
   ProjectStatus.approved,
   ProjectStatus.in_progress,
@@ -43,12 +45,22 @@ export type KpiPendingReview = {
   overdue: boolean;
 };
 
-export type KpiOverdueMilestone = {
+export type KpiMilestoneAssessmentProgressItem = {
   projectId: number;
   projectName: string;
-  milestoneId: number;
-  title: string;
-  dueDate: Date;
+  programId: string;
+  programName: string;
+  answeredItems: number;
+  totalItems: number;
+  percent: number;
+};
+
+export type KpiMilestoneAssessmentProgress = {
+  percent: number | null;
+  answeredItems: number;
+  totalItems: number;
+  pendingPrograms: number;
+  items: KpiMilestoneAssessmentProgressItem[];
 };
 
 export type KpiReviewWindow = {
@@ -71,7 +83,7 @@ export type KpiResponse = {
     overdueCount: number;
     items: KpiPendingReview[];
   };
-  overdueMilestones: { count: number; items: KpiOverdueMilestone[] };
+  milestoneAssessmentProgress: KpiMilestoneAssessmentProgress;
   myReviews: {
     all: KpiReviewWindow;
     last30Days: KpiReviewWindow;
@@ -83,6 +95,13 @@ type ReviewedReportRow = {
   status: ReportStatus;
   submittedAt: Date | null;
   reviewedAt: Date | null;
+};
+
+type AssessmentProjectRow = {
+  id: number;
+  name: string;
+  programRequirements: { programId: string }[];
+  milestoneAssessments: { programId: string; answers: unknown }[];
 };
 
 function daysAgo(now: Date, days: number): Date {
@@ -146,7 +165,8 @@ export class StatsService {
         phase: true,
         startDate: true,
         createdAt: true,
-        milestones: { select: { isMinimum: true, completed: true } },
+        programRequirements: { select: { programId: true } },
+        milestoneAssessments: { select: { programId: true, answers: true } },
         reports: { select: { status: true } },
       },
     });
@@ -174,8 +194,7 @@ export class StatsService {
       pendingReviewCount,
       overdueReviewCount,
       reviewItems,
-      overdueMilestoneCount,
-      milestoneItems,
+      assessmentProjects,
       reviewRows,
     ] = await Promise.all([
       this.prisma.project.count({ where: scope }),
@@ -226,26 +245,16 @@ export class StatsService {
           project: { select: { id: true, name: true } },
         },
       }),
-      this.prisma.projectMilestones.count({
-        where: {
-          completed: false,
-          dueDate: { lt: now },
-          project: activeScope,
-        },
-      }),
-      this.prisma.projectMilestones.findMany({
-        where: {
-          completed: false,
-          dueDate: { lt: now },
-          project: activeScope,
-        },
-        orderBy: [{ dueDate: 'asc' }, { id: 'asc' }],
-        take: PENDING_ITEMS_LIMIT,
+      this.prisma.project.findMany({
+        where: activeScope,
+        orderBy: [{ id: 'asc' }],
         select: {
           id: true,
-          title: true,
-          dueDate: true,
-          project: { select: { id: true, name: true } },
+          name: true,
+          programRequirements: { select: { programId: true } },
+          milestoneAssessments: {
+            select: { programId: true, answers: true },
+          },
         },
       }),
       this.prisma.projectReport.findMany({
@@ -292,21 +301,82 @@ export class StatsService {
           overdue: report.dueDate.getTime() < now.getTime(),
         })),
       },
-      overdueMilestones: {
-        count: overdueMilestoneCount,
-        items: milestoneItems.map((milestone) => ({
-          projectId: milestone.project.id,
-          projectName: milestone.project.name,
-          milestoneId: milestone.id,
-          title: milestone.title,
-          dueDate: milestone.dueDate,
-        })),
-      },
+      milestoneAssessmentProgress:
+        this.milestoneAssessmentProgress(assessmentProjects),
       myReviews: {
         all: reviewWindow(reviewRows),
         last30Days: reviewWindow(reviewRows, daysAgo(now, LAST_MONTH_DAYS)),
         lastWeek: reviewWindow(reviewRows, daysAgo(now, LAST_WEEK_DAYS)),
       },
+    };
+  }
+
+  private milestoneAssessmentProgress(
+    projects: AssessmentProjectRow[],
+  ): KpiMilestoneAssessmentProgress {
+    const items: KpiMilestoneAssessmentProgressItem[] = [];
+
+    for (const project of projects) {
+      const savedByProgram = new Map(
+        project.milestoneAssessments.map((assessment) => [
+          assessment.programId,
+          assessment.answers,
+        ]),
+      );
+
+      for (const requirement of project.programRequirements) {
+        const template = findMilestoneAssessmentTemplate(requirement.programId);
+        if (!template) {
+          continue;
+        }
+
+        const summary = summarizeMilestoneAssessment(
+          requirement.programId,
+          savedByProgram.get(requirement.programId),
+        );
+        if (summary.totalItems === 0) {
+          continue;
+        }
+
+        items.push({
+          projectId: project.id,
+          projectName: project.name,
+          programId: requirement.programId,
+          programName: template.programName,
+          answeredItems: summary.answeredItems,
+          totalItems: summary.totalItems,
+          percent: Math.round(
+            (summary.answeredItems / summary.totalItems) * 100,
+          ),
+        });
+      }
+    }
+
+    const answeredItems = items.reduce(
+      (total, item) => total + item.answeredItems,
+      0,
+    );
+    const totalItems = items.reduce(
+      (total, item) => total + item.totalItems,
+      0,
+    );
+    const pending = items.filter(
+      (item) => item.answeredItems < item.totalItems,
+    );
+
+    return {
+      percent:
+        totalItems > 0 ? Math.round((answeredItems / totalItems) * 100) : null,
+      answeredItems,
+      totalItems,
+      pendingPrograms: pending.length,
+      items: pending
+        .sort(
+          (left, right) =>
+            left.percent - right.percent ||
+            left.projectName.localeCompare(right.projectName),
+        )
+        .slice(0, PENDING_ITEMS_LIMIT),
     };
   }
 

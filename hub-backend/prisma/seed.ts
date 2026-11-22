@@ -10,7 +10,6 @@ import {
 import { seedUsers } from './seed/users';
 import { seedProjects } from './seed/projects';
 import { seedActors } from './seed/actors';
-import { seedMilestones } from './seed/milestones';
 import { seedObservations } from './seed/observations';
 import { seedProjectStatus } from './seed/status';
 import { seedAttachments } from './seed/attachments';
@@ -25,7 +24,6 @@ const SECTION_RUNNERS: Record<
   users: seedUsers,
   projects: seedProjects,
   actors: seedActors,
-  milestones: seedMilestones,
   observations: seedObservations,
   status: seedProjectStatus,
   attachments: seedAttachments,

@@ -5,7 +5,6 @@ import { createStorage, deleteFromStorage } from './storage';
 const PROJECT_SECTIONS: SeedSection[] = [
   'projects',
   'actors',
-  'milestones',
   'observations',
   'status',
   'attachments',

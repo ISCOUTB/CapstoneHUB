@@ -35,9 +35,11 @@ import {
   ProjectDetailResponse,
   ProjectInterestResponse,
   ProjectListResponse,
+  ProjectProgramRequirementResponse,
   ProjectWithRelations,
   mapProjectDetailResponse,
   mapProjectListResponse,
+  mapProjectProgramRequirement,
   projectInclude,
 } from './projects.select';
 import {
@@ -85,14 +87,6 @@ export function isValidProjectStatusTransition(
   return transitions[previousStatus].includes(nextStatus);
 }
 
-type PendingMinimumMilestone = { id: number; title: string };
-
-function formatPendingMilestones(
-  milestones: PendingMinimumMilestone[],
-): string {
-  return milestones.map((milestone) => milestone.title).join(', ');
-}
-
 /** Aprobadores de la siguiente fase que todavía no dieron su visto bueno. */
 function pendingPhaseApprovers(
   project: {
@@ -119,7 +113,7 @@ function pendingPhaseApprovers(
   }).filter((approver) => !approved.has(approver.userId));
 }
 
-export const DEFAULT_FINAL_MILESTONE_TITLE = 'Documento final';
+export const DEFAULT_FINAL_REPORT_TITLE = 'Documento final';
 
 export const DEFAULT_FINAL_REPORT_MIME_TYPES = [
   'application/pdf',
@@ -130,10 +124,10 @@ export const DEFAULT_FINAL_REPORT_MIME_TYPES = [
 export const DEFAULT_FINAL_REPORT_MAX_FILES = 1;
 
 /**
- * Fecha por defecto del hito "Documento final": ocho meses después del inicio
- * del proyecto o desde hoy si no hay fecha de inicio.
+ * Fecha por defecto de la entrega "Documento final": ocho meses después del
+ * inicio del proyecto o desde hoy si no hay fecha de inicio.
  */
-export function defaultFinalMilestoneDueDate(
+export function defaultFinalReportDueDate(
   startDate: Date | string | null | undefined,
 ): Date {
   const parsed = startDate ? new Date(startDate) : new Date();
@@ -842,136 +836,32 @@ export class ProjectsService {
   ): Promise<ProjectWithRelations> {
     const normalizedProgramRequirements =
       this.validateProgramRequirements(programRequirements);
-    const dueDate = defaultFinalMilestoneDueDate(data.startDate);
+    const dueDate = defaultFinalReportDueDate(data.startDate);
 
     return this.prisma.$transaction(async (transaction) => {
-      // Todo proyecto nace con el hito mínimo "Documento final" del segundo
-      // semestre y su entrega asociada para adjuntar el documento.
-      const areaMilestones: Record<string, string[]> = {
-        systems: [
-          'Levantamiento de requisitos',
-          'Diseño de la solución',
-          'Desarrollo del prototipo',
-          'Pruebas y validación',
-        ],
-        industrial: [
-          'Diagnóstico del proceso',
-          'Diseño de la propuesta de mejora',
-          'Implementación o simulación',
-          'Evaluación de resultados',
-        ],
-        civil: [
-          'Diagnóstico y levantamiento de información',
-          'Diseño preliminar',
-          'Desarrollo de la propuesta técnica',
-          'Validación de la solución',
-        ],
-        electrical: [
-          'Levantamiento de requerimientos técnicos',
-          'Diseño eléctrico o electrónico',
-          'Implementación del prototipo',
-          'Pruebas de funcionamiento',
-        ],
-        mechanical: [
-          'Análisis de necesidades',
-          'Diseño mecánico preliminar',
-          'Construcción o simulación del prototipo',
-          'Pruebas y ajustes',
-        ],
-        environmental: [
-          'Diagnóstico ambiental',
-          'Diseño de la estrategia de intervención',
-          'Implementación o evaluación piloto',
-          'Evaluación del impacto',
-        ],
-        other: [
-          'Definición de requerimientos',
-          'Diseño de la propuesta',
-          'Desarrollo o implementación',
-          'Validación de resultados',
-        ],
-      };
-      const fallbackMilestones = [
-        'Definición de requerimientos',
-        'Diseño de la propuesta',
-        'Desarrollo o implementación',
-        'Validación de resultados',
-      ];
-      const selectedAreas = (data.engineeringArea ?? '')
-        .split(',')
-        .map((area) => area.trim())
-        .filter(Boolean);
-      const milestoneTitles = Array.from(
-        new Set(
-          selectedAreas.flatMap(
-            (area) => areaMilestones[area] ?? fallbackMilestones,
-          ),
-        ),
-      );
-      const minimumMilestoneCount = milestoneTitles.length;
-      const milestoneData = [
-        ...milestoneTitles.map((title, index) => {
-          const milestoneDueDate = data.startDate
-            ? new Date(data.startDate)
-            : new Date();
-          const dueMonth = Math.max(
-            1,
-            Math.floor(((index + 1) * 7) / (minimumMilestoneCount + 1)),
-          );
-          milestoneDueDate.setMonth(milestoneDueDate.getMonth() + dueMonth);
-
-          return {
-            title,
-            phase:
-              index < Math.ceil(minimumMilestoneCount / 2)
-                ? ProjectPhase.semester_1
-                : ProjectPhase.semester_2,
-            isMinimum: true,
-            completed: false,
-            dueDate: milestoneDueDate,
-          };
-        }),
-        {
-          title: DEFAULT_FINAL_MILESTONE_TITLE,
-          phase: ProjectPhase.semester_2,
-          isMinimum: true,
-          completed: false,
-          dueDate,
-        },
-      ];
-
+      // Todo proyecto nace con la entrega "Documento final" para adjuntar el
+      // artículo o documento de cierre. Ya no se generan hitos dinámicos.
       const project = await transaction.project.create({
         data: {
           ...data,
           programRequirements: normalizedProgramRequirements.length
             ? { create: normalizedProgramRequirements }
             : undefined,
-          milestones: { create: milestoneData },
         },
-        select: { id: true, milestones: { select: { id: true, title: true } } },
+        select: { id: true },
       });
 
-      const milestoneId = project.milestones.find(
-        (milestone) => milestone.title === DEFAULT_FINAL_MILESTONE_TITLE,
-      )?.id;
-
-      if (milestoneId !== undefined) {
-        const report = await transaction.projectReport.create({
-          data: {
-            projectId: project.id,
-            title: DEFAULT_FINAL_MILESTONE_TITLE,
-            dueDate,
-            type: ReportContentKind.file,
-            allowedMimeTypes: DEFAULT_FINAL_REPORT_MIME_TYPES,
-            maxFiles: DEFAULT_FINAL_REPORT_MAX_FILES,
-          },
-          select: { id: true },
-        });
-
-        await transaction.milestoneReportLink.create({
-          data: { milestoneId, reportId: report.id },
-        });
-      }
+      await transaction.projectReport.create({
+        data: {
+          projectId: project.id,
+          title: DEFAULT_FINAL_REPORT_TITLE,
+          dueDate,
+          type: ReportContentKind.file,
+          allowedMimeTypes: DEFAULT_FINAL_REPORT_MIME_TYPES,
+          maxFiles: DEFAULT_FINAL_REPORT_MAX_FILES,
+        },
+        select: { id: true },
+      });
 
       return transaction.project.findUniqueOrThrow({
         where: { id: project.id },
@@ -1266,12 +1156,6 @@ export class ProjectsService {
       );
     }
     if (nextStatus === ProjectStatus.closed) {
-      const pendingMinimums = await this.incompleteMinimumMilestones(projectId);
-      if (pendingMinimums.length > 0) {
-        throw new ConflictException(
-          `Cannot close the project while minimum milestones are incomplete: ${formatPendingMilestones(pendingMinimums)}`,
-        );
-      }
       await this.evaluations.assertPhaseEvaluated(
         projectId,
         currentProject.phase,
@@ -1310,9 +1194,9 @@ export class ProjectsService {
     return project;
   }
   /**
-   * Avanza el proyecto al siguiente semestre (fase) cuando todos sus hitos
-   * mínimos de la fase actual están completos y el proponente y los evaluadores
-   * asignados ya dieron su visto bueno.
+   * Avanza el proyecto al siguiente semestre (fase) cuando la fase actual está
+   * evaluada y el proponente y los evaluadores asignados ya dieron su visto
+   * bueno.
    */
   async advanceProjectPhase(params: {
     user: AuthenticatedUser;
@@ -1358,15 +1242,6 @@ export class ProjectsService {
       currentProject.phase,
       'advance',
     );
-
-    const pendingMinimums = await this.incompleteMinimumMilestones(projectId, [
-      currentProject.phase,
-    ]);
-    if (pendingMinimums.length > 0) {
-      throw new ConflictException(
-        `Cannot advance to the next phase while minimum milestones are incomplete: ${formatPendingMilestones(pendingMinimums)}`,
-      );
-    }
 
     const pendingApprovers = pendingPhaseApprovers(currentProject, nextPhase);
     if (pendingApprovers.length > 0) {
@@ -1492,29 +1367,6 @@ export class ProjectsService {
     }
     return project;
   }
-  /**
-   * Hitos mínimos sin completar. Si se pasan fases, solo se consideran los de
-   * esas fases más los que no tienen fase (globales).
-   */
-  private async incompleteMinimumMilestones(
-    projectId: number,
-    phases?: ProjectPhase[],
-  ): Promise<PendingMinimumMilestone[]> {
-    const phaseFilter =
-      phases && phases.length > 0
-        ? { OR: [{ phase: { in: phases } }, { phase: null }] }
-        : {};
-    return this.prisma.projectMilestones.findMany({
-      where: {
-        projectId,
-        isMinimum: true,
-        completed: false,
-        ...phaseFilter,
-      },
-      select: { id: true, title: true },
-      orderBy: [{ dueDate: 'asc' }, { id: 'asc' }],
-    });
-  }
   async deleteProject(
     user: AuthenticatedUser,
     where: Prisma.ProjectWhereUniqueInput,
@@ -1523,6 +1375,88 @@ export class ProjectsService {
     await this.authorization.assertCanManageProject(user, projectId);
     return this.prisma.project.delete({ where });
   }
+  async replaceProjectPrograms(params: {
+    user: AuthenticatedUser;
+    projectId: number;
+    programRequirements: ProjectProgramRequirementInput[];
+  }): Promise<ProjectProgramRequirementResponse[]> {
+    const { user, projectId, programRequirements } = params;
+    await this.authorization.assertCanManageProjectPrograms(user, projectId);
+
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        programRequirements: {
+          select: {
+            id: true,
+            programId: true,
+            studentCount: true,
+            createdAt: true,
+          },
+          orderBy: { id: 'asc' },
+        },
+      },
+    });
+    if (!project) {
+      throw new NotFoundException(`Project ${projectId} not found`);
+    }
+
+    const normalized = this.validateProgramRequirements(programRequirements);
+    const previousValue = JSON.stringify(
+      project.programRequirements.map(({ programId, studentCount }) => ({
+        programId,
+        studentCount,
+      })),
+    );
+    const newValue = JSON.stringify(normalized);
+    const changed = previousValue !== newValue;
+
+    const saved = await this.prisma.$transaction(async (transaction) => {
+      if (changed) {
+        await transaction.projectProgramRequirement.deleteMany({
+          where: { projectId },
+        });
+
+        if (normalized.length > 0) {
+          await transaction.projectProgramRequirement.createMany({
+            data: normalized.map((requirement) => ({
+              projectId,
+              ...requirement,
+            })),
+          });
+        }
+
+        await transaction.projectChangeHistory.create({
+          data: {
+            projectId,
+            authorUserId: user.id,
+            field: 'programRequirements',
+            previousValue,
+            newValue,
+          },
+        });
+        await transaction.project.update({
+          where: { id: projectId },
+          data: { updatedAt: new Date() },
+        });
+      }
+
+      return transaction.projectProgramRequirement.findMany({
+        where: { projectId },
+        orderBy: { id: 'asc' },
+        select: {
+          id: true,
+          programId: true,
+          studentCount: true,
+          createdAt: true,
+        },
+      });
+    });
+
+    return saved.map(mapProjectProgramRequirement);
+  }
+
   async assignableUsers(
     user: AuthenticatedUser,
     projectId: number,

@@ -1,6 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 function normalizeProgramId(value: unknown): unknown {
   if (typeof value !== 'string') {
@@ -30,4 +38,15 @@ export class ProjectProgramRequirementDto {
   @IsInt()
   @Min(1)
   studentCount!: number;
+}
+
+export class ReplaceProjectProgramsDto {
+  @ApiProperty({
+    description: 'Programas académicos requeridos por el proyecto',
+    type: [ProjectProgramRequirementDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProjectProgramRequirementDto)
+  programRequirements!: ProjectProgramRequirementDto[];
 }

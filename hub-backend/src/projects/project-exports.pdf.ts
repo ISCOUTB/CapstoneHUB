@@ -387,7 +387,7 @@ function drawProjectSections(
   labelValue(doc, 'Costo estimado', formatCurrency(project.estimatedCost));
 }
 
-function drawTeamAndMilestones(
+function drawTeam(
   doc: PDFDocumentInstance,
   project: ProjectDetailResponse,
 ): void {
@@ -406,23 +406,6 @@ function drawTeamAndMilestones(
         assignment.user.email,
       ]),
       [0.36, 0.24, 0.4],
-    );
-    doc.moveDown(0.4);
-  }
-
-  if (project.milestones.length > 0) {
-    sectionTitle(doc, 'Hitos');
-    drawTable(
-      doc,
-      ['Hito', 'Fase', 'Vence', 'Mínimo', 'Completado'],
-      project.milestones.map((milestone) => [
-        milestone.title,
-        phaseLabel(milestone.phase),
-        formatDate(milestone.dueDate),
-        formatBoolean(milestone.isMinimum),
-        formatBoolean(milestone.completed),
-      ]),
-      [0.4, 0.18, 0.16, 0.12, 0.14],
     );
     doc.moveDown(0.4);
   }
@@ -461,7 +444,7 @@ function drawFooter(doc: PDFDocumentInstance): void {
 }
 
 /**
- * Genera el PDF de información general del proyecto. Incluye equipo e hitos
+ * Genera el PDF de información general del proyecto. Incluye equipo
  * solo cuando el espectador puede ver datos sensibles.
  */
 export async function buildProjectPdf(
@@ -509,7 +492,7 @@ export async function buildProjectPdf(
   drawHeader(doc, project);
   drawSummary(doc, project);
   drawProjectSections(doc, project);
-  drawTeamAndMilestones(doc, project);
+  drawTeam(doc, project);
   drawFooter(doc);
 
   doc.end();

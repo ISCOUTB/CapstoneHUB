@@ -94,23 +94,23 @@ model User {
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 
-  roleAssignments         UserRoleAssignment[]
-  projectAssignments      ProjectActorAssignment[]
-  projectStatusHistories  ProjectStatusHistory[]
-  projectChangeHistories  ProjectChangeHistory[]
-  authoredObservations    ProjectObservation[]
-  uploadedAttachments     ProjectAttachment[]
-  createdReports          ProjectReport[]           @relation("ReportCreatedBy")
-  reviewedReports         ProjectReport[]           @relation("ReportReviewedBy")
-  reportContents          ProjectReportContent[]    @relation("ReportContentCreatedBy")
-  proposedProjects        Project[]                 @relation("ProjectProposedBy")
-  projectInterests        ProjectInterest[]
-  phaseApprovals          ProjectPhaseApproval[]
-  createdRubricTemplates  RubricTemplate[]          @relation("RubricTemplateCreatedBy")
-  rubricAssignments       ProjectRubricAssignment[] @relation("RubricAssignmentAssignedBy")
-  projectEvaluations      ProjectEvaluation[]       @relation("ProjectEvaluationEvaluator")
-  milestoneRubricsUpdated ProjectMilestoneRubric[]
-  uploadedGuideDocuments  GuideDocument[]           @relation("GuideDocumentUploadedBy")
+  roleAssignments        UserRoleAssignment[]
+  projectAssignments     ProjectActorAssignment[]
+  projectStatusHistories ProjectStatusHistory[]
+  projectChangeHistories ProjectChangeHistory[]
+  authoredObservations   ProjectObservation[]
+  uploadedAttachments    ProjectAttachment[]
+  createdReports         ProjectReport[]              @relation("ReportCreatedBy")
+  reviewedReports        ProjectReport[]              @relation("ReportReviewedBy")
+  reportContents         ProjectReportContent[]       @relation("ReportContentCreatedBy")
+  proposedProjects       Project[]                    @relation("ProjectProposedBy")
+  projectInterests       ProjectInterest[]
+  phaseApprovals         ProjectPhaseApproval[]
+  createdRubricTemplates RubricTemplate[]             @relation("RubricTemplateCreatedBy")
+  rubricAssignments      ProjectRubricAssignment[]    @relation("RubricAssignmentAssignedBy")
+  projectEvaluations     ProjectEvaluation[]          @relation("ProjectEvaluationEvaluator")
+  milestoneAssessments   ProjectMilestoneAssessment[]
+  uploadedGuideDocuments GuideDocument[]              @relation("GuideDocumentUploadedBy")
 
   @@index([fullName], map: "idx_user_full_name")
   @@map("user")
@@ -164,23 +164,22 @@ model Project {
   monetaryResourcesDescription String?       @map("monetary_resources_description") @db.Text
   facultyAdvisors              String[]      @default([]) @map("faculty_advisors")
 
-  proposer            User?                       @relation("ProjectProposedBy", fields: [proposerUserId], references: [id], onDelete: SetNull)
-  schools             ProjectSchool[]
-  programRequirements ProjectProgramRequirement[]
-  naturalProposer     ProjectNaturalProposer?
-  actorAssignments    ProjectActorAssignment[]
-  interests           ProjectInterest[]
-  observations        ProjectObservation[]
-  statusHistory       ProjectStatusHistory[]
-  milestones          ProjectMilestones[]
-  attachments         ProjectAttachment[]
-  reports             ProjectReport[]
-  deliverables        ProjectDeliverable[]
-  changeHistory       ProjectChangeHistory[]
-  phaseApprovals      ProjectPhaseApproval[]
-  rubricAssignments   ProjectRubricAssignment[]
-  evaluations         ProjectEvaluation[]
-  milestoneRubrics    ProjectMilestoneRubric[]
+  proposer             User?                        @relation("ProjectProposedBy", fields: [proposerUserId], references: [id], onDelete: SetNull)
+  schools              ProjectSchool[]
+  programRequirements  ProjectProgramRequirement[]
+  naturalProposer      ProjectNaturalProposer?
+  actorAssignments     ProjectActorAssignment[]
+  interests            ProjectInterest[]
+  observations         ProjectObservation[]
+  statusHistory        ProjectStatusHistory[]
+  attachments          ProjectAttachment[]
+  reports              ProjectReport[]
+  deliverables         ProjectDeliverable[]
+  changeHistory        ProjectChangeHistory[]
+  phaseApprovals       ProjectPhaseApproval[]
+  rubricAssignments    ProjectRubricAssignment[]
+  evaluations          ProjectEvaluation[]
+  milestoneAssessments ProjectMilestoneAssessment[]
 
   @@index([status], map: "idx_project_status")
   @@index([startDate], map: "idx_project_start_date")
@@ -326,28 +325,7 @@ model ProjectChangeHistory {
   @@map("project_change_history")
 }
 
-model ProjectMilestones {
-  id          Int           @id @default(autoincrement())
-  projectId   Int           @map("project_id")
-  title       String        @db.VarChar(255)
-  description String?       @db.Text
-  dueDate     DateTime      @map("due_date")
-  completed   Boolean       @default(false)
-  isMinimum   Boolean       @default(false) @map("is_minimum")
-  phase       ProjectPhase?
-  createdAt   DateTime      @default(now()) @map("created_at")
-
-  project     Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  reportLinks MilestoneReportLink[]
-
-  @@index([projectId], map: "idx_project_milestones_project_id")
-  @@index([dueDate], map: "idx_project_milestones_due_date")
-  @@index([completed], map: "idx_project_milestones_completed")
-  @@index([isMinimum], map: "idx_project_milestones_is_minimum")
-  @@map("project_milestones")
-}
-
-model ProjectMilestoneRubric {
+model ProjectMilestoneAssessment {
   id              Int      @id @default(autoincrement())
   projectId       Int      @map("project_id")
   programId       String   @map("program_id") @db.VarChar(100)
@@ -358,9 +336,9 @@ model ProjectMilestoneRubric {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   updatedBy User?   @relation(fields: [updatedByUserId], references: [id], onDelete: SetNull)
 
-  @@unique([projectId, programId], map: "uk_project_milestone_rubric_project_program")
-  @@index([programId], map: "idx_project_milestone_rubric_program_id")
-  @@map("project_milestone_rubric")
+  @@unique([projectId, programId], map: "uk_project_milestone_assessment_project_program")
+  @@index([programId], map: "idx_project_milestone_assessment_program_id")
+  @@map("project_milestone_assessment")
 }
 
 model ProjectPhaseApproval {
@@ -513,12 +491,11 @@ model ProjectReport {
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
 
-  project        Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy      User?                  @relation("ReportCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  reviewedBy     User?                  @relation("ReportReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
-  attachments    ProjectAttachment[]
-  contents       ProjectReportContent[]
-  milestoneLinks MilestoneReportLink[]
+  project     Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy   User?                  @relation("ReportCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  reviewedBy  User?                  @relation("ReportReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  attachments ProjectAttachment[]
+  contents    ProjectReportContent[]
 
   @@index([projectId], map: "idx_project_report_project_id")
   @@index([dueDate], map: "idx_project_report_due_date")
@@ -547,20 +524,6 @@ model ProjectReportContent {
   @@index([kind], map: "idx_project_report_content_kind")
   @@index([createdByUserId], map: "idx_project_report_content_created_by_user_id")
   @@map("project_report_content")
-}
-
-model MilestoneReportLink {
-  milestoneId Int      @map("milestone_id")
-  reportId    Int      @map("report_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  milestone ProjectMilestones @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
-  report    ProjectReport     @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  @@id([milestoneId, reportId])
-  @@index([reportId], map: "idx_milestone_report_report_id")
-  @@index([milestoneId], map: "idx_milestone_report_milestone_id")
-  @@map("milestone_report")
 }
 
 /**
