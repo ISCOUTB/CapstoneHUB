@@ -107,12 +107,23 @@ export class AttachmentsService {
 
     const attachment = await this.prisma.projectAttachment.findFirst({
       where: { id: attachmentId, projectId },
-      select: attachmentSelect,
+      select: {
+        ...attachmentSelect,
+        report: { select: { status: true } },
+      },
     });
 
     if (!attachment) {
       throw new NotFoundException(
         `Attachment ${attachmentId} not found in project ${projectId}`,
+      );
+    }
+
+    if (attachment.report) {
+      await this.authorization.assertCanViewReportContents(
+        user,
+        projectId,
+        attachment.report,
       );
     }
 

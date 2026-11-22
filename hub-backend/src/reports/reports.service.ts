@@ -38,6 +38,7 @@ import {
 import {
   ProjectReportContentResponse,
   ProjectReportResponse,
+  SelectedReport,
   mapReport,
   mapReportContent,
   reportContentSelect,
@@ -77,13 +78,17 @@ export class ReportsService {
   ): Promise<ProjectReportResponse[]> {
     await this.assertProjectAccess(projectId, user);
 
+    const canViewDraftContents = await this.authorization.canSubmitReports(
+      user,
+      projectId,
+    );
     const reports = await this.prisma.projectReport.findMany({
       where: { projectId },
       orderBy: [{ dueDate: 'asc' }, { id: 'asc' }],
       select: reportSelect,
     });
 
-    return reports.map(mapReport);
+    return reports.map((report) => mapReport(report, canViewDraftContents));
   }
 
   async createReport(params: {
@@ -114,7 +119,7 @@ export class ReportsService {
       select: reportSelect,
     });
 
-    return mapReport(report);
+    return this.mapReportForViewer(report, user, projectId);
   }
 
   async updateReport(params: {
@@ -174,7 +179,7 @@ export class ReportsService {
       select: reportSelect,
     });
 
-    return mapReport(report);
+    return this.mapReportForViewer(report, user, projectId);
   }
 
   async deleteReport(params: {
@@ -210,7 +215,7 @@ export class ReportsService {
       attachments.map((attachment) => this.safeDelete(attachment.storageKey)),
     );
 
-    return mapReport(report);
+    return this.mapReportForViewer(report, user, projectId);
   }
 
   async submitReport(params: {
@@ -253,7 +258,7 @@ export class ReportsService {
       select: reportSelect,
     });
 
-    return mapReport(report);
+    return this.mapReportForViewer(report, user, projectId);
   }
 
   async reviewReport(params: {
@@ -284,7 +289,7 @@ export class ReportsService {
       select: reportSelect,
     });
 
-    return mapReport(report);
+    return this.mapReportForViewer(report, user, projectId);
   }
 
   async createContent(params: {
@@ -491,7 +496,10 @@ export class ReportsService {
 
     const content = await this.prisma.projectReportContent.findFirst({
       where: { id: contentId, reportId, report: { projectId } },
-      select: reportContentSelect,
+      select: {
+        ...reportContentSelect,
+        report: { select: { status: true } },
+      },
     });
 
     if (!content) {
@@ -499,6 +507,12 @@ export class ReportsService {
         `Content ${contentId} not found in report ${reportId}`,
       );
     }
+
+    await this.authorization.assertCanViewReportContents(
+      user,
+      projectId,
+      content.report,
+    );
 
     if (!content.attachment) {
       throw new BadRequestException('Content has no file to stream');
@@ -707,6 +721,19 @@ export class ReportsService {
         'Cannot change the configuration of a report that already has content',
       );
     }
+  }
+
+  private async mapReportForViewer(
+    report: SelectedReport,
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<ProjectReportResponse> {
+    const canViewDraftContents = await this.authorization.canSubmitReports(
+      user,
+      projectId,
+    );
+
+    return mapReport(report, canViewDraftContents);
   }
 
   private async assertProjectAccess(

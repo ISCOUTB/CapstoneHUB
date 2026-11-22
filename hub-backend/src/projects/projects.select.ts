@@ -498,6 +498,16 @@ export function mapProjectDetailResponse(
 ): ProjectDetailResponse {
   const privatePreview = project.isPrivate && !canViewSensitiveData;
   const { canExpressInterest = false, viewerInterest = null } = viewerContext;
+  // Mismo criterio que `AuthorizationService.canSubmitReports`: el borrador de
+  // una entrega solo lo ve un administrador o un estudiante asignado.
+  const canViewDraftReportContents =
+    viewer != null &&
+    (viewer.roles.includes(UserRole.admin) ||
+      project.actorAssignments.some(
+        (assignment) =>
+          assignment.userId === viewer.id &&
+          assignment.role === ActorRole.student,
+      ));
 
   return {
     ...mapProjectListResponse(project, canViewSensitiveData),
@@ -621,7 +631,7 @@ export function mapProjectDetailResponse(
       ? project.reports
           .slice()
           .sort(byDateThenId((report) => report.dueDate.getTime()))
-          .map(mapReport)
+          .map((report) => mapReport(report, canViewDraftReportContents))
       : [],
   };
 }

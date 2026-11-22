@@ -113,10 +113,25 @@ export type ProjectReportResponse = {
   createdBy: ReportUser | null;
   reviewedBy: ReportUser | null;
   milestones: { id: number; title: string }[];
+  /** `false` mientras el contenido está oculto por no haberse enviado. */
+  canViewContents: boolean;
+  /** Indica si existe contenido aunque `contents` venga oculto. */
+  hasContents: boolean;
   contents: ProjectReportContentResponse[];
 };
 
-export function mapReport(report: SelectedReport): ProjectReportResponse {
+/** Estados en los que el estudiante aún puede editar el contenido. */
+export function isDraftReportStatus(status: ReportStatus): boolean {
+  return status === ReportStatus.pending || status === ReportStatus.rejected;
+}
+
+export function mapReport(
+  report: SelectedReport,
+  canViewDraftContents = false,
+): ProjectReportResponse {
+  const canViewContents =
+    !isDraftReportStatus(report.status) || canViewDraftContents;
+
   return {
     id: report.id,
     projectId: report.projectId,
@@ -138,6 +153,8 @@ export function mapReport(report: SelectedReport): ProjectReportResponse {
       id: link.milestone.id,
       title: link.milestone.title,
     })),
-    contents: report.contents.map(mapReportContent),
+    canViewContents,
+    hasContents: report.contents.length > 0,
+    contents: canViewContents ? report.contents.map(mapReportContent) : [],
   };
 }

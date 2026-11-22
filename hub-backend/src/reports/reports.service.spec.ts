@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { ReportContentKind, ReportStatus } from '../generated/prisma/client';
@@ -118,6 +119,8 @@ describe('ReportsService', () => {
       assertProjectMember: jest.fn(),
       assertCanSubmitReports: jest.fn(),
       assertCanManageReports: jest.fn(),
+      assertCanViewReportContents: jest.fn(),
+      canSubmitReports: jest.fn().mockResolvedValue(false),
     };
     const storage = {
       read: jest.fn(),
@@ -136,6 +139,98 @@ describe('ReportsService', () => {
       storage,
     };
   }
+
+  it('hides draft contents from viewers who cannot submit reports', async () => {
+    const { service, prisma, authorization } = createService();
+    prisma.project.findUnique.mockResolvedValue({ id: 10 });
+    prisma.projectReport.findMany.mockResolvedValue([
+      selectedReport({
+        status: 'pending',
+        contents: [selectedContent()],
+      }),
+      selectedReport({
+        id: 4,
+        status: 'rejected',
+        contents: [selectedContent({ id: 10, reportId: 4 })],
+      }),
+      selectedReport({
+        id: 5,
+        status: 'submitted',
+        contents: [selectedContent({ id: 11, reportId: 5 })],
+      }),
+    ]);
+
+    const result = await service.reportsByProject(10, user);
+
+    expect(result[0]).toMatchObject({
+      status: 'pending',
+      canViewContents: false,
+      hasContents: true,
+      contents: [],
+    });
+    expect(result[1]).toMatchObject({
+      status: 'rejected',
+      canViewContents: false,
+      hasContents: true,
+      contents: [],
+    });
+    expect(result[2]).toMatchObject({
+      status: 'submitted',
+      canViewContents: true,
+      hasContents: true,
+    });
+    expect(result[2].contents).toHaveLength(1);
+    expect(authorization.canSubmitReports).toHaveBeenCalledWith(user, 10);
+  });
+
+  it('shows draft contents to assigned students', async () => {
+    const { service, prisma, authorization } = createService();
+    prisma.project.findUnique.mockResolvedValue({ id: 10 });
+    authorization.canSubmitReports.mockResolvedValue(true);
+    prisma.projectReport.findMany.mockResolvedValue([
+      selectedReport({
+        status: 'pending',
+        contents: [selectedContent()],
+      }),
+    ]);
+
+    const result = await service.reportsByProject(10, user);
+
+    expect(result[0]).toMatchObject({
+      status: 'pending',
+      canViewContents: true,
+      hasContents: true,
+    });
+    expect(result[0].contents).toHaveLength(1);
+  });
+
+  it('blocks streaming draft content when the viewer cannot submit reports', async () => {
+    const { service, prisma, authorization, storage } = createService();
+    prisma.project.findUnique.mockResolvedValue({ id: 10 });
+    prisma.projectReportContent.findFirst.mockResolvedValue({
+      ...selectedContent({ kind: 'file' }),
+      report: { status: 'pending' },
+    });
+    authorization.assertCanViewReportContents.mockRejectedValue(
+      new ForbiddenException('Report contents are hidden'),
+    );
+
+    await expect(
+      service.openContentStream({
+        projectId: 10,
+        reportId: 3,
+        contentId: 9,
+        user,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(authorization.assertCanViewReportContents).toHaveBeenCalledWith(
+      user,
+      10,
+      { status: 'pending' },
+    );
+    expect(storage.read).not.toHaveBeenCalled();
+  });
 
   const FILE_MIME_TYPES = [
     'application/pdf',

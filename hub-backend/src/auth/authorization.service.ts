@@ -8,6 +8,7 @@ import {
   Prisma,
   UserRole,
   ProjectStatus,
+  ReportStatus,
 } from '../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { AuthenticatedUser } from './auth.types';
@@ -256,13 +257,16 @@ export class AuthorizationService {
    * Enviar entregas (y preparar su contenido) está reservado a
    * administradores y estudiantes asignados al proyecto. Docentes,
    * evaluadores y proponentes solo configuran y revisan la entrega.
+   *
+   * El mismo criterio decide quién puede ver el contenido de una entrega
+   * pendiente o rechazada.
    */
-  async assertCanSubmitReports(
+  async canSubmitReports(
     user: AuthenticatedUser,
     projectId: number,
-  ): Promise<void> {
+  ): Promise<boolean> {
     if (user.roles.includes(UserRole.admin)) {
-      return;
+      return true;
     }
 
     const assignment = await this.prisma.projectActorAssignment.findFirst({
@@ -270,11 +274,46 @@ export class AuthorizationService {
       select: { id: true },
     });
 
-    if (!assignment) {
-      throw new ForbiddenException(
-        'A project student assignment is required to submit reports',
-      );
+    return Boolean(assignment);
+  }
+
+  async assertCanSubmitReports(
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<void> {
+    if (await this.canSubmitReports(user, projectId)) {
+      return;
     }
+
+    throw new ForbiddenException(
+      'A project student assignment is required to submit reports',
+    );
+  }
+
+  /**
+   * El contenido de una entrega solo se expone a los miembros del proyecto
+   * cuando ya fue enviada. Mientras esté pendiente o rechazada, únicamente los
+   * estudiantes asignados (y los administradores) pueden consultarlo.
+   */
+  async assertCanViewReportContents(
+    user: AuthenticatedUser,
+    projectId: number,
+    report: { status: ReportStatus },
+  ): Promise<void> {
+    if (
+      report.status !== ReportStatus.pending &&
+      report.status !== ReportStatus.rejected
+    ) {
+      return;
+    }
+
+    if (await this.canSubmitReports(user, projectId)) {
+      return;
+    }
+
+    throw new ForbiddenException(
+      'Report contents are only visible to assigned students until the report is submitted',
+    );
   }
 
   assertCanCreateProject(user: AuthenticatedUser): void {
