@@ -121,6 +121,17 @@ const REPORT_TYPE_OPTIONS: {
   { value: "file", label: "Archivo" },
 ];
 
+function isReportConfigLocked(
+  report: ProjectReportItem | null,
+  pending: boolean,
+): boolean {
+  return (
+    pending ||
+    (report !== null &&
+      (report.status !== "pending" || report.hasContents))
+  );
+}
+
 function FormField({
   htmlFor,
   label,
@@ -590,10 +601,7 @@ export default function ProjectReportsPanel({
   const reviewDialogTitle =
     reviewDecision === "accepted" ? "Aceptar entrega" : "No aceptar entrega";
   const editingTextContent = contentEdit?.content.kind === "text";
-  const configLocked =
-    isPending ||
-    (editingReport !== null &&
-      (editingReport.status !== "pending" || editingReport.hasContents));
+  const configLocked = isReportConfigLocked(editingReport, isPending);
 
   return (
     <Card className="mt-6">
