@@ -148,6 +148,10 @@ izquierda y un **topbar** claro (`bg-card`) sticky sobre el contenido.
   dropdown de perfil conserva **Mi perfil** y **Cerrar sesión**.
 - En login y registro no hay sidebar: el topbar recupera la marca estática a la
   izquierda y deja el formulario a ancho completo.
+- La galería pública (`/gallery`) tampoco monta sidebar: usa el topbar con la
+  marca y el widget de sesión. Lista los proyectos finalizados y públicos en
+  tarjetas enlazadas al detalle, con la descripción recortada a tres líneas y
+  los estados compartidos de carga, vacío y error.
 - La landing pública (`/`) no monta sidebar ni topbar. El acceso a la sesión
   vive en el CTA **Iniciar sesión** del hero.
 
@@ -160,8 +164,8 @@ pestañas de usuario dentro del cuerpo: la navegación vive solo en la sidebar.
 
 La landing `/` mantiene su hero y no publica header ni usa el shell. El inicio
 interno (`/home`) requiere sesión y publica su header como cualquier módulo. Las
-pantallas cargadas sin `PageFrame` (login, registro y algunos estados de carga)
-dejan el topbar sin título de módulo.
+pantallas cargadas sin `PageFrame` (login, registro, galería y algunos estados de
+carga) dejan el topbar sin título de módulo.
 
 ## Convenciones para pantallas nuevas
 

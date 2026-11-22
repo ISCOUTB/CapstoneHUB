@@ -577,9 +577,11 @@ mostrados, y si es inválido se responde `401` en lugar de degradar a anónimo.
   estudiantes ven además los privados en `approved` en modo de vista previa.
 - `assertProjectMember` (usado por observaciones, hitos, anexos y entregas) es
   de miembros: proponente, actores asignados y roles revisores. Los proyectos
-  públicos solo exponen su información base en el listado y el detalle. La vista
-  previa de un privado expone aún menos: nombre, estado, fase, fuente, ubicación,
-  descripción, requisitos de equipo y resultados esperados.
+  públicos exponen su información base en el listado y el detalle, incluida la
+  descripción y el nombre del proponente; el correo, la cédula, el equipo y los
+  anexos quedan reservados a los miembros. La vista previa de un privado expone
+  aún menos: nombre, estado, fase, fuente, ubicación, descripción, requisitos de
+  equipo y resultados esperados.
 - `canExpressInterest` exige rol global `student`, proyecto `approved`, y que el
   solicitante no sea el proponente ni un actor asignado. El interés duplicado y
   el estado se validan en `ProjectsService`.

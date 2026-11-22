@@ -29,6 +29,7 @@ Ver también: [Arquitectura del backend](./backend_arch.md),
 | Ruta | Pantalla |
 | --- | --- |
 | `/` | Landing pública, sin sidebar ni topbar. |
+| `/gallery` | Galería pública de proyectos finalizados y no privados (`GET /projects` sin sesión), con topbar de marca y sin sidebar. |
 | `/home` | Inicio interno (requiere sesión): proyectos propios y asignados del usuario. |
 | `/login` | Inicio de sesión. |
 | `/register` | Registro de proponentes (auto-login). |
