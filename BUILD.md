@@ -55,7 +55,7 @@ INITIAL_ADMIN_NAME
 
 # para generar datos de prueba
 
-Prisma seeds genera usuarios, proyectos, actores, hitos, observaciones, historial de
+Prisma seeds genera usuarios, proyectos, actores, observaciones, historial de
 estados, anexos de ejemplo y documentos del catálogo de guías. Todo en `hub-backend/prisma`:
 
 ```
@@ -74,7 +74,6 @@ npm run seed                 # todas las secciones
 npm run seed:users           # solo usuarios
 npm run seed:projects        # solo proyectos
 npm run seed:actors          # solo asignaciones de actores
-npm run seed:milestones      # solo hitos
 npm run seed:observations    # solo observaciones
 npm run seed:status          # solo transiciones de estado
 npm run seed:attachments     # solo anexos
@@ -180,8 +179,7 @@ las dos suites (supertest y Playwright).
   escuelas, actores, estado objetivo y anexos. Incluye proyectos históricos
   finalizados (`targetStatus: closed` e `isPrivate: false`) pensados para la
   galería pública; los privados cerrados sirven como control negativo.
-- `prisma/fixtures/milestones.json` y `observations.json`: indexados por el
-  nombre del proyecto.
+- `prisma/fixtures/observations.json`: indexado por el nombre del proyecto.
 - `prisma/fixtures/attachments/`: archivos de ejemplo que se suben a
   RustFS.
 - El historial de estados reparte las transiciones entre la fecha de inicio y

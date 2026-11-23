@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { RiEditLine, RiFilePdfLine } from "@remixicon/react";
 import ProjectStatusDialog from "../../components/project-status-dialog";
-import ProjectCategoriesPanel from "./project-categories-panel";
 import ProjectDetailsBadges from "./project-details-badges";
 import ProjectDetailsSkeleton from "./project-details-skeleton";
 import ProjectGeneralTab from "./project-general-tab";
@@ -197,7 +196,6 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
                       projectId={project.id}
                       currentStatus={project.status}
                       assignments={assignments}
-                      milestones={project.milestones ?? []}
                       evaluationGate={project.evaluationGate}
                       onProjectChange={refresh}
                     />
@@ -232,10 +230,6 @@ export default function ProjectDetailsView({ id }: { readonly id: string }) {
 
               <TabsContent value="general" className="mt-6 flex flex-col gap-6">
                 <ProjectGeneralTab project={project} />
-              </TabsContent>
-
-              <TabsContent value="categorias" className="mt-6">
-                <ProjectCategoriesPanel categories={project.categories} />
               </TabsContent>
 
               {isMember ? (

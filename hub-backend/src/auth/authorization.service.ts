@@ -33,7 +33,8 @@ export class AuthorizationService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Acceso de LECTURA sensible (observaciones, hitos, anexos y entregas):
+   * Acceso de LECTURA sensible (observaciones, evaluación de hitos, anexos y
+   * entregas):
    * reservado al proponente, los actores asignados y los revisores. Los
    * proyectos públicos solo exponen su información base en el listado y el
    * detalle; no autoriza mutaciones (ver {@link assertCanWriteProjectData}).
@@ -564,15 +565,17 @@ export class AuthorizationService {
   }
 
   /**
-   * Gestionar hitos exige administrador o una asignación docente/evaluadora.
-   * El directivo global sí entra en {@link assertCanManageReports}, pero los
-   * hitos quedan reservados a quien participa en el proyecto.
+   * Editar la evaluación de hitos está abierto a administradores y directivos
+   * (aunque no estén asignados) y a docentes/evaluadores asignados.
    */
-  async canManageMilestone(
+  async canManageMilestoneAssessment(
     user: AuthenticatedUser,
     projectId: number,
   ): Promise<boolean> {
-    if (user.roles.includes(UserRole.admin)) {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.directivo)
+    ) {
       return true;
     }
 
@@ -588,15 +591,35 @@ export class AuthorizationService {
     return Boolean(assignment);
   }
 
-  async assertCanManageMilestone(
+  async assertCanManageMilestoneAssessment(
     user: AuthenticatedUser,
     projectId: number,
   ): Promise<void> {
-    if (user.roles.includes(UserRole.admin)) {
+    if (await this.canManageMilestoneAssessment(user, projectId)) {
       return;
     }
 
-    await this.assertProjectManagementAssignment(user, projectId);
+    throw new ForbiddenException(
+      'A project teacher or evaluator assignment is required to manage milestone assessments',
+    );
+  }
+
+  /**
+   * Añadir o quitar programas del proyecto está reservado a administradores,
+   * directivos y docentes asignados. Los evaluadores solo consultan.
+   */
+  async assertCanManageProjectPrograms(
+    user: AuthenticatedUser,
+    projectId: number,
+  ): Promise<void> {
+    if (
+      user.roles.includes(UserRole.admin) ||
+      user.roles.includes(UserRole.directivo)
+    ) {
+      return;
+    }
+
+    await this.assertProjectAssignment(user, projectId, ActorRole.teacher);
   }
 
   /**

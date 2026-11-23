@@ -3,6 +3,7 @@ import {
   ProjectStatus,
   ReportStatus,
 } from '../generated/prisma/client';
+import { summarizeProjectMilestoneAssessments } from '../milestone-assessments/milestone-assessment-progress';
 
 /** Fila mínima de proyecto necesaria para calcular las estadísticas. */
 export type SemesterStatsRow = {
@@ -10,7 +11,8 @@ export type SemesterStatsRow = {
   phase: ProjectPhase;
   startDate: Date | null;
   createdAt: Date;
-  milestones: { isMinimum: boolean; completed: boolean }[];
+  programRequirements: { programId: string }[];
+  milestoneAssessments: { programId: string; answers: unknown }[];
   reports: { status: ReportStatus }[];
 };
 
@@ -24,7 +26,7 @@ export type SemesterStatsBucket = {
   inProgress: number;
   closed: number;
   byStatus: { status: ProjectStatus; count: number }[];
-  minimumMilestones: { total: number; completed: number };
+  milestoneAssessments: { totalItems: number; answeredItems: number };
   reports: { total: number; accepted: number };
 };
 
@@ -68,21 +70,18 @@ export function academicSemester(date: Date): { year: number; half: 1 | 2 } {
 
 function summarize(rows: SemesterStatsRow[]): SemesterStatsBucket {
   const counts = new Map<ProjectStatus, number>();
-  const minimumMilestones = { total: 0, completed: 0 };
+  const milestoneAssessments = { totalItems: 0, answeredItems: 0 };
   const reports = { total: 0, accepted: 0 };
 
   for (const row of rows) {
     counts.set(row.status, (counts.get(row.status) ?? 0) + 1);
 
-    for (const milestone of row.milestones) {
-      if (!milestone.isMinimum) {
-        continue;
-      }
-      minimumMilestones.total += 1;
-      if (milestone.completed) {
-        minimumMilestones.completed += 1;
-      }
-    }
+    const progress = summarizeProjectMilestoneAssessments(
+      row.programRequirements.map((requirement) => requirement.programId),
+      row.milestoneAssessments,
+    );
+    milestoneAssessments.totalItems += progress.totalItems;
+    milestoneAssessments.answeredItems += progress.answeredItems;
 
     for (const report of row.reports) {
       reports.total += 1;
@@ -111,7 +110,7 @@ function summarize(rows: SemesterStatsRow[]): SemesterStatsBucket {
       status,
       count: count(status),
     })),
-    minimumMilestones,
+    milestoneAssessments,
     reports,
   };
 }

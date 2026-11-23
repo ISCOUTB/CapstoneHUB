@@ -7,6 +7,7 @@ import {
   MyProject,
   MyProjectInterest,
   UpdateProjectPayload,
+  ProjectProgramRequirement,
   ProjectProgramSchool,
 } from "./schemas";
 import { getApiUrl } from "@/lib/api";
@@ -384,6 +385,21 @@ export function revokeProjectPhaseApproval(id: string): Promise<ProjectDetails> 
     method: "DELETE",
     action: "retirar el visto bueno de fase",
   });
+}
+
+export function replaceProjectPrograms(
+  id: string,
+  programRequirements: { programId: string; studentCount: number }[],
+): Promise<ProjectProgramRequirement[]> {
+  return apiRequest<ProjectProgramRequirement[]>(
+    `/api/projects/${id}/programs`,
+    {
+      method: "PUT",
+      body: { programRequirements },
+      action: "actualizar los programas del proyecto",
+      conflictMessage: PROJECT_EDIT_CONFLICT_MESSAGE,
+    },
+  );
 }
 
 export function updateProject(

@@ -242,11 +242,11 @@ describe('AuthorizationService', () => {
     });
   });
 
-  it('requires an assigned teacher or evaluator for milestones', async () => {
+  it('requires an assigned teacher or evaluator for milestone assessments', async () => {
     const { service, findAssignment } = createService({ id: 3 });
 
     await expect(
-      service.assertCanManageMilestone(user([UserRole.teacher]), 10),
+      service.assertCanManageMilestoneAssessment(user([UserRole.teacher]), 10),
     ).resolves.toBeUndefined();
     expect(findAssignment).toHaveBeenCalledWith({
       where: {
@@ -258,21 +258,61 @@ describe('AuthorizationService', () => {
     });
   });
 
-  it('allows admins to manage milestones without a project assignment', async () => {
+  it('allows admins to manage milestone assessments without a project assignment', async () => {
     const { service, findAssignment } = createService();
 
     await expect(
-      service.assertCanManageMilestone(user([UserRole.admin]), 10),
+      service.assertCanManageMilestoneAssessment(user([UserRole.admin]), 10),
     ).resolves.toBeUndefined();
     expect(findAssignment).not.toHaveBeenCalled();
   });
 
-  it('rejects an unassigned directivo for milestones', async () => {
-    const { service } = createService();
+  it('allows unassigned directivos to manage milestone assessments', async () => {
+    const { service, findAssignment } = createService();
 
     await expect(
-      service.assertCanManageMilestone(user([UserRole.directivo]), 10),
+      service.assertCanManageMilestoneAssessment(
+        user([UserRole.directivo]),
+        10,
+      ),
+    ).resolves.toBeUndefined();
+    expect(findAssignment).not.toHaveBeenCalled();
+  });
+
+  it('allows assigned teachers and directivos to manage project programs', async () => {
+    const assigned = createService({ id: 3 });
+    const directivo = createService();
+
+    await expect(
+      assigned.service.assertCanManageProjectPrograms(
+        user([UserRole.teacher]),
+        10,
+      ),
+    ).resolves.toBeUndefined();
+    expect(assigned.findAssignment).toHaveBeenCalledWith({
+      where: { projectId: 10, userId: 7, role: ActorRole.teacher },
+      select: { id: true },
+    });
+
+    await expect(
+      directivo.service.assertCanManageProjectPrograms(
+        user([UserRole.directivo]),
+        10,
+      ),
+    ).resolves.toBeUndefined();
+    expect(directivo.findAssignment).not.toHaveBeenCalled();
+  });
+
+  it('rejects evaluators from managing project programs', async () => {
+    const { service, findAssignment } = createService();
+
+    await expect(
+      service.assertCanManageProjectPrograms(user([UserRole.evaluator]), 10),
     ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(findAssignment).toHaveBeenCalledWith({
+      where: { projectId: 10, userId: 7, role: ActorRole.teacher },
+      select: { id: true },
+    });
   });
 
   it('allows admins to manage reports without a project assignment', async () => {

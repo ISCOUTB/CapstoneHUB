@@ -247,10 +247,6 @@ function ReportDeleteDialog({
   onOpenChange,
   onConfirm,
 }: ReportDeleteDialogProps) {
-  const milestoneTitles = (report?.milestones ?? [])
-    .map((milestone) => milestone.title)
-    .join(", ");
-
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -259,12 +255,6 @@ function ReportDeleteDialog({
           <AlertDialogDescription>
             ¿Eliminar la entrega &quot;{report?.title}&quot;? Esta acción no se
             puede deshacer.
-            {milestoneTitles ? (
-              <span className="mt-2 block text-destructive">
-                Está vinculada a los hitos: {milestoneTitles}. Se desvinculará
-                de ellos.
-              </span>
-            ) : null}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

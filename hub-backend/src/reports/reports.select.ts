@@ -80,11 +80,6 @@ export const reportSelect = {
   updatedAt: true,
   createdBy: { select: reportUserSelect },
   reviewedBy: { select: reportUserSelect },
-  milestoneLinks: {
-    select: {
-      milestone: { select: { id: true, title: true } },
-    },
-  },
   contents: {
     select: reportContentSelect,
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -112,7 +107,6 @@ export type ProjectReportResponse = {
   updatedAt: Date;
   createdBy: ReportUser | null;
   reviewedBy: ReportUser | null;
-  milestones: { id: number; title: string }[];
   /** `false` mientras el contenido está oculto por no haberse enviado. */
   canViewContents: boolean;
   /** Indica si existe contenido aunque `contents` venga oculto. */
@@ -149,10 +143,6 @@ export function mapReport(
     updatedAt: report.updatedAt,
     createdBy: report.createdBy,
     reviewedBy: report.reviewedBy,
-    milestones: report.milestoneLinks.map((link) => ({
-      id: link.milestone.id,
-      title: link.milestone.title,
-    })),
     canViewContents,
     hasContents: report.contents.length > 0,
     contents: canViewContents ? report.contents.map(mapReportContent) : [],

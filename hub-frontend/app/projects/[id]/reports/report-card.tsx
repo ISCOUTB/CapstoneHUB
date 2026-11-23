@@ -35,7 +35,6 @@ import {
   RiDeleteBinLine,
   RiErrorWarningLine,
   RiEyeLine,
-  RiLinksLine,
   RiPencilLine,
   RiSendPlaneLine,
   RiTimeLine,
@@ -208,18 +207,6 @@ function ReportSummary({ report }: { readonly report: ProjectReportItem }) {
         <p className="text-sm text-muted-foreground">
           Enviada el {formatDate(report.submittedAt)}
         </p>
-      ) : null}
-
-      {(report.milestones ?? []).length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">
-            <RiLinksLine className="size-3.5" />
-            {(report.milestones ?? []).length} hito(s)
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {report.milestones?.map((milestone) => milestone.title).join(", ")}
-          </span>
-        </div>
       ) : null}
     </>
   );

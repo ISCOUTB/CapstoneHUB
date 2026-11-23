@@ -29,12 +29,22 @@ export type KpiPendingReview = {
   overdue: boolean;
 };
 
-export type KpiOverdueMilestone = {
+export type KpiMilestoneAssessmentProgressItem = {
   projectId: number;
   projectName: string;
-  milestoneId: number;
-  title: string;
-  dueDate: string;
+  programId: string;
+  programName: string;
+  answeredItems: number;
+  totalItems: number;
+  percent: number;
+};
+
+export type KpiMilestoneAssessmentProgress = {
+  percent: number | null;
+  answeredItems: number;
+  totalItems: number;
+  pendingPrograms: number;
+  items: KpiMilestoneAssessmentProgressItem[];
 };
 
 export type KpiReviewWindow = {
@@ -57,7 +67,7 @@ export type KpiResponse = {
     overdueCount: number;
     items: KpiPendingReview[];
   };
-  overdueMilestones: { count: number; items: KpiOverdueMilestone[] };
+  milestoneAssessmentProgress: KpiMilestoneAssessmentProgress;
   myReviews: {
     all: KpiReviewWindow;
     last30Days: KpiReviewWindow;
@@ -102,7 +112,7 @@ export type SemesterBucket = {
   inProgress: number;
   closed: number;
   byStatus: { status: KpiProjectStatus; count: number }[];
-  minimumMilestones: { total: number; completed: number };
+  milestoneAssessments: { totalItems: number; answeredItems: number };
   reports: { total: number; accepted: number };
 };
 

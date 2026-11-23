@@ -76,7 +76,7 @@ de datos y mantener estable el contrato de la API aunque cambie el esquema.
 | **Auth** | Registro público, login, gestión de usuarios y asignación de roles. Crea el primer admin. |
 | **Projects** | CRUD de proyectos, asignación de actores, transición de estados y exportación Excel/PDF. |
 | **Observations** | Observaciones de texto libre asociadas a un proyecto. |
-| **Milestones** | Entregables programados por proyecto. |
+| **Evaluación de hitos** | Evaluación de requisitos por programa y proyecto. |
 | **Attachments** | Subida, listado, descarga y borrado de archivos. |
 | **Reports** | Entregas por proyecto, su contenido y su revisión. |
 | **Rubrics** | Plantillas de rúbricas por área y asignación de una rúbrica por proyecto/fase. |
@@ -155,12 +155,13 @@ pasa.
 | Editar datos del proyecto | no | sí | sí | miembro | miembro | no† |
 | Gestionar / borrar proyecto | no | sí | no | miembro | no | no |
 | Asignar actores | no | sí | sí | miembro | no | no |
-| Gestionar hitos | no | sí | no | miembro | miembro | no |
+| Gestionar programas del proyecto | no | sí | sí | miembro | no | no |
+| Editar evaluación de hitos | no | sí | sí | miembro | miembro | no |
 | Gestionar y revisar entregas | no | sí | sí | miembro | miembro | no |
 | Preparar y enviar entregas | no | sí | no | no | no | miembro |
 | Avanzar fase (semestre) | no | sí | no | miembro | no | no |
 | Cambiar estado | no | sí | sí (propuesta)* | miembro (ejecución) | miembro (propuesta) | no |
-| Ver observaciones / hitos / anexos | no | sí | sí | miembro | miembro | miembro |
+| Ver observaciones / evaluación de hitos / anexos | no | sí | sí | miembro | miembro | miembro |
 | Comentar un proyecto | no | sí | sí | miembro | miembro | miembro |
 | Ver evaluaciones y notas | no | sí | sí | no | miembro | no |
 | Enviar evaluación semestral | no | sí | no | no | sí | no |
@@ -191,10 +192,10 @@ pasa.
   correspondiente. Un proyecto `closed` o `rejected` es de solo lectura
   (responde `409`). Cada campo modificado se registra en `ProjectChangeHistory`.
 - El `directivo` ve todos los proyectos y, sin asignarse, puede editar sus
-  datos, asignar actores, comentar, gestionar o revisar entregas y resolver la
-  fase de propuesta. Para gestionar hitos o aprobar la fase necesita una
-  asignación como `evaluator`; para avanzar de fase o hacer las transiciones de
-  ejecución, una asignación como `teacher`.
+  datos, asignar actores, comentar, gestionar o revisar entregas, editar la
+  evaluación de hitos y resolver la fase de propuesta. Para aprobar la fase
+  necesita una asignación como `evaluator`; para avanzar de fase o hacer las
+  transiciones de ejecución, una asignación como `teacher`.
 - `Preparar y enviar entregas` (contenido y envío) queda reservado al `student`
   asignado o a un `admin`. Docentes, evaluadores, directivos y proponentes solo
   configuran y revisan la entrega, aunque estén asignados al proyecto. Mientras
@@ -250,25 +251,36 @@ y `approved → rejected`); los docentes asignados gestionan el resto
 (`approved → in_progress`, `in_progress → {paused, closed, cancelled}`,
 `paused → {in_progress, cancelled}`).
 
-### Fases (semestres) e hitos mínimos
+### Fases (semestres)
 
 La **fase** (`phase`, `semester_1` → `semester_2`) es independiente del estado:
 un proyecto puede estar `in_progress` y avanzar de semestre sin cambiar de
 estado. `POST /projects/:id/phase/advance` avanza la fase solo cuando el
-proyecto está `in_progress`, todos los **hitos mínimos** de la fase actual (más
-los globales, sin fase) están completos y el **visto bueno de fase** está
-completo: el proponente del proyecto y cada evaluador asignado aprobaron la fase
-destino con `POST /projects/:id/phase/approvals`. Si falta algo, responde `409`
-con los pendientes. El bloqueo es duro, sin excepción para `admin`, y el avance
-se registra en `ProjectChangeHistory` (`field = "phase"`). Cada aprobador puede
-retirar su visto bueno con `DELETE /projects/:id/phase/approvals` mientras no se
-haya avanzado.
+proyecto está `in_progress`, la fase actual está evaluada y el **visto bueno de
+fase** está completo: el proponente del proyecto y cada evaluador asignado
+aprobaron la fase destino con `POST /projects/:id/phase/approvals`. Si falta
+algo, responde `409` con los pendientes. El avance se registra en
+`ProjectChangeHistory` (`field = "phase"`). Cada aprobador puede retirar su visto
+bueno con `DELETE /projects/:id/phase/approvals` mientras no se haya avanzado.
 
-Los **hitos mínimos** son los marcados con `isMinimum`. Son obligatorios para
-avanzar de fase y para cerrar el proyecto: la transición `in_progress → closed`
-también responde `409` mientras quede algún hito mínimo sin completar o la fase
-actual no esté evaluada. La regla es un bloqueo duro, sin excepción para
-`admin`. Rechazar un proyecto nunca se bloquea.
+### Evaluación de hitos
+
+La evaluación de hitos es un registro de seguimiento por programa académico. No
+bloquea el avance de fase ni el cierre del proyecto; esas decisiones dependen de
+las evaluaciones y de los docentes/evaluadores.
+
+Cada proyecto tiene una evaluación por programa requerido
+(`ProjectMilestoneAssessment`, `projectId + programId`) con respuestas
+`yes`/`no`/`na` y una observación por requisito. Los docentes/evaluadores
+asignados y los directivos pueden editarla; los estudiantes ven un resumen
+filtrado. El progreso se calcula como requisitos evaluados sobre el total del
+formato. Al guardar se registra un cambio por ítem en `ProjectChangeHistory`
+(`field = "milestone_assessment"`).
+
+Los programas del proyecto se pueden reemplazar después de crearlo con
+`PUT /projects/:id/programs` (admin, directivo o docente asignado). Así los
+proyectos antiguos pueden recibir sus formatos de evaluación y los proyectos
+existentes pueden corregir sus programas sin tocar las respuestas guardadas.
 
 ### Evaluación semestral
 
@@ -313,24 +325,14 @@ admin/directivo. La administración (`/guides/admin/documents` y las mutaciones)
 requiere admin o directivo. Los archivos aceptan PDF, Word, Excel, PowerPoint y
 ZIP hasta `MAX_GUIDE_FILE_SIZE_BYTES` (25 MB por defecto).
 
-### Hitos y entregas
+### Entregas y evaluación de hitos
 
-Un hito se puede vincular con una o varias **entregas** (`ProjectReport`) y una
-entrega con varios hitos (tabla intermedia `MilestoneReportLink`). Al crear o
-editar un hito se envía `reportIds` con las entregas a vincular (solo del mismo
-proyecto). **Un hito no se puede completar** mientras alguna entrega vinculada
-no esté `accepted`; la API responde `409` con las entregas pendientes. Volver a
-marcarlo como pendiente siempre está permitido.
-
-Eliminar un hito o una entrega solo borra sus enlaces: la otra parte no se toca.
-La interfaz avisa antes de eliminarlos indicando qué se desvinculará.
-
-Todo proyecto nuevo nace con el hito mínimo **«Documento final»** en
-`semester_2`, con vencimiento a un año de la fecha de inicio (o de la fecha de
-creación si no se indicó inicio), **más una entrega «Documento final»** de tipo
-Archivo (PDF/Word, máximo 1 archivo) vinculada a él. Es el artículo/documento
-final que cada grupo debe adjuntar y que debe ser aceptado para cerrar el
-proyecto; el hito y la entrega se pueden editar o eliminar como cualquier otro.
+Las entregas son independientes de la evaluación de hitos: no existe vínculo
+entre `ProjectReport` y los requisitos del formato. Todo proyecto nuevo nace con
+la entrega **«Documento final»** de tipo Archivo (PDF/Word, máximo 1 archivo),
+que cada grupo debe adjuntar y que debe ser aceptada antes de cerrar el proyecto.
+La entrega no está vinculada a hitos y puede editarse o eliminarse como
+cualquier otra.
 
 ```mermaid
 stateDiagram-v2
@@ -370,7 +372,7 @@ El esquema Prisma completo está documentado en
   `ProjectDeliverable`.
 - **Equipo y seguimiento**: `ProjectActorAssignment`, `ProjectObservation`,
   `ProjectInterest`, `ProjectStatusHistory`, `ProjectChangeHistory`,
-  `ProjectMilestones`, `MilestoneReportLink`.
+  `ProjectMilestoneAssessment`.
 - **Archivos**: `ProjectAttachment` (solo metadatos; el binario vive en
   S3/RustFS).
 
@@ -400,10 +402,6 @@ por tanto el mismo almacenamiento S3. El contenido solo se puede modificar
 mientras la entrega esté `pending` o `rejected`; al enviarla se valida que tenga
 al menos una pieza.
 
-Cada entrega expone en la API los hitos a los que está vinculada
-(`milestones`), y cada hito expone sus entregas vinculadas (`reports`) con su
-estado. Ver [Hitos y entregas](#hitos-y-entregas).
-
 `POST .../contents/files` (multipart, campo `file`) acepta documentos (PDF, Word,
 Excel), imágenes (PNG, JPEG, WebP, GIF) y videos (MP4, WebM, OGG) hasta
 `MAX_REPORT_FILE_SIZE_BYTES` (100 MB por defecto); valida que el MIME esté entre
@@ -426,7 +424,7 @@ siguen una forma consistente (`statusCode`, `message`, `error`):
 | `400`  | DTO inválido, transición de estado inválida o motivo faltante.      |
 | `401`  | Token ausente, malformado o expirado.                               |
 | `403`  | Autenticado pero sin rol/asignación en el proyecto.                 |
-| `404`  | Proyecto, usuario, hito o anexo no encontrado.                      |
+| `404`  | Proyecto, usuario o anexo no encontrado.                           |
 | `409`  | Valor único duplicado (por ejemplo email o asignación de actor).    |
 | `500`  | Configuración requerida faltante (S3, secreto de auth).             |
 | `503`  | La base de datos no está disponible (conexión rechazada o agotada). |
@@ -495,10 +493,10 @@ datos. Las rutas tienen un límite de 10 peticiones por minuto.
   Hay un tope de seguridad de 10.000 proyectos.
 - `GET /projects/:id/export/pdf` genera el PDF de un proyecto visible. Reutiliza
   `ProjectsService.project()` para que la visibilidad y el redactado de datos
-  sensibles coincidan con el detalle. Incluye información general, equipo e
-  hitos; estos dos últimos solo si el solicitante puede ver datos sensibles.
-  Excluye observaciones, anexos, entregas, evaluaciones e historial. Se usa
-  `pdfkit` con fuente Helvetica y se sanea el texto no representable.
+  sensibles coincidan con el detalle. Incluye información general y equipo;
+  este último solo si el solicitante puede ver datos sensibles. Excluye
+  observaciones, anexos, entregas, evaluaciones e historial. Se usa `pdfkit`
+  con fuente Helvetica y se sanea el texto no representable.
 
 En ambos casos el proyecto privado solo se exporta si el solicitante ya puede
 verlo: los directivos y administradores ven todos; los docentes, los suyos o los
@@ -529,13 +527,15 @@ públicos. Las respuestas son `StreamableFile` con `Content-Disposition` y
 | `POST` | `/projects` | Crear un proyecto; `isPrivate` lo define el proponente. |
 | `PUT` | `/projects/:id` | Editar los datos (admin, directivo o docente/evaluador asignado; proponente mientras siga en propuesta; `409` si está finalizado/rechazado). Registra historial por campo. |
 | `DELETE` | `/projects/:id` | Borrar (admin o docente asignado). |
-| `PATCH` | `/projects/:id/status` | Cambiar estado (registra historial; `under_review` solo como legado). El cierre exige hitos mínimos completos y evaluación de la fase actual. |
-| `POST` | `/projects/:id/phase/advance` | Avanzar de fase (semestre) si los hitos mínimos están completos, la fase está evaluada y el proponente y los evaluadores dieron su visto bueno (`409` si no). |
+| `PATCH` | `/projects/:id/status` | Cambiar estado (registra historial; `under_review` solo como legado). El cierre exige la evaluación de la fase actual. |
+| `POST` | `/projects/:id/phase/advance` | Avanzar de fase (semestre) si la fase está evaluada y el proponente y los evaluadores dieron su visto bueno (`409` si no). |
 | `POST` | `/projects/:id/phase/approvals` | Dar el visto bueno de fase (proponente o evaluador asignado). |
 | `DELETE` | `/projects/:id/phase/approvals` | Retirar el visto bueno de fase propio. |
 | `POST` | `/projects/:id/actors` | Asignar un usuario a un proyecto. |
 | `GET/POST` | `/projects/:id/observations` | Listar / agregar observaciones. |
-| `GET/POST/PATCH/DELETE` | `/projects/:id/milestones` | Gestionar hitos: marca de mínimo (`isMinimum`), fase y entregas vinculadas (`reportIds`). |
+| `PUT` | `/projects/:id/programs` | Reemplazar los programas académicos del proyecto (admin, directivo o docente asignado). |
+| `GET` | `/projects/:id/milestone-assessments` | Consultar la evaluación de hitos por programa. |
+| `PUT` | `/projects/:id/milestone-assessments/:programId` | Guardar respuestas y observaciones de la evaluación de hitos. |
 | `GET/POST/DELETE` | `/projects/:id/attachments` | Gestionar anexos. |
 | `GET` | `/projects/:id/attachments/:aid/download` | Descargar un anexo. |
 | `GET/POST/PATCH/DELETE` | `/projects/:id/reports` | Gestionar entregas y su contenido. |
@@ -560,8 +560,8 @@ públicos. Las respuestas son `StreamableFile` con `Content-Disposition` y
 | `DELETE` | `/guides/documents/:id/file` | Quitar el archivo adjunto (admin/directivo). |
 | `GET` | `/projects/:id/evaluations` | Rúbricas, evaluaciones, promedio y evaluadores pendientes (admin, directivo o evaluador asignado). |
 | `PUT` | `/projects/:id/evaluations/:phase` | Crear o actualizar la evaluación propia (admin o evaluador asignado). |
-| `GET` | `/stats/kpis` | Indicadores agregados: pendientes, distribución de proyectos y actividad de revisión (admin, directivo, docente o evaluador; el alcance es global para admin/directivo y los proyectos asignados o propuestos para el resto). |
-| `GET` | `/stats/semesters` | Panorama global por semestre: proyectos, aceptación, hitos mínimos y entregas por semestre académico y por fase del proyecto (admin/directivo). |
+| `GET` | `/stats/kpis` | Indicadores agregados: pendientes, distribución de proyectos, avance de evaluación de hitos y actividad de revisión (admin, directivo, docente o evaluador; el alcance es global para admin/directivo y los proyectos asignados o propuestos para el resto). |
+| `GET` | `/stats/semesters` | Panorama global por semestre: proyectos, aceptación, evaluación de hitos y entregas por semestre académico y por fase del proyecto (admin/directivo). |
 
 La autenticación es **global** (`AuthGuard` como `APP_GUARD`): todas las rutas
 requieren token salvo las marcadas con `@Public()` (`/health`, `/auth/register`,
@@ -579,7 +579,7 @@ mostrados, y si es inválido se responde `401` en lugar de degradar a anónimo.
   `in_progress` o `paused`. A eso se suman `proposerUserId`, las asignaciones y
   los intereses del solicitante; los roles `admin` y `directivo` ven todo. Los
   estudiantes ven además los privados en `approved` en modo de vista previa.
-- `assertProjectMember` (usado por observaciones, hitos, anexos y entregas) es
+- `assertProjectMember` (usado por observaciones, evaluación de hitos, anexos y entregas) es
   de miembros: proponente, actores asignados y roles revisores. Los proyectos
   públicos exponen su información base en el listado y el detalle, incluida la
   descripción y el nombre del proponente; el correo, la cédula, el equipo y los

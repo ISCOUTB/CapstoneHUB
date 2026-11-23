@@ -71,17 +71,6 @@ export interface ProjectsFixture {
   projects: ProjectFixture[];
 }
 
-export interface MilestoneFixture {
-  title: string;
-  description?: string;
-  dueDate: string;
-  completed?: boolean;
-  isMinimum?: boolean;
-  phase?: ProjectPhase;
-}
-
-export type MilestonesFixture = Record<string, MilestoneFixture[]>;
-
 export interface ObservationFixture {
   authorEmail: string;
   content: string;
@@ -99,8 +88,6 @@ export interface ReportFixture {
   status?: 'pending' | 'submitted' | 'accepted' | 'rejected';
   submittedAt?: string | null;
   reviewComment?: string | null;
-  /** Títulos de los hitos del mismo proyecto a los que se vincula la entrega. */
-  milestoneTitles?: string[];
 }
 
 export type ReportsFixture = Record<string, ReportFixture[]>;
@@ -122,8 +109,6 @@ export const loadUsers = (): UsersFixture =>
   loadFixture<UsersFixture>('users.json');
 export const loadProjects = (): ProjectsFixture =>
   loadFixture<ProjectsFixture>('projects.json');
-export const loadMilestones = (): MilestonesFixture =>
-  loadFixture<MilestonesFixture>('milestones.json');
 export const loadObservations = (): ObservationsFixture =>
   loadFixture<ObservationsFixture>('observations.json');
 export const loadReports = (): ReportsFixture =>

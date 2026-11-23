@@ -15,7 +15,8 @@ function row(overrides: Partial<SemesterStatsRow> = {}): SemesterStatsRow {
     phase: ProjectPhase.semester_1,
     startDate: new Date('2026-02-10T12:00:00Z'),
     createdAt: new Date('2026-01-05T12:00:00Z'),
-    milestones: [],
+    programRequirements: [],
+    milestoneAssessments: [],
     reports: [],
     ...overrides,
   };
@@ -98,13 +99,17 @@ describe('buildSemesterStats', () => {
     expect(bucket.byStatus.find((s) => s.status === 'rejected')?.count).toBe(1);
   });
 
-  it('cuenta solo los hitos mínimos y las entregas aceptadas', () => {
+  it('cuenta los requisitos evaluados y las entregas aceptadas', () => {
     const result = buildSemesterStats([
       row({
-        milestones: [
-          { isMinimum: true, completed: true },
-          { isMinimum: true, completed: false },
-          { isMinimum: false, completed: true },
+        programRequirements: [{ programId: 'ingenieria-industrial' }],
+        milestoneAssessments: [
+          {
+            programId: 'ingenieria-industrial',
+            answers: {
+              'overview-1': { status: 'yes', observation: '' },
+            },
+          },
         ],
         reports: [
           { status: ReportStatus.accepted },
@@ -115,7 +120,10 @@ describe('buildSemesterStats', () => {
     ]);
 
     const [bucket] = result.calendar;
-    expect(bucket.minimumMilestones).toEqual({ total: 2, completed: 1 });
+    expect(bucket.milestoneAssessments).toEqual({
+      totalItems: 37,
+      answeredItems: 1,
+    });
     expect(bucket.reports).toEqual({ total: 3, accepted: 1 });
   });
 

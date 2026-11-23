@@ -85,7 +85,8 @@ export default function KpiPending({
 }: {
   readonly kpis: KpiResponse;
 }) {
-  const { pendingProposals, pendingReviews, overdueMilestones } = kpis;
+  const { pendingProposals, pendingReviews, milestoneAssessmentProgress } =
+    kpis;
 
   return (
     <div className="mb-6 flex flex-col gap-4">
@@ -214,44 +215,44 @@ export default function KpiPending({
 
       <Card>
         <CardHeader>
-          <CardTitle>Hitos vencidos</CardTitle>
+          <CardTitle>Evaluación de hitos pendiente</CardTitle>
           <CardDescription>
-            {overdueMilestones.count === 0
-              ? "No hay hitos vencidos en proyectos activos."
-              : `${overdueMilestones.count} hito(s) incompletos con fecha pasada.`}
+            {milestoneAssessmentProgress.pendingPrograms === 0
+              ? "No hay evaluaciones de hitos pendientes."
+              : `${milestoneAssessmentProgress.pendingPrograms} programa(s) con requisitos sin evaluar.`}
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          {overdueMilestones.items.length === 0 ? (
-            <EmptyPending message="Los hitos vencidos de proyectos activos aparecerán aquí." />
+          {milestoneAssessmentProgress.items.length === 0 ? (
+            <EmptyPending message="Los programas con evaluación pendiente aparecerán aquí." />
           ) : (
             <>
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50 hover:bg-muted/50">
                     <TableHead>Proyecto</TableHead>
-                    <TableHead>Hito</TableHead>
-                    <TableHead>Vencía</TableHead>
+                    <TableHead>Programa</TableHead>
+                    <TableHead>Avance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {overdueMilestones.items.map((milestone) => (
+                  {milestoneAssessmentProgress.items.map((item) => (
                     <TableRow
-                      key={milestone.milestoneId}
+                      key={`${item.projectId}-${item.programId}`}
                       className="transition-colors hover:bg-utb-blue/[0.04]"
                     >
                       <TableCell>
                         <ProjectLink
-                          projectId={milestone.projectId}
-                          name={milestone.projectName}
+                          projectId={item.projectId}
+                          name={item.projectName}
                         />
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {milestone.title}
+                        {item.programName}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {formatDate(milestone.dueDate)}
+                        {item.answeredItems}/{item.totalItems} · {item.percent}%
                       </TableCell>
                     </TableRow>
                   ))}
@@ -259,8 +260,8 @@ export default function KpiPending({
               </Table>
 
               <MoreNote
-                total={overdueMilestones.count}
-                shown={overdueMilestones.items.length}
+                total={milestoneAssessmentProgress.pendingPrograms}
+                shown={milestoneAssessmentProgress.items.length}
               />
             </>
           )}

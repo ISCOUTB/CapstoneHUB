@@ -17,7 +17,6 @@
     "seed:users": "ts-node --require ./prisma/register.cjs prisma/seed.ts --only=users",
     "seed:projects": "ts-node --require ./prisma/register.cjs prisma/seed.ts --only=projects",
     "seed:actors": "ts-node --require ./prisma/register.cjs prisma/seed.ts --only=actors",
-    "seed:milestones": "ts-node --require ./prisma/register.cjs prisma/seed.ts --only=milestones",
     "seed:observations": "ts-node --require ./prisma/register.cjs prisma/seed.ts --only=observations",
     "seed:status": "ts-node --require ./prisma/register.cjs prisma/seed.ts --only=status",
     "seed:attachments": "ts-node --require ./prisma/register.cjs prisma/seed.ts --only=attachments",

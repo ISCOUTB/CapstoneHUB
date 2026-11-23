@@ -17,40 +17,7 @@ const DEFAULT_FILE_MIME_TYPES: string[] = [
   'video/ogg',
 ];
 
-/** Vincula (o desvincula) una entrega con hitos del proyecto por título. */
-async function linkReportToMilestones(
-  prisma: SeedContext['prisma'],
-  projectId: number,
-  reportId: number,
-  milestoneTitles: string[],
-): Promise<void> {
-  const titles = [...new Set(milestoneTitles)];
-
-  const milestones = await prisma.projectMilestones.findMany({
-    where: { projectId, title: { in: titles } },
-    select: { id: true, title: true },
-  });
-
-  const found = new Set(milestones.map((milestone) => milestone.title));
-  const missing = titles.filter((title) => !found.has(title));
-  if (missing.length > 0) {
-    throw new Error(
-      `Milestones not found in project ${projectId}: ${missing.join(', ')}`,
-    );
-  }
-
-  await prisma.milestoneReportLink.deleteMany({ where: { reportId } });
-  if (milestones.length > 0) {
-    await prisma.milestoneReportLink.createMany({
-      data: milestones.map((milestone) => ({
-        milestoneId: milestone.id,
-        reportId,
-      })),
-    });
-  }
-}
-
-/** Crea o actualiza una entrega y, si aplica, sus vínculos con hitos. */
+/** Crea o actualiza una entrega. */
 async function seedReport(
   prisma: SeedContext['prisma'],
   projectId: number,
@@ -97,32 +64,20 @@ async function seedReport(
     reviewComment,
   };
 
-  let reportId: number;
-
   if (existing) {
     await prisma.projectReport.update({
       where: { id: existing.id },
       data,
     });
-    reportId = existing.id;
     log.info(`Updated report "${report.title}" (${projectName})`);
-  } else {
-    const created = await prisma.projectReport.create({
-      data: { projectId, title: report.title, ...data },
-      select: { id: true },
-    });
-    reportId = created.id;
-    log.ok(`Created report "${report.title}" (${projectName})`);
+    return;
   }
 
-  if (report.milestoneTitles !== undefined) {
-    await linkReportToMilestones(
-      prisma,
-      projectId,
-      reportId,
-      report.milestoneTitles,
-    );
-  }
+  await prisma.projectReport.create({
+    data: { projectId, title: report.title, ...data },
+    select: { id: true },
+  });
+  log.ok(`Created report "${report.title}" (${projectName})`);
 }
 
 export async function seedReports({

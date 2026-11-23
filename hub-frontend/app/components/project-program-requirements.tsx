@@ -22,7 +22,7 @@ type ProgramRequirementItem = {
   readonly schoolName?: string;
 };
 
-function isEngineeringProgram(
+export function isEngineeringProgram(
   programId: string,
   programName: string,
 ): boolean {

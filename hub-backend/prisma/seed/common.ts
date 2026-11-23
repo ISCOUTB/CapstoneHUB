@@ -16,7 +16,6 @@ export type SeedSection =
   | 'users'
   | 'projects'
   | 'actors'
-  | 'milestones'
   | 'observations'
   | 'status'
   | 'attachments'
@@ -27,7 +26,6 @@ export const ALL_SECTIONS: SeedSection[] = [
   'users',
   'projects',
   'actors',
-  'milestones',
   'observations',
   'status',
   'attachments',
@@ -39,7 +37,6 @@ const SECTION_DEPENDENCIES: Record<SeedSection, SeedSection[]> = {
   users: [],
   projects: [],
   actors: ['users', 'projects'],
-  milestones: ['projects'],
   observations: ['users', 'projects'],
   status: ['projects', 'actors'],
   attachments: ['projects', 'users'],

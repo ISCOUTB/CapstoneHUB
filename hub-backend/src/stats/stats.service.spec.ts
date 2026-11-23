@@ -27,10 +27,6 @@ describe('StatsService', () => {
         count: jest.fn().mockResolvedValue(0),
         findMany: jest.fn().mockResolvedValue([]),
       },
-      projectMilestones: {
-        count: jest.fn().mockResolvedValue(0),
-        findMany: jest.fn().mockResolvedValue([]),
-      },
     };
     const authorization = {
       assertCanViewKpis: jest.fn(),
@@ -91,21 +87,6 @@ describe('StatsService', () => {
     const result = await service.kpisForUser(user([UserRole.directivo]));
 
     expect(prisma.project.count).toHaveBeenCalledWith({ where: {} });
-    expect(prisma.projectMilestones.count).toHaveBeenCalledWith({
-      where: {
-        completed: false,
-        dueDate: { lt: expect.any(Date) as Date },
-        project: {
-          status: {
-            in: [
-              ProjectStatus.approved,
-              ProjectStatus.in_progress,
-              ProjectStatus.paused,
-            ],
-          },
-        },
-      },
-    });
     expect(result.scope).toBe('global');
   });
 
@@ -119,15 +100,31 @@ describe('StatsService', () => {
       .mockResolvedValueOnce([
         { phase: ProjectPhase.semester_1, _count: { _all: 4 } },
       ]);
-    prisma.project.findMany.mockResolvedValue([
-      {
-        id: 1,
-        name: 'Propuesta nueva',
-        createdAt: new Date('2026-09-01T10:00:00Z'),
-        proposer: null,
-        naturalProposer: { fullName: 'Proponente Natural' },
-      },
-    ]);
+    prisma.project.findMany
+      .mockResolvedValueOnce([
+        {
+          id: 1,
+          name: 'Propuesta nueva',
+          createdAt: new Date('2026-09-01T10:00:00Z'),
+          proposer: null,
+          naturalProposer: { fullName: 'Proponente Natural' },
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 10,
+          name: 'Proyecto',
+          programRequirements: [{ programId: 'ingenieria-industrial' }],
+          milestoneAssessments: [
+            {
+              programId: 'ingenieria-industrial',
+              answers: {
+                'overview-1': { status: 'yes', observation: '' },
+              },
+            },
+          ],
+        },
+      ]);
     prisma.projectReport.count
       .mockResolvedValueOnce(5)
       .mockResolvedValueOnce(2);
@@ -142,15 +139,6 @@ describe('StatsService', () => {
         },
       ])
       .mockResolvedValueOnce([]);
-    prisma.projectMilestones.count.mockResolvedValue(1);
-    prisma.projectMilestones.findMany.mockResolvedValue([
-      {
-        id: 9,
-        title: 'Hito vencido',
-        dueDate: new Date('2026-09-20T00:00:00Z'),
-        project: { id: 10, name: 'Proyecto' },
-      },
-    ]);
 
     const result = await service.kpisForUser(user([UserRole.teacher]));
 
@@ -185,18 +173,21 @@ describe('StatsService', () => {
         },
       ],
     });
-    expect(result.overdueMilestones).toEqual({
-      count: 1,
-      items: [
-        {
-          projectId: 10,
-          projectName: 'Proyecto',
-          milestoneId: 9,
-          title: 'Hito vencido',
-          dueDate: new Date('2026-09-20T00:00:00Z'),
-        },
-      ],
+    expect(result.milestoneAssessmentProgress).toMatchObject({
+      percent: 3,
+      answeredItems: 1,
+      totalItems: 37,
+      pendingPrograms: 1,
     });
+    expect(result.milestoneAssessmentProgress.items).toEqual([
+      expect.objectContaining({
+        projectId: 10,
+        programId: 'ingenieria-industrial',
+        answeredItems: 1,
+        totalItems: 37,
+        percent: 3,
+      }),
+    ]);
   });
 
   it('computes the review windows from the reviews authored by the user', async () => {

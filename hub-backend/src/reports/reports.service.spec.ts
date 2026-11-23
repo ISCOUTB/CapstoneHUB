@@ -39,7 +39,6 @@ describe('ReportsService', () => {
         email: 'coordinator@example.com',
       },
       reviewedBy: null,
-      milestoneLinks: [],
       contents: [],
       ...overrides,
     };

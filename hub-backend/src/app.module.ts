@@ -9,7 +9,7 @@ import { AppService } from './app.service';
 import { ProjectsModule } from './projects/projects.module';
 import { PrismaModule } from './prisma.module';
 import { ObservationsModule } from './observations/observations.module';
-import { MilestonesModule } from './milestones/milestones.module';
+import { MilestoneAssessmentsModule } from './milestone-assessments/milestone-assessments.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { ReportsModule } from './reports/reports.module';
 import { StatsModule } from './stats/stats.module';
@@ -30,7 +30,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     PrismaModule,
     ProjectsModule,
     ObservationsModule,
-    MilestonesModule,
+    MilestoneAssessmentsModule,
     AttachmentsModule,
     ReportsModule,
     StatsModule,

@@ -1,5 +1,4 @@
 import { ProjectChangeHistoryItem } from "../../services/schemas";
-import { RUBRIC_TEMPLATES } from "./milestones/rubric-templates";
 import { formatPhase, formatProjectSource } from "../../services/utils";
 import { formatCurrency, formatDate } from "./project-formatters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,9 +30,13 @@ const FIELD_LABELS: Record<string, string> = {
 
 type MilestoneHistoryValue = {
   programId?: string;
+  programName?: string;
   itemId?: string;
+  itemLabel?: string;
   answer?: { status?: string | null; observation?: string } | null;
 };
+
+const MILESTONE_ASSESSMENT_FIELD = "milestone_assessment";
 
 function parseMilestoneHistoryValue(value: string | null): MilestoneHistoryValue | null {
   if (!value) return null;
@@ -62,10 +65,10 @@ function formatMilestoneAnswer(value: MilestoneHistoryValue | null): string {
 
 function getMilestoneHistoryLabel(value: MilestoneHistoryValue | null): string {
   if (!value?.programId || !value.itemId) return "Evaluación de hitos";
-  const template = RUBRIC_TEMPLATES[value.programId];
-  const item = template?.overviewItems.find((entry) => entry.id === value.itemId)
-    ?? template?.sections.flatMap((section) => section.items).find((entry) => entry.id === value.itemId);
-  return item ? `${template.programName} · ${item.label}` : `${value.programId} · ${value.itemId}`;
+
+  const program = value.programName ?? value.programId;
+  const item = value.itemLabel ?? value.itemId;
+  return `${program} · ${item}`;
 }
 
 function formatChangedAt(dateValue: string): string {
@@ -151,7 +154,7 @@ export default function ProjectChangeHistoryPanel({
               <li key={entry.id}>
                 <Card size="sm">
                   <CardContent className="flex flex-col gap-2 pt-4">
-                    {entry.field === "milestone_rubric" ? (
+                    {entry.field === MILESTONE_ASSESSMENT_FIELD ? (
                       <>
                         {(() => {
                           const previous = parseMilestoneHistoryValue(entry.previousValue);
@@ -159,7 +162,8 @@ export default function ProjectChangeHistoryPanel({
                           return (
                             <>
                               <p className="text-sm font-medium">
-                                Hitos · {getMilestoneHistoryLabel(next ?? previous)}
+                                Evaluación de hitos ·{" "}
+                                {getMilestoneHistoryLabel(next ?? previous)}
                               </p>
                               <p className="text-sm">
                                 <span className="text-muted-foreground line-through">

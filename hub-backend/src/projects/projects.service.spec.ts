@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
 import {
-  DEFAULT_FINAL_MILESTONE_TITLE,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  DEFAULT_FINAL_REPORT_TITLE,
   diffProjectUpdate,
   isValidProjectStatusTransition,
   type ProjectDetailResponse,
@@ -92,7 +96,6 @@ function createProjectDetail(): ProjectDetailResponse {
     updatedAt: new Date(),
     observations: [],
     actorAssignments: [],
-    milestones: [],
     statusHistory: [],
     changeHistory: [],
     attachments: [],
@@ -115,17 +118,15 @@ function createPrismaMock() {
   const findUnique = jest
     .fn()
     .mockResolvedValue({ id: 10, status: ProjectStatus.proposed });
-  const milestoneFindMany = jest.fn().mockResolvedValue([]);
 
   const prisma = {
     project: { findUnique },
-    projectMilestones: { findMany: milestoneFindMany },
     $transaction: jest.fn((callback: (transaction: Transaction) => unknown) =>
       callback(transaction),
     ),
   };
 
-  return { prisma, projectUpdateMany, historyCreate, milestoneFindMany };
+  return { prisma, projectUpdateMany, historyCreate };
 }
 
 function createAuthorizationMock() {
@@ -133,6 +134,7 @@ function createAuthorizationMock() {
     assertCanTransitionProject: jest.fn().mockResolvedValue(undefined),
     assertCanManageProject: jest.fn().mockResolvedValue(undefined),
     assertCanAssignActors: jest.fn().mockResolvedValue(undefined),
+    assertCanManageProjectPrograms: jest.fn().mockResolvedValue(undefined),
     assertAssignableUser: jest.fn().mockResolvedValue(undefined),
     assertCanEditProjectDetails: jest.fn().mockResolvedValue(undefined),
     assertCanApproveProjectPhase: jest.fn().mockResolvedValue('proposer'),
@@ -236,10 +238,8 @@ function createAdvancePrismaMock(options?: {
       approverUserId: userId,
     })),
   });
-  const milestoneFindMany = jest.fn().mockResolvedValue([]);
   const prisma = {
     project: { findUnique },
-    projectMilestones: { findMany: milestoneFindMany },
     projectPhaseApproval: {
       upsert: approvalUpsert,
       deleteMany: approvalDeleteMany,
@@ -253,7 +253,6 @@ function createAdvancePrismaMock(options?: {
     prisma,
     projectUpdate,
     changeCreate,
-    milestoneFindMany,
     approvalUpsert,
     approvalDeleteMany,
   };
@@ -395,27 +394,7 @@ describe('ProjectsService', () => {
     expect(authorization.assertCanTransitionProject).not.toHaveBeenCalled();
   });
 
-  it('blocks closing a project while minimum milestones are incomplete', async () => {
-    const { prisma, projectUpdateMany, milestoneFindMany } = createPrismaMock();
-    prisma.project.findUnique.mockResolvedValue({
-      id: 10,
-      status: ProjectStatus.in_progress,
-    });
-    milestoneFindMany.mockResolvedValue([{ id: 1, title: 'Informe final' }]);
-    const service = createService(prisma, createAuthorizationMock());
-
-    await expect(
-      service.transitionProjectStatus({
-        user: EVALUATOR_USER,
-        projectId: 10,
-        nextStatus: ProjectStatus.closed,
-        description: 'Cerrar el proyecto',
-      }),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(projectUpdateMany).not.toHaveBeenCalled();
-  });
-
-  it('closes a project when its minimum milestones are complete', async () => {
+  it('closes a project when its current phase is evaluated', async () => {
     const { prisma, projectUpdateMany } = createPrismaMock();
     prisma.project.findUnique.mockResolvedValue({
       id: 10,
@@ -462,18 +441,6 @@ describe('ProjectsService', () => {
         newValue: ProjectPhase.semester_2,
       },
     });
-  });
-
-  it('blocks advancing the phase while the current phase minimums are incomplete', async () => {
-    const { prisma, projectUpdate, milestoneFindMany } =
-      createAdvancePrismaMock();
-    milestoneFindMany.mockResolvedValue([{ id: 1, title: 'Prototipo' }]);
-    const service = createService(prisma, createAuthorizationMock());
-
-    await expect(
-      service.advanceProjectPhase({ user: ADMIN_USER, projectId: 10 }),
-    ).rejects.toBeInstanceOf(ConflictException);
-    expect(projectUpdate).not.toHaveBeenCalled();
   });
 
   it('rejects advancing the phase when the project is not in progress', async () => {
@@ -737,6 +704,144 @@ describe('ProjectsService', () => {
     });
   });
 
+  it('replaces project programs and records the change', async () => {
+    const createdAt = new Date('2026-11-22T10:00:00Z');
+    const prisma = {
+      project: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 10,
+          programRequirements: [],
+        }),
+        update: jest.fn(),
+      },
+      projectProgramRequirement: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 1,
+            programId: 'ingenieria-industrial',
+            studentCount: 2,
+            createdAt,
+          },
+        ]),
+      },
+      projectChangeHistory: {
+        create: jest.fn<
+          Promise<unknown>,
+          [
+            {
+              data: {
+                projectId: number;
+                field: string;
+                previousValue: string;
+                newValue: string;
+              };
+            },
+          ]
+        >(),
+      },
+      $transaction: jest.fn(),
+    };
+    prisma.$transaction.mockImplementation(
+      (callback: (value: unknown) => unknown) => callback(prisma),
+    );
+    const authorization = createAuthorizationMock();
+    const service = createService(prisma, authorization);
+
+    const result = await service.replaceProjectPrograms({
+      user: ADMIN_USER,
+      projectId: 10,
+      programRequirements: [
+        { programId: 'ingenieria-industrial', studentCount: 2 },
+      ],
+    });
+
+    expect(authorization.assertCanManageProjectPrograms).toHaveBeenCalledWith(
+      ADMIN_USER,
+      10,
+    );
+    expect(prisma.projectProgramRequirement.createMany).toHaveBeenCalledWith({
+      data: [
+        { projectId: 10, programId: 'ingenieria-industrial', studentCount: 2 },
+      ],
+    });
+    const history = prisma.projectChangeHistory.create.mock.calls[0][0].data;
+    expect(history.projectId).toBe(10);
+    expect(history.field).toBe('programRequirements');
+    expect(result).toEqual([
+      expect.objectContaining({
+        programId: 'ingenieria-industrial',
+        programName: 'Ingeniería Industrial',
+        studentCount: 2,
+      }),
+    ]);
+  });
+
+  it('does not rewrite project programs when the list is unchanged', async () => {
+    const prisma = {
+      project: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 10,
+          programRequirements: [
+            {
+              id: 1,
+              programId: 'ingenieria-industrial',
+              studentCount: 2,
+              createdAt: new Date(),
+            },
+          ],
+        }),
+        update: jest.fn(),
+      },
+      projectProgramRequirement: {
+        deleteMany: jest.fn(),
+        createMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      projectChangeHistory: { create: jest.fn() },
+      $transaction: jest.fn(),
+    };
+    prisma.$transaction.mockImplementation(
+      (callback: (value: unknown) => unknown) => callback(prisma),
+    );
+    const service = createService(prisma, createAuthorizationMock());
+
+    await service.replaceProjectPrograms({
+      user: ADMIN_USER,
+      projectId: 10,
+      programRequirements: [
+        { programId: 'ingenieria-industrial', studentCount: 2 },
+      ],
+    });
+
+    expect(prisma.projectProgramRequirement.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.projectProgramRequirement.createMany).not.toHaveBeenCalled();
+    expect(prisma.projectChangeHistory.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid project program lists', async () => {
+    const prisma = {
+      project: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 10,
+          programRequirements: [],
+        }),
+      },
+    };
+    const service = createService(prisma, createAuthorizationMock());
+
+    await expect(
+      service.replaceProjectPrograms({
+        user: ADMIN_USER,
+        projectId: 10,
+        programRequirements: [
+          { programId: 'ingenieria-industrial', studentCount: 0 },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('lists assignable users after authorizing the acting user', async () => {
     const findMany = jest.fn().mockResolvedValue([
       {
@@ -769,7 +874,7 @@ describe('ProjectsService', () => {
     ]);
   });
 
-  it('creates the project with the default final milestone and report', async () => {
+  it('creates the project with the default final report', async () => {
     const createdProject = {
       id: 11,
       name: 'New project',
@@ -784,7 +889,6 @@ describe('ProjectsService', () => {
       actorAssignments: [],
       deliverables: [],
       observations: [],
-      milestones: [],
       statusHistory: [],
       changeHistory: [],
       attachments: [],
@@ -801,25 +905,15 @@ describe('ProjectsService', () => {
       updatedAt: new Date(),
     };
     const projectCreate = jest
-      .fn<
-        Promise<{ id: number; milestones: { id: number; title: string }[] }>,
-        [{ data: unknown }]
-      >()
-      .mockResolvedValue({
-        id: 11,
-        milestones: [{ id: 100, title: DEFAULT_FINAL_MILESTONE_TITLE }],
-      });
+      .fn<Promise<{ id: number }>, [{ data: unknown }]>()
+      .mockResolvedValue({ id: 11 });
     const reportCreate = jest
       .fn<Promise<{ id: number }>, [{ data: Record<string, unknown> }]>()
       .mockResolvedValue({ id: 200 });
-    const linkCreate = jest
-      .fn<Promise<unknown>, [{ data: Record<string, unknown> }]>()
-      .mockResolvedValue({});
     const findUniqueOrThrow = jest.fn().mockResolvedValue(createdProject);
     const transaction = {
       project: { create: projectCreate, findUniqueOrThrow },
       projectReport: { create: reportCreate },
-      milestoneReportLink: { create: linkCreate },
     };
     const prisma = {
       $transaction: jest.fn((callback: (value: unknown) => unknown) =>
@@ -842,52 +936,28 @@ describe('ProjectsService', () => {
 
     const data = projectCreate.mock.calls[0][0].data as {
       proposer: unknown;
-      milestones: {
-        create: {
-          title: string;
-          phase: ProjectPhase;
-          isMinimum: boolean;
-          completed: boolean;
-          dueDate: Date;
-        }[];
-      };
+      milestones?: unknown;
     };
     expect(data).toEqual(
       expect.objectContaining({
         proposer: { connect: { id: EVALUATOR_USER.id } },
       }),
     );
-    expect(data.milestones.create).toHaveLength(5);
-    expect(
-      data.milestones.create.every((milestone) => milestone.isMinimum),
-    ).toBe(true);
-    const milestone = data.milestones.create.find(
-      (item) => item.title === DEFAULT_FINAL_MILESTONE_TITLE,
-    );
-    expect(milestone).toEqual(
-      expect.objectContaining({
-        title: DEFAULT_FINAL_MILESTONE_TITLE,
-        phase: ProjectPhase.semester_2,
-        isMinimum: true,
-        completed: false,
-      }),
-    );
-    expect(milestone?.dueDate).toBeInstanceOf(Date);
-    expect(
-      (milestone!.dueDate.getFullYear() - 2026) * 12 +
-        (milestone!.dueDate.getMonth() - 0),
-    ).toBe(8);
+    expect(data).not.toHaveProperty('milestones');
 
     expect(reportCreate).toHaveBeenCalledTimes(1);
-    expect(reportCreate.mock.calls[0][0].data).toMatchObject({
+    const reportData = reportCreate.mock.calls[0][0].data;
+    expect(reportData).toMatchObject({
       projectId: 11,
-      title: DEFAULT_FINAL_MILESTONE_TITLE,
+      title: DEFAULT_FINAL_REPORT_TITLE,
       type: ReportContentKind.file,
       maxFiles: 1,
     });
-    expect(linkCreate).toHaveBeenCalledWith({
-      data: { milestoneId: 100, reportId: 200 },
-    });
+    expect(reportData.dueDate).toBeInstanceOf(Date);
+    expect(
+      ((reportData.dueDate as Date).getFullYear() - 2026) * 12 +
+        ((reportData.dueDate as Date).getMonth() - 0),
+    ).toBe(8);
     expect(findUniqueOrThrow).toHaveBeenCalled();
   });
 
