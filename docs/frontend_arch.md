@@ -58,7 +58,8 @@ Los binarios de las entregas también pasan por el proxy: se suben como multipar
 reenvía por streaming al backend, que los guarda en el almacenamiento. La
 descarga/reproducción sigue pasando por el proxy `stream`, que reenvía `Range`.
 Las exportaciones de proyectos también se transmiten sin bufferizar: el BFF
-reconoce `projects/export/excel` y `projects/:id/export/pdf` y reenvía
+reconoce `projects/export/excel`, `projects/:id/export/pdf` y
+`projects/:id/export/milestones/pdf` y reenvía
 `Content-Type`, `Content-Length` y `Content-Disposition`.
 
 `app/api/auth/proxy.ts` es un helper reutilizable para login y usuarios.
@@ -80,7 +81,8 @@ subidas multipart del archivo del documento.
   de los datos del proyecto.
 - `milestone-assessments.ts` — evaluación de hitos por programa y sus
   respuestas.
-- `project-exports.ts` — descarga del Excel general y del PDF de detalle; usa
+- `project-exports.ts` — descarga del Excel general, del PDF de detalle y del
+  informe de hitos; usa
   `lib/download.ts` para interpretar `Content-Disposition` y disparar la
   descarga en el navegador.
 - `schemas.ts` — tipos TypeScript compartidos (`ProjectDetails`, etc.).
@@ -122,6 +124,10 @@ rol, sin aplicar los filtros activos. El detalle ofrece **Descargar PDF** junto 
 las acciones de estado y edición. Ambos botones solo se renderizan para `admin`,
 `directivo` y `teacher` (`canExportProjectData`) y muestran el progreso y los
 errores en línea.
+
+La pestaña **Hitos** ofrece **Descargar informe de hitos** en el encabezado de la
+evaluación. Se muestra cuando se cumplen a la vez `canExportProjectData` y
+`canManageMilestoneAssessments`, la misma regla que aplica el backend.
 
 La pestaña **Evaluación** es visible para administradores, directivos y
 evaluadores asignados. Muestra la rúbrica de cada semestre, el estado de

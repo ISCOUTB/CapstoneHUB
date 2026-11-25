@@ -16,7 +16,7 @@ CapstoneHUB es un sistema web de gestión integral para proyectos Capstone que f
 | 1 | **Gestión de postulaciones** | Postulación de proyectos de ingeniería y consultoría con formato flexible (origen: entidad externa, investigación, necesidad interna o impacto social). Flujo de revisión por directivos y evaluadores. | Implementado |
 | 2 | **Banco de proyectos** | Listado y detalle de proyectos, estados, galería de proyectos finalizados no privados, vista previa de proyectos aprobados para estudiantes e interés de estudiantes en proyectos. | Implementado |
 | 3 | **Asignación de actores** | Asignación de docentes, evaluadores y estudiantes a cada proyecto (una persona solo tiene un rol por proyecto). | Implementado |
-| 4 | **Hitos y entregas** | Evaluación informativa de hitos por programa, entregas (reportes) con contenido de tipo texto, enlace, imagen, video o archivo, y revisión (aceptar/rechazar). | Implementado |
+| 4 | **Hitos y entregas** | Evaluación informativa de hitos por programa, informe PDF de hitos, entregas (reportes) con contenido de tipo texto, enlace, imagen, video o archivo, y revisión (aceptar/rechazar). | Implementado |
 | 5 | **Anexos y guías** | Anexos por proyecto y catálogo de formatos, plantillas y guías descargables. | Implementado |
 | 6 | **Observaciones e historial** | Observaciones del proyecto, historial de estados e historial de cambios. | Implementado |
 | 7 | **Evaluación** | Rúbricas por área, asignación de rúbrica por proyecto y fase, evaluación semestral con notas ponderadas, visto bueno de fase y bloqueo de avance/cierre. | Implementado |
@@ -118,7 +118,7 @@ flowchart TB
 | **Gestión de Entregas** | Estudiantes | Hitos, reportes y archivos por proyecto | Implementado |
 | **Seguimiento de Proyectos** | Todos los roles según permisos | Estados, fases, observaciones, historial y estadísticas | Implementado |
 | **Evaluación semestral** | Evaluadores, directivos | Rúbricas y notas ponderadas por fase | Implementado |
-| **Generación de Documentos** | Sistema | Cartas y documentos oficiales | Planificado |
+| **Generación de Documentos** | Sistema | Informe PDF de hitos (implementado); cartas y documentos oficiales | Parcial |
 
 ## Contexto Técnico {#_contexto_t_cnico}
 
@@ -160,7 +160,7 @@ flowchart TB
 | Consultas de datos | HTTPS (Frontend ↔ Backend) | JSON |
 | Descarga de archivos | HTTPS (Backend → Frontend) | Stream desde RustFS |
 | Notificaciones | Email *(planificado)* | HTML/Texto plano |
-| Generación de PDFs | Backend → File Storage *(planificado)* | PDF |
+| Generación de PDFs | Backend → Navegador (stream, vía BFF) | PDF |
 | Autenticación SSO | HTTPS (Backend ↔ Entra ID) *(planificado)* | OIDC (`code`, `state`, `nonce`) |
 
 # Estrategia de solución {#section-solution-strategy}
@@ -225,7 +225,7 @@ flowchart TB
 | **Guides** | Catálogo de formatos, plantillas y guías |
 | **Stats** | KPIs y panorama por semestre |
 | **Health** | `GET /health` |
-| **Documents** *(planificado)* | Generación de PDFs oficiales |
+| **Documents** | Generación de PDFs: informe de evaluación de hitos. Cartas y documentos oficiales *(planificado)* |
 | **Notifications** *(planificado)* | Emails y alertas de fechas límite |
 
 ## Enfoque para Alcanzar Metas de Calidad
@@ -299,7 +299,7 @@ El sistema se divide en cuatro contenedores desacoplados que se comunican median
 | `LoggerMiddleware` | Asigna `request-id` y registra una línea JSON por petición |
 | `AuthGuard` / `AdminGuard` | Validan el token y exigen el rol `admin` donde corresponde |
 | `AuthorizationService` | Centraliza permisos por rol global y por rol dentro del proyecto |
-| Módulos de dominio | Auth, Projects, Milestone assessments, Reports, Observations, Attachments, Rubrics, Evaluations, Guides, Stats, Health |
+| Módulos de dominio | Auth, Projects, Milestone assessments, Documents, Reports, Observations, Attachments, Rubrics, Evaluations, Guides, Stats, Health |
 | `PrismaService` | Acceso a datos |
 | `StorageService` / `S3StorageService` | Abstracción de archivos y limpieza de objetos huérfanos (`npm run storage:gc`) |
 | `DatabaseExceptionFilter` | Traduce errores de conexión a PostgreSQL en `503` |
@@ -543,7 +543,7 @@ Sistema de diseño UTB con shadcn/ui y Tailwind v4. Interfaz en español.
 **Deuda técnica**
 - Estado heredado `under_review` conservado solo por compatibilidad.
 - Variables `AZURE_*` documentadas pero sin código que las use.
-- Módulos de documentos y notificaciones sin implementar.
+- Cartas y documentos oficiales, y notificaciones, sin implementar.
 
 ---
 

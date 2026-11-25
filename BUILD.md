@@ -155,6 +155,11 @@ DATABASE_URL="postgresql://<usuario>:<contraseña>@localhost:5432/capstonehub_te
 Los specs están en `e2e/` (`auth.spec.ts`, `project-detail.spec.ts`,
 `register.spec.ts`, `guides.spec.ts`).
 
+La prueba de descarga del informe de hitos (`milestone-report.spec.ts`) necesita un
+administrador existente: define `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD`. Sin ellas
+se omite. Si el backend corre con el límite de peticiones activo, usa
+`DISABLE_THROTTLE=true` para que las pruebas que registran usuarios no reciban `429`.
+
 Para depurar con el navegador visible o la interfaz interactiva:
 
 ```bash

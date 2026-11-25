@@ -75,6 +75,7 @@ de datos y mantener estable el contrato de la API aunque cambie el esquema.
 | --- | --- |
 | **Auth** | Registro público, login, gestión de usuarios y asignación de roles. Crea el primer admin. |
 | **Projects** | CRUD de proyectos, asignación de actores, transición de estados y exportación Excel/PDF. |
+| **Documents** | Informes PDF generados a partir de los datos del proyecto: informe de evaluación de hitos. |
 | **Observations** | Observaciones de texto libre asociadas a un proyecto. |
 | **Evaluación de hitos** | Evaluación de requisitos por programa y proyecto. |
 | **Attachments** | Subida, listado, descarga y borrado de archivos. |
@@ -157,6 +158,7 @@ pasa.
 | Asignar actores | no | sí | sí | miembro | no | no |
 | Gestionar programas del proyecto | no | sí | sí | miembro | no | no |
 | Editar evaluación de hitos | no | sí | sí | miembro | miembro | no |
+| Descargar informe de hitos | no | sí | sí | miembro | no | no |
 | Gestionar y revisar entregas | no | sí | sí | miembro | miembro | no |
 | Preparar y enviar entregas | no | sí | no | no | no | miembro |
 | Avanzar fase (semestre) | no | sí | no | miembro | no | no |
@@ -503,6 +505,15 @@ verlo: los directivos y administradores ven todos; los docentes, los suyos o los
 públicos. Las respuestas son `StreamableFile` con `Content-Disposition` y
 `Content-Length`.
 
+El informe de evaluación de hitos (`GET /projects/:id/export/milestones/pdf`,
+módulo `documents`) añade una comprobación de membresía. Lo descargan `admin`,
+`directivo` y el `teacher` asignado al proyecto como docente o evaluador
+(`assertCanManageMilestoneAssessment`); un evaluador con rol global no puede
+exportar. Un proyecto no visible responde `404`, y uno visible al que el
+solicitante no puede gestionar los hitos responde `403`. El informe resume el
+avance por programa y, para cada requisito del formato, su estado y su
+observación. El equipo solo aparece si el solicitante puede ver datos sensibles.
+
 ## Endpoints principales
 
 | Método | Ruta | Descripción |
@@ -520,6 +531,7 @@ públicos. Las respuestas son `StreamableFile` con `Content-Disposition` y
 | `GET` | `/projects/:id` | Detalle (404 si el proyecto es privado y el solicitante no es miembro; los estudiantes ven los aprobados en vista previa). Incluye `evaluationGate` para miembros y `viewerInterest`/`canExpressInterest` para estudiantes. |
 | `GET` | `/projects/export/excel` | Descargar el libro general de proyectos visibles (admin, directivo o docente). |
 | `GET` | `/projects/:id/export/pdf` | Descargar el PDF de información general del proyecto (misma visibilidad que el detalle; admin, directivo o docente). |
+| `GET` | `/projects/:id/export/milestones/pdf` | Descargar el informe PDF de evaluación de hitos (admin, directivo o docente asignado al proyecto). |
 | `POST` | `/projects/:id/interests` | Expresar interés en un proyecto aprobado con mensaje opcional (estudiante, no proponente ni asignado). Devuelve el detalle actualizado. |
 | `DELETE` | `/projects/:id/interests/me` | Retirar el interés propio (`204`). |
 | `GET` | `/projects/:id/interests` | Listar estudiantes interesados (admin, directivo o docente asignado). |
