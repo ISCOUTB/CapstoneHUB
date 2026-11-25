@@ -13,7 +13,16 @@ const handlers = createProxyRouteHandlers({
       return true;
     }
 
-    return path.length === 3 && path[1] === "export" && path[2] === "pdf";
+    if (path.length === 3 && path[1] === "export" && path[2] === "pdf") {
+      return true;
+    }
+
+    return (
+      path.length === 4 &&
+      path[1] === "export" &&
+      path[2] === "milestones" &&
+      path[3] === "pdf"
+    );
   },
   isMultipartUpload: (path) =>
     (path.length === 2 && path[1] === "attachments") ||
