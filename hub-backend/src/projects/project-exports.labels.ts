@@ -62,17 +62,6 @@ const MONETARY_RESOURCE_LABELS: Record<string, string> = {
   na: 'N/A',
 };
 
-const PDF_TEXT_REPLACEMENTS: Record<string, string> = {
-  '–': '-',
-  '—': '-',
-  '“': '"',
-  '”': '"',
-  '‘': "'",
-  '’': "'",
-  '…': '...',
-  '•': '-',
-};
-
 export function statusLabel(status: ProjectStatus): string {
   return STATUS_LABELS[status] ?? status;
 }
@@ -152,20 +141,6 @@ export function safeExcelText(value: string | null | undefined): string {
   }
 
   return /^[=+\-@]/.test(text) ? `'${text}` : text;
-}
-
-/**
- * Las fuentes estándar de PDFKit cubren latín básico (incluidos los acentos
- * españoles), pero no emoji ni otras escrituras. Se reemplazan por texto
- * equivalente o por un espacio para que el PDF no falle.
- */
-export function safePdfText(value: string | null | undefined): string {
-  return (value ?? '')
-    .replace(/\r\n/g, '\n')
-    .replace(/[–—“”‘’…•]/g, (character) => {
-      return PDF_TEXT_REPLACEMENTS[character] ?? ' ';
-    })
-    .replace(/[^\t\n\r\x20-\x7E\xA0-\xFF]/g, ' ');
 }
 
 export function slugifyFileName(value: string, fallback: string): string {
