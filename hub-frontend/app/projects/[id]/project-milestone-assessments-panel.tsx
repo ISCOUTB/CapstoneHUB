@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RiFilePdfLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiFilePdfLine } from "@remixicon/react";
 import {
   getProjectMilestoneAssessments,
   saveProjectMilestoneAssessment,
@@ -29,6 +29,7 @@ import {
 } from "../../services/schemas";
 import { useAuth } from "../../components/auth-provider";
 import AccessNotice from "../../components/access-notice";
+import CollapsibleCard from "../../components/collapsible-card";
 import { isEngineeringProgram } from "../../components/project-program-requirements";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -188,6 +189,7 @@ function AssessmentTable({
   heading,
   itemHeading,
   placeholder,
+  defaultOpen = false,
   onUpdate,
 }: {
   readonly programId: string;
@@ -196,12 +198,35 @@ function AssessmentTable({
   readonly heading: string;
   readonly itemHeading: string;
   readonly placeholder: string;
+  readonly defaultOpen?: boolean;
   readonly onUpdate: AnswerUpdate;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
+  const answeredCount = items.filter((item) => {
+    const answer = answers[item.id] ?? EMPTY_ANSWER;
+    return answer.status !== null || answer.observation.trim().length > 0;
+  }).length;
+
   return (
-    <section className="space-y-2">
-      <h3 className="font-semibold">{heading}</h3>
-      <div className="overflow-x-auto rounded-md border">
+    <details
+      className="group rounded-xl border border-border/70"
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+        <div className="min-w-0">
+          <h3 className="font-semibold">{heading}</h3>
+          <p className="text-xs text-muted-foreground">
+            {answeredCount} de {items.length} requisito(s) con respuesta
+          </p>
+        </div>
+        <RiArrowDownSLine
+          className="size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none group-open:rotate-180"
+          aria-hidden="true"
+        />
+      </summary>
+
+      <div className="overflow-x-auto border-t">
         <Table>
           <TableHeader>
             <TableRow>
@@ -226,7 +251,7 @@ function AssessmentTable({
           </TableBody>
         </Table>
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -286,6 +311,7 @@ function TeacherAssessmentEditor({
           heading="Resumen general de hitos"
           itemHeading="Hito"
           placeholder="Observación general..."
+          defaultOpen
           onUpdate={onUpdate}
         />
         {template.sections.map((section) => (
@@ -367,9 +393,22 @@ function StudentMilestoneSummary({
         marcado como incluidos y sus observaciones.
       </p>
       {visibleSections.map(({ item, overviewAnswer, visibleItems }) => (
-        <details key={item.id} className="rounded-lg border px-4 py-3">
-          <summary className="cursor-pointer font-medium">{item.label}</summary>
-          <div className="mt-3 space-y-3 pl-1 text-sm">
+        <details
+          key={item.id}
+          className="group rounded-xl border border-border/70"
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+            <span className="font-medium">{item.label}</span>
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              {visibleItems.length}{" "}
+              {visibleItems.length === 1 ? "requisito" : "requisitos"}
+              <RiArrowDownSLine
+                className="size-4 shrink-0 transition-transform motion-reduce:transition-none group-open:rotate-180"
+                aria-hidden="true"
+              />
+            </span>
+          </summary>
+          <div className="space-y-3 border-t px-4 py-3 text-sm">
             {overviewAnswer.observation.trim() ? (
               <p className="text-muted-foreground">
                 {overviewAnswer.observation}
@@ -446,6 +485,7 @@ function ProjectProgramsCard({
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     setDraft(toProgramDrafts(programRequirements));
@@ -580,137 +620,151 @@ function ProjectProgramsCard({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Programas del proyecto</CardTitle>
-        <CardDescription>
-          Los programas definen los formatos de evaluación de hitos. Puedes
-          agregarlos o quitarlos sin perder las respuestas guardadas.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {draft.length === 0 ? (
-          <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-            Este proyecto no tiene programas asociados.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {draft.map((item) => (
-              <div
-                key={item.programId}
-                className="flex flex-wrap items-end gap-3 rounded-lg border p-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">
-                    {programName(item.programId)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.programId}
-                  </p>
-                </div>
-                <div className="w-28">
-                  <label
-                    htmlFor={`program-students-${item.programId}`}
-                    className="text-xs text-muted-foreground"
-                  >
-                    Estudiantes
-                  </label>
-                  <Input
-                    id={`program-students-${item.programId}`}
-                    type="number"
-                    min={1}
-                    value={item.studentCount}
-                    onChange={(event) =>
-                      updateStudentCount(item.programId, event.target.value)
-                    }
-                    disabled={saving}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => removeProgram(item.programId)}
-                  disabled={saving}
-                >
-                  Quitar
-                </Button>
+    <CollapsibleCard
+      title="Programas del proyecto"
+      description="Los programas definen los formatos de evaluación de hitos. Puedes agregarlos o quitarlos sin perder las respuestas guardadas."
+      badges={
+        <Badge variant="outline">
+          {draft.length === 1 ? "1 programa" : `${draft.length} programas`}
+        </Badge>
+      }
+      expanded={expanded}
+      onExpandedChange={setExpanded}
+      toggleLabel="los programas del proyecto"
+      contentClassName="space-y-4"
+    >
+      {draft.length === 0 ? (
+        <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+          Este proyecto no tiene programas asociados.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {draft.map((item) => (
+            <div
+              key={item.programId}
+              className="flex flex-wrap items-end gap-3 rounded-lg border p-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">
+                  {programName(item.programId)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {item.programId}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
+              <div className="w-28">
+                <label
+                  htmlFor={`program-students-${item.programId}`}
+                  className="text-xs text-muted-foreground"
+                >
+                  Estudiantes
+                </label>
+                <Input
+                  id={`program-students-${item.programId}`}
+                  type="number"
+                  min={1}
+                  value={item.studentCount}
+                  onChange={(event) =>
+                    updateStudentCount(item.programId, event.target.value)
+                  }
+                  disabled={saving}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => removeProgram(item.programId)}
+                disabled={saving}
+              >
+                Quitar
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
 
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-dashed p-3">
-          <div className="min-w-48 flex-1">
-            <label
-              htmlFor="new-project-program"
-              className="text-xs text-muted-foreground"
-            >
-              Agregar programa
-            </label>
-            <Select
-              value={newProgramId}
-              onValueChange={(value) => {
-                if (value !== null) {
-                  setNewProgramId(value);
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-dashed p-3">
+        <div className="min-w-48 flex-1">
+          <label
+            htmlFor="new-project-program"
+            className="text-xs text-muted-foreground"
+          >
+            Agregar programa
+          </label>
+          <Select
+            value={newProgramId}
+            onValueChange={(value) => {
+              if (value !== null) {
+                setNewProgramId(value);
+              }
+            }}
+            disabled={saving}
+          >
+            <SelectTrigger id="new-project-program" className="w-full">
+              <SelectValue placeholder="Selecciona un programa">
+                {
+                  options.find((option) => option.programId === newProgramId)
+                    ?.programName
                 }
-              }}
-              disabled={saving}
-            >
-              <SelectTrigger id="new-project-program" className="w-full">
-                <SelectValue placeholder="Selecciona un programa">
-                  {options.find((option) => option.programId === newProgramId)
-                    ?.programName}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {availableOptions.map((option) => (
-                  <SelectItem key={option.programId} value={option.programId}>
-                    {option.programName} — {option.schoolName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-28">
-            <label
-              htmlFor="new-program-students"
-              className="text-xs text-muted-foreground"
-            >
-              Estudiantes
-            </label>
-            <Input
-              id="new-program-students"
-              type="number"
-              min={1}
-              value={newStudentCount}
-              onChange={(event) => setNewStudentCount(event.target.value)}
-              disabled={saving}
-            />
-          </div>
-          <Button type="button" variant="outline" onClick={addProgram} disabled={saving}>
-            Agregar
-          </Button>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {availableOptions.map((option) => (
+                <SelectItem key={option.programId} value={option.programId}>
+                  {option.programName} — {option.schoolName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-
-        {errorMessage ? (
-          <Alert variant="destructive">
-            <AlertDescription>{errorMessage}</AlertDescription>
-          </Alert>
-        ) : null}
-        {saved ? (
-          <p className="text-sm text-emerald-700">
-            Programas guardados correctamente.
-          </p>
-        ) : null}
-
-        <div className="flex justify-end">
-          <Button type="button" onClick={() => void savePrograms()} disabled={saving}>
-            {saving ? "Guardando..." : "Guardar programas"}
-          </Button>
+        <div className="w-28">
+          <label
+            htmlFor="new-program-students"
+            className="text-xs text-muted-foreground"
+          >
+            Estudiantes
+          </label>
+          <Input
+            id="new-program-students"
+            type="number"
+            min={1}
+            value={newStudentCount}
+            onChange={(event) => setNewStudentCount(event.target.value)}
+            disabled={saving}
+          />
         </div>
-      </CardContent>
-    </Card>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={addProgram}
+          disabled={saving}
+        >
+          Agregar
+        </Button>
+      </div>
+
+      {errorMessage ? (
+        <Alert variant="destructive">
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      ) : null}
+      {saved ? (
+        <p className="text-sm text-emerald-700">
+          Programas guardados correctamente.
+        </p>
+      ) : null}
+
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          onClick={() => void savePrograms()}
+          disabled={saving}
+        >
+          {saving ? "Guardando..." : "Guardar programas"}
+        </Button>
+      </div>
+    </CollapsibleCard>
   );
 }
 
@@ -730,6 +784,7 @@ function ProgramAssessmentCard({
   readonly onSave: () => void;
 }) {
   const [showStudentPreview, setShowStudentPreview] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   if (!assessment.template) {
     return (
@@ -751,48 +806,47 @@ function ProgramAssessmentCard({
   ).length;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle>{template.programName}</CardTitle>
-            <CardDescription>{template.introduction}</CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {canManage ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setShowStudentPreview((current) => !current)}
-              >
-                {showStudentPreview ? "Volver a editar" : "Vista del estudiante"}
-              </Button>
-            ) : null}
-            <Badge variant="outline">
-              {canManage && !showStudentPreview
-                ? `${answeredItems}/${assessment.summary.totalItems} evaluados`
-                : "Resumen"}
-            </Badge>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {canManage && !showStudentPreview ? (
-          <TeacherAssessmentEditor
-            programId={assessment.programId}
-            template={template}
-            answers={answers}
-            saving={saving}
-            saved={saved}
-            onUpdate={onUpdate}
-            onSave={onSave}
-          />
-        ) : (
-          <StudentMilestoneSummary template={template} answers={answers} />
-        )}
-      </CardContent>
-    </Card>
+    <CollapsibleCard
+      title={template.programName}
+      description={template.introduction}
+      badges={
+        <Badge variant="outline">
+          {canManage && !showStudentPreview
+            ? `${answeredItems}/${assessment.summary.totalItems} evaluados`
+            : "Resumen"}
+        </Badge>
+      }
+      actions={
+        canManage ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setShowStudentPreview((current) => !current)}
+          >
+            {showStudentPreview ? "Volver a editar" : "Vista del estudiante"}
+          </Button>
+        ) : null
+      }
+      expanded={expanded}
+      onExpandedChange={setExpanded}
+      toggleLabel={`la evaluación de ${template.programName}`}
+      contentClassName="space-y-4"
+    >
+      {canManage && !showStudentPreview ? (
+        <TeacherAssessmentEditor
+          programId={assessment.programId}
+          template={template}
+          answers={answers}
+          saving={saving}
+          saved={saved}
+          onUpdate={onUpdate}
+          onSave={onSave}
+        />
+      ) : (
+        <StudentMilestoneSummary template={template} answers={answers} />
+      )}
+    </CollapsibleCard>
   );
 }
 

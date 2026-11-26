@@ -21,14 +21,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import CollapsibleCard from "@/app/components/collapsible-card";
 import {
   RiCheckboxCircleLine,
   RiCloseCircleLine,
@@ -121,71 +115,6 @@ type ReportCardProps = {
   readonly onDeleteContent: (reportId: number, contentId: number) => Promise<void>;
   readonly onDownload: (attachment: ProjectAttachmentItem) => Promise<void>;
 };
-
-type ReportCardHeaderProps = {
-  readonly report: ProjectReportItem;
-  readonly canManage: boolean;
-  readonly busy: boolean;
-  readonly onEdit: (report: ProjectReportItem) => void;
-  readonly onDelete: (report: ProjectReportItem) => void;
-};
-
-function ReportCardHeader({
-  report,
-  canManage,
-  busy,
-  onEdit,
-  onDelete,
-}: ReportCardHeaderProps) {
-  return (
-    <CardHeader>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <CardTitle className="whitespace-normal">{report.title}</CardTitle>
-          <CardDescription>
-            <span className="inline-flex items-center gap-1">
-              <ContentKindIcon kind={report.type} className="size-3.5" />
-              {CONTENT_KIND_LABELS[report.type]}
-            </span>
-            {" · Vence el "}
-            {formatDate(report.dueDate)}
-            {report.createdBy
-              ? ` · Creada por ${report.createdBy.fullName}`
-              : ""}
-          </CardDescription>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <ReportStatusBadge status={report.status} />
-
-          {canManage ? (
-            <>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Editar entrega"
-                onClick={() => onEdit(report)}
-                disabled={busy}
-              >
-                <RiPencilLine />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="Eliminar entrega"
-                className="text-destructive"
-                onClick={() => onDelete(report)}
-                disabled={busy}
-              >
-                <RiDeleteBinLine />
-              </Button>
-            </>
-          ) : null}
-        </div>
-      </div>
-    </CardHeader>
-  );
-}
 
 function ReportSummary({ report }: { readonly report: ProjectReportItem }) {
   return (
@@ -306,6 +235,7 @@ export function ReportCard({
   onDownload,
 }: ReportCardProps) {
   const [submitOpen, setSubmitOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const { busy, errorMessage, setErrorMessage, run } = useAsyncAction();
 
   const isAwaitingReview = report.status === "submitted";
@@ -371,17 +301,60 @@ export function ReportCard({
     await run(() => onSubmit(report), "No se pudo enviar la entrega");
   }
 
-  return (
-    <Card>
-      <ReportCardHeader
-        report={report}
-        canManage={canManage}
-        busy={busy}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
+  const contentsLabel =
+    fileCount === 0
+      ? "Sin contenidos"
+      : `${fileCount} contenido${fileCount === 1 ? "" : "s"}`;
 
-      <CardContent className="flex flex-col gap-4">
+  return (
+    <>
+      <CollapsibleCard
+        title={report.title}
+        description={
+          <>
+            <span className="inline-flex items-center gap-1">
+              <ContentKindIcon kind={report.type} className="size-3.5" />
+              {CONTENT_KIND_LABELS[report.type]}
+            </span>
+            {" · Vence el "}
+            {formatDate(report.dueDate)}
+            {` · ${contentsLabel}`}
+            {report.createdBy
+              ? ` · Creada por ${report.createdBy.fullName}`
+              : ""}
+          </>
+        }
+        badges={<ReportStatusBadge status={report.status} />}
+        actions={
+          canManage ? (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Editar entrega"
+                onClick={() => onEdit(report)}
+                disabled={busy}
+              >
+                <RiPencilLine />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Eliminar entrega"
+                className="text-destructive"
+                onClick={() => onDelete(report)}
+                disabled={busy}
+              >
+                <RiDeleteBinLine />
+              </Button>
+            </>
+          ) : null
+        }
+        expanded={expanded}
+        onExpandedChange={setExpanded}
+        toggleLabel={`la entrega "${report.title}"`}
+        contentClassName="flex flex-col gap-4"
+      >
         <ReportSummary report={report} />
         <ReportReviewAlert report={report} />
 
@@ -433,7 +406,7 @@ export function ReportCard({
         ) : null}
 
         {errorMessage ? <ErrorBanner message={errorMessage} /> : null}
-      </CardContent>
+      </CollapsibleCard>
 
       <AlertDialog open={submitOpen} onOpenChange={setSubmitOpen}>
         <AlertDialogContent>
@@ -451,6 +424,6 @@ export function ReportCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </>
   );
 }
