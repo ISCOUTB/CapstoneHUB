@@ -141,7 +141,10 @@ docentes/evaluadores asignados y directivos registran Sí/No/N/A y observaciones
 por requisito. Es informativa y no bloquea el avance de fase ni el cierre; los
 estudiantes ven un resumen filtrado. Los administradores, directivos y docentes
 asignados pueden añadir o quitar programas del proyecto desde esta misma
-pestaña, lo que permite habilitar formatos en proyectos antiguos. Cuando una
+pestaña, lo que permite habilitar formatos en proyectos antiguos. **Agregar
+programas** abre un diálogo de selección múltiple con búsqueda por programa o
+escuela y cantidad de estudiantes; al guardar se persisten todos los
+seleccionados. Cuando una
 entrega aún no se ha enviado, quien no es estudiante asignado ve un aviso de
 contenido privado en lugar de sus textos, enlaces y archivos.
 

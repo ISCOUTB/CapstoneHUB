@@ -16,10 +16,11 @@ import {
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? "";
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? "";
 
-async function createProjectWithProgram(
+async function createProject(
   request: APIRequestContext,
   accessToken: string,
   email: string,
+  programRequirements: { programId: string; studentCount: number }[] = [],
 ): Promise<number> {
   const created = await request.post(`${BACKEND_URL}/projects`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -32,15 +33,23 @@ async function createProjectWithProgram(
       isPrivate: true,
       source: "internal_need",
       submissionConsentAt: new Date().toISOString(),
-      programRequirements: [
-        { programId: "ingenieria-industrial", studentCount: 2 },
-      ],
+      programRequirements,
     },
   });
   expect(created.ok()).toBe(true);
 
   const project = (await created.json()) as { id: number };
   return project.id;
+}
+
+function createProjectWithProgram(
+  request: APIRequestContext,
+  accessToken: string,
+  email: string,
+): Promise<number> {
+  return createProject(request, accessToken, email, [
+    { programId: "ingenieria-industrial", studentCount: 2 },
+  ]);
 }
 
 async function login(page: Page, email: string, password: string) {
@@ -75,7 +84,7 @@ test("el proponente ve la evaluación de hitos sin el botón del informe", async
   ).toHaveCount(0);
 });
 
-test.describe("informe de hitos como administrador", () => {
+test.describe("hitos como administrador", () => {
   test.skip(
     !ADMIN_EMAIL || !ADMIN_PASSWORD,
     "Requiere E2E_ADMIN_EMAIL y E2E_ADMIN_PASSWORD con un administrador existente",
@@ -113,5 +122,40 @@ test.describe("informe de hitos como administrador", () => {
 
     const content = await readFile(filePath);
     expect(content.subarray(0, 4).toString()).toBe("%PDF");
+  });
+
+  test("el administrador agrega programas desde el diálogo de hitos", async ({
+    page,
+    request,
+  }) => {
+    const email = uniqueEmail("hitos-programas");
+    const { accessToken } = await registerProposer(request, email);
+    const projectId = await createProject(request, accessToken, email);
+
+    await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+    await openMilestones(page, projectId);
+
+    await page.getByRole("button", { name: "Agregar programas" }).click();
+
+    const dialog = page.getByRole("dialog", { name: "Agregar programas" });
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByLabel("Filtrar programas").fill("industrial");
+    await dialog
+      .getByRole("checkbox", { name: /Ingeniería Industrial/ })
+      .click();
+    await dialog.getByLabel("Estudiantes").fill("2");
+    await dialog.getByRole("button", { name: "Guardar programas" }).click();
+
+    await expect(dialog).toBeHidden();
+    await expect(
+      page.getByText("Ingeniería Industrial", { exact: true }).first(),
+    ).toBeVisible();
+
+    await page.reload();
+    await page.getByRole("tab", { name: "Hitos" }).click();
+    await expect(
+      page.getByText("Ingeniería Industrial", { exact: true }).first(),
+    ).toBeVisible();
   });
 });

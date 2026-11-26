@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RiArrowDownSLine, RiFilePdfLine } from "@remixicon/react";
+import { RiAddLine, RiArrowDownSLine, RiFilePdfLine } from "@remixicon/react";
 import {
   getProjectMilestoneAssessments,
   saveProjectMilestoneAssessment,
@@ -31,6 +31,9 @@ import { useAuth } from "../../components/auth-provider";
 import AccessNotice from "../../components/access-notice";
 import CollapsibleCard from "../../components/collapsible-card";
 import { isEngineeringProgram } from "../../components/project-program-requirements";
+import ProjectProgramDialog, {
+  type ProjectProgramOption,
+} from "./project-program-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,13 +45,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -480,12 +476,14 @@ function ProjectProgramsCard({
     toProgramDrafts(programRequirements),
   );
   const [schools, setSchools] = useState<ProjectProgramSchool[]>([]);
-  const [newProgramId, setNewProgramId] = useState("");
-  const [newStudentCount, setNewStudentCount] = useState("1");
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   useEffect(() => {
     setDraft(toProgramDrafts(programRequirements));
@@ -497,28 +495,39 @@ function ProjectProgramsCard({
     }
 
     let cancelled = false;
+    setCatalogLoading(true);
+    setCatalogError(null);
+
     void getProjectProgramsCatalog()
       .then((result) => {
-        if (!cancelled) {
-          setSchools(result.schools);
+        if (cancelled) {
+          return;
         }
+
+        setSchools(result.schools);
+        setCatalogError(result.error ?? null);
       })
       .catch(() => {
         if (!cancelled) {
-          setErrorMessage("No se pudo cargar el catálogo de programas.");
+          setCatalogError("No se pudo cargar el catálogo de programas.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setCatalogLoading(false);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [canManage]);
+  }, [canManage, catalogAttempt]);
 
   if (!canManage) {
     return null;
   }
 
-  const options = schools
+  const options: ProjectProgramOption[] = schools
     .flatMap((school) =>
       school.programs.map((program) => ({
         programId: program.id,
@@ -529,42 +538,16 @@ function ProjectProgramsCard({
     .filter((option) =>
       isEngineeringProgram(option.programId, option.programName),
     );
-  const selectedIds = new Set(draft.map((item) => item.programId));
-  const availableOptions = options.filter(
-    (option) => !selectedIds.has(option.programId),
-  );
+  const existingProgramIds = draft.map((item) => item.programId);
+  const remainingSlots = Math.max(0, 4 - draft.length);
+  const hasChanges =
+    JSON.stringify(draft) !==
+    JSON.stringify(toProgramDrafts(programRequirements));
   const programName = (programId: string) =>
     options.find((option) => option.programId === programId)?.programName ??
     programRequirements.find((item) => item.programId === programId)
       ?.programName ??
     programId;
-
-  function addProgram() {
-    setErrorMessage(null);
-    setSaved(false);
-
-    if (!newProgramId) {
-      setErrorMessage("Selecciona un programa.");
-      return;
-    }
-
-    if (selectedIds.has(newProgramId)) {
-      setErrorMessage("El programa ya está asociado al proyecto.");
-      return;
-    }
-
-    if (!Number.isInteger(Number(newStudentCount)) || Number(newStudentCount) < 1) {
-      setErrorMessage("La cantidad de estudiantes debe ser un entero mayor a 0.");
-      return;
-    }
-
-    setDraft((previous) => [
-      ...previous,
-      { programId: newProgramId, studentCount: newStudentCount },
-    ]);
-    setNewProgramId("");
-    setNewStudentCount("1");
-  }
 
   function updateStudentCount(programId: string, value: string) {
     setSaved(false);
@@ -582,7 +565,23 @@ function ProjectProgramsCard({
     );
   }
 
-  async function savePrograms() {
+  async function persistPrograms(
+    nextDraft: ProgramRequirementDraft[],
+  ): Promise<void> {
+    const savedPrograms = await replaceProjectPrograms(
+      String(projectId),
+      nextDraft.map((item) => ({
+        programId: item.programId,
+        studentCount: Number(item.studentCount),
+      })),
+    );
+
+    setDraft(toProgramDrafts(savedPrograms));
+    setSaved(true);
+    await onSaved(savedPrograms);
+  }
+
+  async function savePrograms(): Promise<void> {
     setErrorMessage(null);
     setSaved(false);
 
@@ -592,22 +591,15 @@ function ProjectProgramsCard({
         Number(item.studentCount) < 1,
     );
     if (invalid) {
-      setErrorMessage("La cantidad de estudiantes debe ser un entero mayor a 0.");
+      setErrorMessage(
+        "La cantidad de estudiantes debe ser un entero mayor a 0.",
+      );
       return;
     }
 
     setSaving(true);
     try {
-      const savedPrograms = await replaceProjectPrograms(
-        String(projectId),
-        draft.map((item) => ({
-          programId: item.programId,
-          studentCount: Number(item.studentCount),
-        })),
-      );
-      setDraft(toProgramDrafts(savedPrograms));
-      setSaved(true);
-      await onSaved(savedPrograms);
+      await persistPrograms(draft);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -619,152 +611,168 @@ function ProjectProgramsCard({
     }
   }
 
+  async function addPrograms(
+    selectedPrograms: { programId: string; studentCount: number }[],
+  ): Promise<void> {
+    setErrorMessage(null);
+    setSaved(false);
+
+    const nextDraft: ProgramRequirementDraft[] = [
+      ...draft,
+      ...selectedPrograms.map((program) => ({
+        programId: program.programId,
+        studentCount: String(program.studentCount),
+      })),
+    ];
+
+    if (nextDraft.length > 4) {
+      throw new Error("Un proyecto no puede tener más de 4 programas.");
+    }
+
+    await persistPrograms(nextDraft);
+  }
+
   return (
-    <CollapsibleCard
-      title="Programas del proyecto"
-      description="Los programas definen los formatos de evaluación de hitos. Puedes agregarlos o quitarlos sin perder las respuestas guardadas."
-      badges={
-        <Badge variant="outline">
-          {draft.length === 1 ? "1 programa" : `${draft.length} programas`}
-        </Badge>
-      }
-      expanded={expanded}
-      onExpandedChange={setExpanded}
-      toggleLabel="los programas del proyecto"
-      contentClassName="space-y-4"
-    >
-      {draft.length === 0 ? (
-        <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-          Este proyecto no tiene programas asociados.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {draft.map((item) => (
-            <div
-              key={item.programId}
-              className="flex flex-wrap items-end gap-3 rounded-lg border p-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">
-                  {programName(item.programId)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {item.programId}
-                </p>
-              </div>
-              <div className="w-28">
-                <label
-                  htmlFor={`program-students-${item.programId}`}
-                  className="text-xs text-muted-foreground"
-                >
-                  Estudiantes
-                </label>
-                <Input
-                  id={`program-students-${item.programId}`}
-                  type="number"
-                  min={1}
-                  value={item.studentCount}
-                  onChange={(event) =>
-                    updateStudentCount(item.programId, event.target.value)
-                  }
-                  disabled={saving}
-                />
-              </div>
+    <>
+      <CollapsibleCard
+        title="Programas del proyecto"
+        description="Los programas definen los formatos de evaluación de hitos. Puedes agregarlos o quitarlos sin perder las respuestas guardadas."
+        badges={
+          <Badge variant="outline">
+            {draft.length === 1 ? "1 programa" : `${draft.length} programas`}
+          </Badge>
+        }
+        actions={
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setAddDialogOpen(true)}
+            disabled={
+              saving ||
+              catalogLoading ||
+              catalogError !== null ||
+              remainingSlots === 0
+            }
+          >
+            {catalogLoading ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <RiAddLine data-icon="inline-start" />
+            )}
+            {catalogLoading ? "Cargando..." : "Agregar programas"}
+          </Button>
+        }
+        expanded={expanded}
+        onExpandedChange={setExpanded}
+        toggleLabel="los programas del proyecto"
+        contentClassName="space-y-4"
+      >
+        {catalogError ? (
+          <Alert variant="destructive">
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+              {catalogError}
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => removeProgram(item.programId)}
-                disabled={saving}
+                onClick={() => setCatalogAttempt((attempt) => attempt + 1)}
               >
-                Quitar
+                Reintentar
               </Button>
-            </div>
-          ))}
-        </div>
-      )}
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-dashed p-3">
-        <div className="min-w-48 flex-1">
-          <label
-            htmlFor="new-project-program"
-            className="text-xs text-muted-foreground"
-          >
-            Agregar programa
-          </label>
-          <Select
-            value={newProgramId}
-            onValueChange={(value) => {
-              if (value !== null) {
-                setNewProgramId(value);
-              }
-            }}
-            disabled={saving}
-          >
-            <SelectTrigger id="new-project-program" className="w-full">
-              <SelectValue placeholder="Selecciona un programa">
-                {
-                  options.find((option) => option.programId === newProgramId)
-                    ?.programName
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {availableOptions.map((option) => (
-                <SelectItem key={option.programId} value={option.programId}>
-                  {option.programName} — {option.schoolName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-28">
-          <label
-            htmlFor="new-program-students"
-            className="text-xs text-muted-foreground"
-          >
-            Estudiantes
-          </label>
-          <Input
-            id="new-program-students"
-            type="number"
-            min={1}
-            value={newStudentCount}
-            onChange={(event) => setNewStudentCount(event.target.value)}
-            disabled={saving}
-          />
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={addProgram}
-          disabled={saving}
-        >
-          Agregar
-        </Button>
-      </div>
+        {draft.length === 0 ? (
+          <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+            Este proyecto no tiene programas asociados. Usa «Agregar programas»
+            para comenzar.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {draft.map((item) => (
+              <div
+                key={item.programId}
+                className="flex flex-wrap items-end gap-3 rounded-lg border p-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">
+                    {programName(item.programId)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.programId}
+                  </p>
+                </div>
+                <div className="w-28">
+                  <label
+                    htmlFor={`program-students-${item.programId}`}
+                    className="text-xs text-muted-foreground"
+                  >
+                    Estudiantes
+                  </label>
+                  <Input
+                    id={`program-students-${item.programId}`}
+                    type="number"
+                    min={1}
+                    value={item.studentCount}
+                    onChange={(event) =>
+                      updateStudentCount(item.programId, event.target.value)
+                    }
+                    disabled={saving}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeProgram(item.programId)}
+                  disabled={saving}
+                >
+                  Quitar
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
 
-      {errorMessage ? (
-        <Alert variant="destructive">
-          <AlertDescription>{errorMessage}</AlertDescription>
-        </Alert>
-      ) : null}
-      {saved ? (
-        <p className="text-sm text-emerald-700">
-          Programas guardados correctamente.
-        </p>
-      ) : null}
+        {remainingSlots === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            El proyecto ya tiene el máximo de 4 programas. Quita uno para
+            agregar otro.
+          </p>
+        ) : null}
 
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          onClick={() => void savePrograms()}
-          disabled={saving}
-        >
-          {saving ? "Guardando..." : "Guardar programas"}
-        </Button>
-      </div>
-    </CollapsibleCard>
+        {errorMessage ? (
+          <Alert variant="destructive">
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        ) : null}
+        {saved ? (
+          <p className="text-sm text-emerald-700">
+            Programas guardados correctamente.
+          </p>
+        ) : null}
+
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            onClick={() => void savePrograms()}
+            disabled={saving || !hasChanges}
+          >
+            {saving ? "Guardando..." : "Guardar cambios"}
+          </Button>
+        </div>
+      </CollapsibleCard>
+
+      <ProjectProgramDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        options={options}
+        existingProgramIds={existingProgramIds}
+        remainingSlots={remainingSlots}
+        onSave={addPrograms}
+      />
+    </>
   );
 }
 
@@ -888,21 +896,31 @@ export default function ProjectMilestoneAssessmentsPanel({
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
 
-  const loadAssessments = useCallback(async () => {
-    setLoading(true);
-    setErrorMessage(null);
-    try {
-      setAssessments(await getProjectMilestoneAssessments(String(projectId)));
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "No se pudo cargar la evaluación de hitos.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
+  const loadAssessments = useCallback(
+    async (options?: { background?: boolean }) => {
+      const background = options?.background ?? false;
+
+      if (!background) {
+        setLoading(true);
+      }
+
+      setErrorMessage(null);
+      try {
+        setAssessments(await getProjectMilestoneAssessments(String(projectId)));
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "No se pudo cargar la evaluación de hitos.",
+        );
+      } finally {
+        if (!background) {
+          setLoading(false);
+        }
+      }
+    },
+    [projectId],
+  );
 
   useEffect(() => {
     setPrograms([...programRequirements]);
@@ -915,7 +933,7 @@ export default function ProjectMilestoneAssessmentsPanel({
   const handleProgramsSaved = useCallback(
     async (savedPrograms: ProjectProgramRequirement[]) => {
       setPrograms(savedPrograms);
-      await loadAssessments();
+      await loadAssessments({ background: true });
       await onProjectChange();
     },
     [loadAssessments, onProjectChange],
