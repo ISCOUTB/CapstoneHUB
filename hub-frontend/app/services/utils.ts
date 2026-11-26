@@ -144,6 +144,41 @@ export const MAX_REPORT_FILE_SIZE_BYTES = 100 * 1024 * 1024;
 
 export const REPORT_TEXT_MAX_LENGTH = 20_000;
 
+export const REPORT_ZIP_MIME_TYPES = [
+  "application/zip",
+  "application/x-zip-compressed",
+] as const;
+
+export function isZipMimeType(mimeType: string): boolean {
+  return (
+    mimeType === "application/zip" ||
+    mimeType === "application/x-zip-compressed"
+  );
+}
+
+export function isZipReportFile(file: File): boolean {
+  return file.name.trim().toLowerCase().endsWith(".zip");
+}
+
+/**
+ * Algunos navegadores envían los `.zip` como `application/octet-stream` o sin
+ * MIME. Se normaliza el archivo antes de subirlo para que el backend lo acepte.
+ */
+export function normalizeReportUploadFile(file: File): File {
+  if (!isZipReportFile(file) || isZipMimeType(file.type)) {
+    return file;
+  }
+
+  if (file.type && file.type !== "application/octet-stream") {
+    return file;
+  }
+
+  return new File([file], file.name, {
+    type: "application/zip",
+    lastModified: file.lastModified,
+  });
+}
+
 /** Opciones de MIME permitidos para el tipo de entrega Archivo. */
 export const REPORT_FILE_MIME_OPTIONS: {
   label: string;
@@ -171,13 +206,27 @@ export const REPORT_FILE_MIME_OPTIONS: {
   { label: "MP4", values: ["video/mp4"] },
   { label: "WebM", values: ["video/webm"] },
   { label: "OGG", values: ["video/ogg"] },
+  { label: "ZIP", values: [...REPORT_ZIP_MIME_TYPES] },
 ];
 
 export function validateReportFile(
   file: File,
   allowedMimeTypes: string[],
 ): string | null {
-  if (file.type && !allowedMimeTypes.includes(file.type)) {
+  const isZip = isZipReportFile(file);
+  const zipAllowed = REPORT_ZIP_MIME_TYPES.some((mimeType) =>
+    allowedMimeTypes.includes(mimeType),
+  );
+  const genericZipMime =
+    isZip &&
+    zipAllowed &&
+    (!file.type || file.type === "application/octet-stream");
+
+  if (file.type && !allowedMimeTypes.includes(file.type) && !genericZipMime) {
+    return "Tipo de archivo no permitido para esta entrega.";
+  }
+
+  if (!file.type && isZip && !zipAllowed) {
     return "Tipo de archivo no permitido para esta entrega.";
   }
 

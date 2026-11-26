@@ -12,6 +12,7 @@ import {
   REPORT_TEXT_MAX_LENGTH,
   formatBytes,
   formatDate,
+  isZipMimeType,
   validateReportFile,
   validateReportLink,
 } from "../../../services/utils";
@@ -41,6 +42,7 @@ import {
   RiDeleteBinLine,
   RiExternalLinkLine,
   RiFileTextLine,
+  RiFileZipLine,
   RiImageLine,
   RiLinkM,
   RiLockLine,
@@ -70,6 +72,10 @@ export function ContentKindIcon({
   readonly className?: string;
 }) {
   if (kind === "file" && mimeType) {
+    if (isZipMimeType(mimeType)) {
+      return <RiFileZipLine className={className} />;
+    }
+
     if (mimeType.startsWith("image/")) {
       return <RiImageLine className={className} />;
     }
@@ -100,6 +106,10 @@ function contentMediaLabel(
   mimeType: string,
 ): string {
   if (kind === "file" && mimeType) {
+    if (isZipMimeType(mimeType)) {
+      return "ZIP";
+    }
+
     if (mimeType.startsWith("image/")) {
       return "Imagen";
     }
@@ -167,9 +177,7 @@ function ReportContentRow({
           />
           {contentMediaLabel(content.kind, mimeType)}
           {content.createdBy ? (
-            <span className="font-normal">
-              · {content.createdBy.fullName}
-            </span>
+            <span className="font-normal">· {content.createdBy.fullName}</span>
           ) : null}
           <span className="font-normal">· {formatDate(content.createdAt)}</span>
         </div>
@@ -330,7 +338,8 @@ export function ReportContentComposer({
   const [labelValue, setLabelValue] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const { busy, errorMessage, setBusy, setErrorMessage, run } = useAsyncAction();
+  const { busy, errorMessage, setBusy, setErrorMessage, run } =
+    useAsyncAction();
 
   function resetComposer(form?: HTMLFormElement) {
     setTextValue("");
@@ -505,7 +514,10 @@ type ReportContentsProps = {
     report: ProjectReportItem,
     content: ProjectReportContentItem,
   ) => void;
-  readonly onDeleteContent: (reportId: number, contentId: number) => Promise<void>;
+  readonly onDeleteContent: (
+    reportId: number,
+    contentId: number,
+  ) => Promise<void>;
   readonly onDownload: (attachment: ProjectAttachmentItem) => void;
 };
 
