@@ -27,6 +27,7 @@ import {
   normalizeTitle,
   normalizeUrl,
   resolveReportConfigUpdate,
+  resolveReportFileMimeType,
   sameStringSet,
   validateReportConfig,
 } from './reports.rules';
@@ -336,10 +337,15 @@ export class ReportsService {
         reportId,
         user,
       );
+      const mimeType = resolveReportFileMimeType(
+        file.mimetype,
+        file.originalname,
+      );
+
       assertReportAcceptsFiles(report.type);
-      assertMimeAllowed(file.mimetype, report.allowedMimeTypes);
+      assertMimeAllowed(mimeType, report.allowedMimeTypes);
       assertFileMatchesKind({
-        mimeType: file.mimetype,
+        mimeType,
         sizeBytes: file.size,
       });
       await this.assertWithinMaxFiles(reportId, report.type, report.maxFiles);
@@ -349,7 +355,7 @@ export class ReportsService {
       await this.storage.saveFromFile({
         key: storageKey,
         filePath: file.path,
-        contentType: file.mimetype,
+        contentType: mimeType,
         sizeBytes: file.size,
       });
 
@@ -372,7 +378,7 @@ export class ReportsService {
                 uploadedByUserId: user.id,
                 originalName: file.originalname,
                 storageKey,
-                mimeType: file.mimetype,
+                mimeType,
                 sizeBytes: file.size,
               },
               select: { id: true },

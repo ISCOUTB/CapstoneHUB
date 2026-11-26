@@ -71,6 +71,32 @@ export function assertKindMatchesReportType(
   }
 }
 
+const GENERIC_FILE_MIME_TYPES: ReadonlySet<string> = new Set([
+  '',
+  'application/octet-stream',
+]);
+
+/**
+ * Algunos navegadores envían los `.zip` como `application/octet-stream` o sin
+ * MIME. Se normalizan a `application/zip` solo cuando la extensión es `.zip`;
+ * después se valida contra los MIME permitidos de la entrega.
+ */
+export function resolveReportFileMimeType(
+  mimeType: string,
+  originalName: string,
+): string {
+  const normalizedName = originalName.trim().toLowerCase();
+
+  if (
+    normalizedName.endsWith('.zip') &&
+    GENERIC_FILE_MIME_TYPES.has(mimeType.trim().toLowerCase())
+  ) {
+    return 'application/zip';
+  }
+
+  return mimeType;
+}
+
 export function assertMimeAllowed(
   mimeType: string,
   allowedMimeTypes: string[],

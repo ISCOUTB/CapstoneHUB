@@ -48,9 +48,16 @@ export const REPORT_VIDEO_MIME_TYPES: ReadonlySet<string> = new Set([
   'video/ogg',
 ]);
 
-/** Unión admitida para el tipo de entrega `file` (documentos, imágenes y videos). */
+/** Archivos comprimidos admitidos como contenido de una entrega. */
+export const REPORT_ARCHIVE_MIME_TYPES: ReadonlySet<string> = new Set([
+  'application/zip',
+  'application/x-zip-compressed',
+]);
+
+/** Unión admitida para el tipo de entrega `file` (documentos, imágenes, videos y ZIP). */
 export const REPORT_FILE_MIME_TYPES: ReadonlySet<string> = new Set([
   ...REPORT_DOCUMENT_MIME_TYPES,
   ...REPORT_IMAGE_MIME_TYPES,
   ...REPORT_VIDEO_MIME_TYPES,
+  ...REPORT_ARCHIVE_MIME_TYPES,
 ]);

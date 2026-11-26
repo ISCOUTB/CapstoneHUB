@@ -1,5 +1,6 @@
 import { ProjectReportContentItem } from "./schemas";
 import { REPORT_CONFLICT_MESSAGE } from "./reports";
+import { normalizeReportUploadFile } from "./utils";
 import { apiRequest, apiRequestVoid } from "@/lib/http";
 import { getApiUrl } from "@/lib/api";
 
@@ -41,7 +42,7 @@ export function uploadReportContentFile(
 ): Promise<ProjectReportContentItem> {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", normalizeReportUploadFile(file));
 
     const request = new XMLHttpRequest();
     request.open(

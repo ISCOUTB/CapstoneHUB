@@ -129,6 +129,10 @@ La pestaña **Hitos** ofrece **Descargar informe de hitos** en el encabezado de 
 evaluación. Se muestra cuando se cumplen a la vez `canExportProjectData` y
 `canManageMilestoneAssessments`, la misma regla que aplica el backend.
 
+En las entregas de tipo Archivo, el formulario de configuración permite marcar
+**ZIP** entre los MIME permitidos. Los archivos `.zip` se muestran con su propio
+icono y etiqueta, y se descargan como cualquier otro archivo.
+
 La pestaña **Evaluación** es visible para administradores, directivos y
 evaluadores asignados. Muestra la rúbrica de cada semestre, el estado de
 evaluaciones y el promedio. Los evaluadores asignados y el admin llenan la

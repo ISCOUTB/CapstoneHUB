@@ -244,6 +244,8 @@ describe('ReportsService', () => {
     'video/mp4',
     'video/webm',
     'video/ogg',
+    'application/zip',
+    'application/x-zip-compressed',
   ];
 
   function pendingReport(overrides: Record<string, unknown> = {}) {
@@ -564,6 +566,109 @@ describe('ReportsService', () => {
       originalName: 'foto.png',
       sizeBytes: 1234,
     });
+  });
+
+  it('uploads a ZIP file when the report allows it', async () => {
+    const { service, prisma, storage } = createService();
+    prisma.project.findUnique.mockResolvedValue({ id: 10 });
+    prisma.projectReport.findFirst.mockResolvedValue(
+      pendingReport({
+        type: 'file',
+        allowedMimeTypes: ['application/x-zip-compressed'],
+      }),
+    );
+    storage.saveFromFile.mockResolvedValue(undefined);
+    prisma.projectAttachment.create.mockResolvedValue({ id: 56 });
+    prisma.projectReportContent.create.mockResolvedValue(
+      selectedContent({
+        kind: 'file',
+        attachment: { id: 56 },
+      }),
+    );
+
+    const result = await service.uploadFileContent({
+      projectId: 10,
+      reportId: 3,
+      user,
+      file: {
+        originalname: 'entrega.zip',
+        mimetype: 'application/x-zip-compressed',
+        size: 2048,
+        path: '/tmp/entrega.zip',
+      } as never,
+    });
+
+    expect(result.kind).toBe('file');
+    expect(storage.saveFromFile).toHaveBeenCalledWith(
+      expect.objectContaining({ contentType: 'application/x-zip-compressed' }),
+    );
+    const [[attachmentCall]] = prisma.projectAttachment.create.mock
+      .calls as unknown as [[{ data: { mimeType: string } }]];
+    expect(attachmentCall.data.mimeType).toBe('application/x-zip-compressed');
+  });
+
+  it('normalizes a ZIP uploaded as application/octet-stream', async () => {
+    const { service, prisma, storage } = createService();
+    prisma.project.findUnique.mockResolvedValue({ id: 10 });
+    prisma.projectReport.findFirst.mockResolvedValue(
+      pendingReport({
+        type: 'file',
+        allowedMimeTypes: ['application/zip'],
+      }),
+    );
+    storage.saveFromFile.mockResolvedValue(undefined);
+    prisma.projectAttachment.create.mockResolvedValue({ id: 57 });
+    prisma.projectReportContent.create.mockResolvedValue(
+      selectedContent({
+        kind: 'file',
+        attachment: { id: 57 },
+      }),
+    );
+
+    await service.uploadFileContent({
+      projectId: 10,
+      reportId: 3,
+      user,
+      file: {
+        originalname: 'entrega.zip',
+        mimetype: 'application/octet-stream',
+        size: 2048,
+        path: '/tmp/entrega.zip',
+      } as never,
+    });
+
+    expect(storage.saveFromFile).toHaveBeenCalledWith(
+      expect.objectContaining({ contentType: 'application/zip' }),
+    );
+    const [[attachmentCall]] = prisma.projectAttachment.create.mock
+      .calls as unknown as [[{ data: { mimeType: string } }]];
+    expect(attachmentCall.data.mimeType).toBe('application/zip');
+  });
+
+  it('rejects a ZIP with a generic MIME when the report does not allow ZIP', async () => {
+    const { service, prisma, storage } = createService();
+    prisma.project.findUnique.mockResolvedValue({ id: 10 });
+    prisma.projectReport.findFirst.mockResolvedValue(
+      pendingReport({
+        type: 'file',
+        allowedMimeTypes: ['application/pdf'],
+      }),
+    );
+
+    await expect(
+      service.uploadFileContent({
+        projectId: 10,
+        reportId: 3,
+        user,
+        file: {
+          originalname: 'entrega.zip',
+          mimetype: 'application/octet-stream',
+          size: 2048,
+          path: '/tmp/entrega.zip',
+        } as never,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(storage.saveFromFile).not.toHaveBeenCalled();
   });
 
   it('rejects a MIME type not allowed by the report', async () => {

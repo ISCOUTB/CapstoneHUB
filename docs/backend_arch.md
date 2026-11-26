@@ -405,10 +405,12 @@ mientras la entrega esté `pending` o `rejected`; al enviarla se valida que teng
 al menos una pieza.
 
 `POST .../contents/files` (multipart, campo `file`) acepta documentos (PDF, Word,
-Excel), imágenes (PNG, JPEG, WebP, GIF) y videos (MP4, WebM, OGG) hasta
-`MAX_REPORT_FILE_SIZE_BYTES` (100 MB por defecto); valida que el MIME esté entre
-los `allowedMimeTypes` de la entrega y que no se haya superado `maxFiles` (si no,
-`409`), guarda el archivo en el almacenamiento por streaming y crea
+Excel), imágenes (PNG, JPEG, WebP, GIF), videos (MP4, WebM, OGG) y archivos ZIP
+hasta `MAX_REPORT_FILE_SIZE_BYTES` (100 MB por defecto); los `.zip` enviados con
+un MIME genérico (`application/octet-stream` o vacío) se normalizan a
+`application/zip`. Valida que el MIME esté entre los `allowedMimeTypes` de la
+entrega y que no se haya superado `maxFiles` (si no, `409`), guarda el archivo en
+el almacenamiento por streaming y crea
 `ProjectAttachment` + `ProjectReportContent` en una transacción. La subida pasa
 por la API, así que el almacenamiento no necesita endpoint público ni CORS.
 `GET .../contents/:cid/stream` sirve el archivo inline y reenvía la cabecera
