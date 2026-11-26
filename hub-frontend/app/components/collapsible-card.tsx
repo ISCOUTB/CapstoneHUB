@@ -50,22 +50,12 @@ export default function CollapsibleCard({
     <Card className={className}>
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <CardTitle className="whitespace-normal">{title}</CardTitle>
-              {badges}
-            </div>
-            {description ? (
-              <CardDescription>{description}</CardDescription>
-            ) : null}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {actions}
+          <div className="flex min-w-0 flex-1 items-start gap-2">
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
+              className="-ml-2 shrink-0"
               aria-expanded={expanded}
               aria-controls={panelId}
               aria-label={`${expanded ? "Contraer" : "Expandir"} ${toggleLabel}`}
@@ -78,7 +68,23 @@ export default function CollapsibleCard({
                 )}
               />
             </Button>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <CardTitle className="whitespace-normal">{title}</CardTitle>
+                {badges}
+              </div>
+              {description ? (
+                <CardDescription>{description}</CardDescription>
+              ) : null}
+            </div>
           </div>
+
+          {actions ? (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {actions}
+            </div>
+          ) : null}
         </div>
       </CardHeader>
 

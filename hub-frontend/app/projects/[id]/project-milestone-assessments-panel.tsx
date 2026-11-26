@@ -40,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -463,7 +464,6 @@ function ProjectProgramsCard({
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [catalogAttempt, setCatalogAttempt] = useState(0);
   const [saved, setSaved] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -544,95 +544,100 @@ function ProjectProgramsCard({
 
   return (
     <>
-      <CollapsibleCard
-        title="Programas del proyecto"
-        description="Los programas definen los formatos de evaluación de hitos. Puedes agregarlos, quitarlos o cambiar sus estudiantes desde el diálogo de edición."
-        badges={
-          <Badge variant="outline">
-            {programRequirements.length === 1
-              ? "1 programa"
-              : `${programRequirements.length} programas`}
-          </Badge>
-        }
-        actions={
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => {
-              setSaved(false);
-              setDialogOpen(true);
-            }}
-            disabled={catalogLoading}
-          >
-            {catalogLoading ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <RiEditLine data-icon="inline-start" />
-            )}
-            {catalogLoading ? "Cargando..." : "Editar programas"}
-          </Button>
-        }
-        expanded={expanded}
-        onExpandedChange={setExpanded}
-        toggleLabel="los programas del proyecto"
-        contentClassName="space-y-4"
-      >
-        {catalogError ? (
-          <Alert variant="destructive">
-            <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-              {catalogError}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setCatalogLoading(true);
-                  setCatalogError(null);
-                  setCatalogAttempt((attempt) => attempt + 1);
-                }}
-              >
-                Reintentar
-              </Button>
-            </AlertDescription>
-          </Alert>
-        ) : null}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex flex-wrap items-center gap-2">
+            Programas del proyecto
+            <Badge variant="outline">
+              {programRequirements.length === 1
+                ? "1 programa"
+                : `${programRequirements.length} programas`}
+            </Badge>
+          </CardTitle>
+          <CardDescription>
+            Los programas definen los formatos de evaluación de hitos. Puedes
+            agregarlos, quitarlos o cambiar sus estudiantes desde el diálogo de
+            edición.
+          </CardDescription>
 
-        {programRequirements.length === 0 ? (
-          <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-            Este proyecto no tiene programas asociados. Usa «Editar programas»
-            para agregarlos.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {programRequirements.map((item) => (
-              <div
-                key={item.programId}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">
-                    {programName(item.programId)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.programId}
-                  </p>
+          <CardAction>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                setSaved(false);
+                setDialogOpen(true);
+              }}
+              disabled={catalogLoading}
+            >
+              {catalogLoading ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <RiEditLine data-icon="inline-start" />
+              )}
+              {catalogLoading ? "Cargando..." : "Editar programas"}
+            </Button>
+          </CardAction>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {catalogError ? (
+            <Alert variant="destructive">
+              <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+                {catalogError}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setCatalogLoading(true);
+                    setCatalogError(null);
+                    setCatalogAttempt((attempt) => attempt + 1);
+                  }}
+                >
+                  Reintentar
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          {programRequirements.length === 0 ? (
+            <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+              Este proyecto no tiene programas asociados. Usa «Editar programas»
+              para agregarlos.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {programRequirements.map((item) => (
+                <div
+                  key={item.programId}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">
+                      {programName(item.programId)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.programId}
+                    </p>
+                  </div>
+                  <Badge variant="secondary">
+                    {item.studentCount === 1
+                      ? "1 estudiante"
+                      : `${item.studentCount} estudiantes`}
+                  </Badge>
                 </div>
-                <Badge variant="secondary">
-                  {item.studentCount === 1
-                    ? "1 estudiante"
-                    : `${item.studentCount} estudiantes`}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        {saved ? (
-          <p className="text-sm text-emerald-700">
-            Programas actualizados correctamente.
-          </p>
-        ) : null}
-      </CollapsibleCard>
+          {saved ? (
+            <p className="text-sm text-emerald-700">
+              Programas actualizados correctamente.
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <ProjectProgramDialog
         open={dialogOpen}
