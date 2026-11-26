@@ -124,7 +124,7 @@ test.describe("hitos como administrador", () => {
     expect(content.subarray(0, 4).toString()).toBe("%PDF");
   });
 
-  test("el administrador agrega programas desde el diálogo de hitos", async ({
+  test("el administrador edita los programas desde el diálogo de hitos", async ({
     page,
     request,
   }) => {
@@ -135,9 +135,9 @@ test.describe("hitos como administrador", () => {
     await login(page, ADMIN_EMAIL, ADMIN_PASSWORD);
     await openMilestones(page, projectId);
 
-    await page.getByRole("button", { name: "Agregar programas" }).click();
+    await page.getByRole("button", { name: "Editar programas" }).click();
 
-    const dialog = page.getByRole("dialog", { name: "Agregar programas" });
+    const dialog = page.getByRole("dialog", { name: "Editar programas" });
     await expect(dialog).toBeVisible();
 
     await dialog.getByLabel("Filtrar programas").fill("industrial");
@@ -145,7 +145,7 @@ test.describe("hitos como administrador", () => {
       .getByRole("checkbox", { name: /Ingeniería Industrial/ })
       .click();
     await dialog.getByLabel("Estudiantes").fill("2");
-    await dialog.getByRole("button", { name: "Guardar programas" }).click();
+    await dialog.getByRole("button", { name: "Guardar cambios" }).click();
 
     await expect(dialog).toBeHidden();
     await expect(
@@ -157,5 +157,10 @@ test.describe("hitos como administrador", () => {
     await expect(
       page.getByText("Ingeniería Industrial", { exact: true }).first(),
     ).toBeVisible();
+
+    await page.getByRole("button", { name: "Editar programas" }).click();
+    const editDialog = page.getByRole("dialog", { name: "Editar programas" });
+    await expect(editDialog.getByLabel("Estudiantes")).toHaveValue("2");
+    await editDialog.getByRole("button", { name: "Cancelar" }).click();
   });
 });

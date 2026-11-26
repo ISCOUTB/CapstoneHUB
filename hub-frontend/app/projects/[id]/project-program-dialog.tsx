@@ -22,16 +22,21 @@ export type ProjectProgramOption = {
   readonly schoolName: string;
 };
 
+export type ProjectProgramValue = {
+  readonly programId: string;
+  readonly studentCount: number;
+};
+
 type ProjectProgramDialogProps = {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly options: readonly ProjectProgramOption[];
-  readonly existingProgramIds: readonly string[];
-  readonly remainingSlots: number;
-  readonly onSave: (
-    programs: { programId: string; studentCount: number }[],
-  ) => Promise<void>;
+  readonly currentPrograms: readonly ProjectProgramValue[];
+  readonly loadError?: string | null;
+  readonly onSave: (programs: ProjectProgramValue[]) => Promise<void>;
 };
+
+const MAX_PROGRAMS = 4;
 
 function normalize(value: string): string {
   return value
@@ -58,15 +63,15 @@ function groupBySchool(
 }
 
 /**
- * Diálogo para asociar varios programas al proyecto. La selección y la
- * cantidad de estudiantes se guardan en una sola petición al confirmar.
+ * Diálogo para editar los programas del proyecto. Permite agregar, quitar y
+ * ajustar la cantidad de estudiantes; todo se guarda en una sola petición.
  */
 export default function ProjectProgramDialog({
   open,
   onOpenChange,
   options,
-  existingProgramIds,
-  remainingSlots,
+  currentPrograms,
+  loadError = null,
   onSave,
 }: ProjectProgramDialogProps) {
   const [search, setSearch] = useState("");
@@ -80,14 +85,21 @@ export default function ProjectProgramDialog({
     }
 
     setSearch("");
-    setSelected({});
+    setSelected(
+      Object.fromEntries(
+        currentPrograms.map((program) => [
+          program.programId,
+          String(program.studentCount),
+        ]),
+      ),
+    );
     setErrorMessage(null);
     setSaving(false);
-  }, [open]);
+  }, [open, currentPrograms]);
 
-  const existingIds = useMemo(
-    () => new Set(existingProgramIds),
-    [existingProgramIds],
+  const currentProgramIds = useMemo(
+    () => new Set(currentPrograms.map((program) => program.programId)),
+    [currentPrograms],
   );
 
   const filteredOptions = useMemo(() => {
@@ -109,14 +121,25 @@ export default function ProjectProgramDialog({
     [filteredOptions],
   );
   const selectedCount = Object.keys(selected).length;
-  const slotsLeft = Math.max(0, remainingSlots - selectedCount);
+  const hasChanges = useMemo(() => {
+    const currentIds = currentPrograms.map((program) => program.programId);
+
+    if (currentIds.length !== selectedCount) {
+      return true;
+    }
+
+    return currentPrograms.some((program) => {
+      const value = selected[program.programId];
+      return value === undefined || Number(value) !== program.studentCount;
+    });
+  }, [currentPrograms, selected, selectedCount]);
 
   function toggleProgram(option: ProjectProgramOption, checked: boolean) {
     setErrorMessage(null);
 
-    if (checked && slotsLeft === 0) {
+    if (checked && selectedCount >= MAX_PROGRAMS) {
       setErrorMessage(
-        "Puedes agregar hasta 4 programas por proyecto. Quita uno para seleccionar otro.",
+        `Puedes asociar hasta ${MAX_PROGRAMS} programas por proyecto. Quita uno para seleccionar otro.`,
       );
       return;
     }
@@ -146,14 +169,9 @@ export default function ProjectProgramDialog({
 
     const entries = Object.entries(selected);
 
-    if (entries.length === 0) {
-      setErrorMessage("Selecciona al menos un programa.");
-      return;
-    }
-
-    if (entries.length > remainingSlots) {
+    if (entries.length > MAX_PROGRAMS) {
       setErrorMessage(
-        "Puedes agregar hasta 4 programas por proyecto. Quita uno para seleccionar otro.",
+        `Puedes asociar hasta ${MAX_PROGRAMS} programas por proyecto. Quita uno para seleccionar otro.`,
       );
       return;
     }
@@ -184,7 +202,7 @@ export default function ProjectProgramDialog({
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "No se pudieron agregar los programas.",
+          : "No se pudieron guardar los programas.",
       );
     } finally {
       setSaving(false);
@@ -202,10 +220,10 @@ export default function ProjectProgramDialog({
     >
       <DialogContent className="sm:max-w-2xl" showCloseButton={!saving}>
         <DialogHeader>
-          <DialogTitle>Agregar programas</DialogTitle>
+          <DialogTitle>Editar programas</DialogTitle>
           <DialogDescription>
             Busca y selecciona los programas que requiere el proyecto. Asigna la
-            cantidad de estudiantes de cada uno antes de guardar.
+            cantidad de estudiantes de cada uno y guarda los cambios.
           </DialogDescription>
         </DialogHeader>
 
@@ -233,11 +251,19 @@ export default function ProjectProgramDialog({
             />
           </div>
 
-          {remainingSlots === 0 ? (
+          {loadError ? (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {loadError} Solo puedes editar los programas ya asociados.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          {selectedCount >= MAX_PROGRAMS ? (
             <Alert>
               <AlertDescription>
-                El proyecto ya tiene el máximo de 4 programas. Quita uno para
-                poder agregar otro.
+                El proyecto ya tiene el máximo de {MAX_PROGRAMS} programas.
+                Quita uno para poder seleccionar otro.
               </AlertDescription>
             </Alert>
           ) : null}
@@ -257,9 +283,11 @@ export default function ProjectProgramDialog({
 
                     <div className="space-y-1">
                       {group.programs.map((option) => {
-                        const isExisting = existingIds.has(option.programId);
                         const isSelected =
                           selected[option.programId] !== undefined;
+                        const isCurrent = currentProgramIds.has(
+                          option.programId,
+                        );
 
                         return (
                           <div
@@ -272,23 +300,22 @@ export default function ProjectProgramDialog({
                             >
                               <Checkbox
                                 id={`program-option-${option.programId}`}
-                                checked={isExisting || isSelected}
+                                checked={isSelected}
                                 onCheckedChange={(checked) =>
                                   toggleProgram(option, checked === true)
                                 }
                                 disabled={
-                                  isExisting ||
                                   saving ||
-                                  (!isSelected && slotsLeft === 0)
+                                  (!isSelected && selectedCount >= MAX_PROGRAMS)
                                 }
                               />
                               <span className="min-w-0">
                                 <span className="block text-sm font-medium">
                                   {option.programName}
                                 </span>
-                                {isExisting ? (
+                                {isCurrent ? (
                                   <span className="block text-xs text-muted-foreground">
-                                    Ya asociado al proyecto
+                                    Asociado actualmente
                                   </span>
                                 ) : null}
                               </span>
@@ -330,7 +357,7 @@ export default function ProjectProgramDialog({
           <p className="text-xs text-muted-foreground">
             {selectedCount === 0
               ? "Ningún programa seleccionado."
-              : `${selectedCount} programa(s) seleccionado(s).`}
+              : `${selectedCount} de ${MAX_PROGRAMS} programas seleccionados.`}
           </p>
 
           {errorMessage ? (
@@ -348,9 +375,9 @@ export default function ProjectProgramDialog({
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving || selectedCount === 0}>
+            <Button type="submit" disabled={saving || !hasChanges}>
               {saving ? <Spinner data-icon="inline-start" /> : null}
-              {saving ? "Guardando..." : "Guardar programas"}
+              {saving ? "Guardando..." : "Guardar cambios"}
             </Button>
           </DialogFooter>
         </form>
