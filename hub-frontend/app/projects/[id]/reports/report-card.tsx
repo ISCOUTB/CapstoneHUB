@@ -43,6 +43,18 @@ import {
   useAsyncAction,
 } from "./report-content";
 
+function formatContentsLabel(count: number): string {
+  if (count === 0) {
+    return "Sin contenidos";
+  }
+
+  if (count === 1) {
+    return "1 contenido";
+  }
+
+  return `${count} contenidos`;
+}
+
 function isOverdue(report: ProjectReportItem): boolean {
   if (report.status === "submitted" || report.status === "accepted") {
     return false;
@@ -51,7 +63,11 @@ function isOverdue(report: ProjectReportItem): boolean {
   return new Date(report.dueDate).getTime() < Date.now();
 }
 
-function ReportStatusBadge({ status }: { readonly status: ProjectReportStatus }) {
+function ReportStatusBadge({
+  status,
+}: {
+  readonly status: ProjectReportStatus;
+}) {
   if (status === "accepted") {
     return (
       <Badge>
@@ -112,7 +128,10 @@ type ReportCardProps = {
     file: File,
     onProgress: (fraction: number) => void,
   ) => Promise<void>;
-  readonly onDeleteContent: (reportId: number, contentId: number) => Promise<void>;
+  readonly onDeleteContent: (
+    reportId: number,
+    contentId: number,
+  ) => Promise<void>;
   readonly onDownload: (attachment: ProjectAttachmentItem) => Promise<void>;
 };
 
@@ -239,7 +258,8 @@ export function ReportCard({
   const { busy, errorMessage, setErrorMessage, run } = useAsyncAction();
 
   const isAwaitingReview = report.status === "submitted";
-  const isEditable = report.status === "pending" || report.status === "rejected";
+  const isEditable =
+    report.status === "pending" || report.status === "rejected";
   const canEditContent = canSubmit ? isEditable : false;
   const reportType = report.type;
   const fileCount = report.contents.length;
@@ -301,10 +321,7 @@ export function ReportCard({
     await run(() => onSubmit(report), "No se pudo enviar la entrega");
   }
 
-  const contentsLabel =
-    fileCount === 0
-      ? "Sin contenidos"
-      : `${fileCount} contenido${fileCount === 1 ? "" : "s"}`;
+  const contentsLabel = formatContentsLabel(fileCount);
 
   return (
     <>

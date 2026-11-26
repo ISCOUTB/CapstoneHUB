@@ -176,12 +176,12 @@ export default function ProjectProgramDialog({
       return;
     }
 
-    const invalid = entries.find(([, studentCount]) => {
+    const hasInvalidStudentCount = entries.some(([, studentCount]) => {
       const parsed = Number(studentCount);
       return !Number.isInteger(parsed) || parsed < 1;
     });
 
-    if (invalid) {
+    if (hasInvalidStudentCount) {
       setErrorMessage(
         "La cantidad de estudiantes debe ser un entero mayor a 0 en cada programa.",
       );
