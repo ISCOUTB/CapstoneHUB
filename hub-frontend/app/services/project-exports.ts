@@ -26,3 +26,18 @@ export async function downloadProjectPdf(
   await ensureOk(response, { action: "generar el PDF del proyecto" });
   await downloadResponseFile(response, `proyecto-${projectId}.pdf`);
 }
+
+/** Descarga el informe de evaluación de hitos de un proyecto. */
+export async function downloadMilestoneReport(
+  projectId: string | number,
+): Promise<void> {
+  const response = await fetch(
+    getApiUrl(`/api/projects/${projectId}/export/milestones/pdf`),
+    {
+      cache: "no-store",
+    },
+  );
+
+  await ensureOk(response, { action: "generar el informe de hitos" });
+  await downloadResponseFile(response, `hitos-proyecto-${projectId}.pdf`);
+}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { RiFilePdfLine } from "@remixicon/react";
 import {
   getProjectMilestoneAssessments,
   saveProjectMilestoneAssessment,
@@ -20,6 +21,8 @@ import {
   canManageMilestoneAssessments,
   canManageProjectPrograms,
 } from "../../services/project-permissions";
+import { downloadMilestoneReport } from "../../services/project-exports";
+import { canExportProjectData } from "../../services/roles";
 import {
   ProjectProgramRequirement,
   ProjectProgramSchool,
@@ -815,6 +818,9 @@ export default function ProjectMilestoneAssessmentsPanel({
         : false,
     [session, actorAssignments],
   );
+  const canDownloadReport = session
+    ? canExportProjectData(session.user.roles) && canManage
+    : false;
   const [assessments, setAssessments] = useState<ProjectMilestoneAssessment[]>(
     [],
   );
@@ -825,6 +831,8 @@ export default function ProjectMilestoneAssessmentsPanel({
   const [savingProgram, setSavingProgram] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successProgram, setSuccessProgram] = useState<string | null>(null);
+  const [isDownloadingReport, setIsDownloadingReport] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   const loadAssessments = useCallback(async () => {
     setLoading(true);
@@ -920,6 +928,23 @@ export default function ProjectMilestoneAssessmentsPanel({
     [assessments, projectId, router],
   );
 
+  async function handleDownloadReport() {
+    setIsDownloadingReport(true);
+    setReportError(null);
+
+    try {
+      await downloadMilestoneReport(projectId);
+    } catch (error) {
+      setReportError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo generar el informe de hitos.",
+      );
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  }
+
   if (!ready) {
     return (
       <Card>
@@ -951,14 +976,39 @@ export default function ProjectMilestoneAssessmentsPanel({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold">Evaluación de hitos</h2>
-        <p className="text-sm text-muted-foreground">
-          {canManage
-            ? "Registra el avance de los requisitos por programa. Esta evaluación no bloquea el avance de fase ni el cierre del proyecto."
-            : "Resumen de los requisitos de hitos correspondientes a los programas del proyecto."}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Evaluación de hitos</h2>
+          <p className="text-sm text-muted-foreground">
+            {canManage
+              ? "Registra el avance de los requisitos por programa. Esta evaluación no bloquea el avance de fase ni el cierre del proyecto."
+              : "Resumen de los requisitos de hitos correspondientes a los programas del proyecto."}
+          </p>
+        </div>
+
+        {canDownloadReport ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadReport}
+            disabled={isDownloadingReport}
+            aria-busy={isDownloadingReport}
+          >
+            {isDownloadingReport ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <RiFilePdfLine data-icon="inline-start" />
+            )}
+            {isDownloadingReport ? "Generando…" : "Descargar informe de hitos"}
+          </Button>
+        ) : null}
       </div>
+
+      {reportError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{reportError}</AlertDescription>
+        </Alert>
+      ) : null}
 
       <ProjectProgramsCard
         projectId={projectId}

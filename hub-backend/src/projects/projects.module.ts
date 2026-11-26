@@ -9,5 +9,6 @@ import { EvaluationsModule } from '../evaluations/evaluations.module';
   imports: [AuthModule, EvaluationsModule],
   controllers: [ProjectsController],
   providers: [ProjectsService, ProjectExportsService],
+  exports: [ProjectsService],
 })
 export class ProjectsModule {}

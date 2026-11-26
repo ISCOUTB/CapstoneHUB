@@ -7,6 +7,7 @@ import {
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProjectsModule } from './projects/projects.module';
+import { DocumentsModule } from './documents/documents.module';
 import { PrismaModule } from './prisma.module';
 import { ObservationsModule } from './observations/observations.module';
 import { MilestoneAssessmentsModule } from './milestone-assessments/milestone-assessments.module';
@@ -29,6 +30,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
     ConfigModule.forRoot(),
     PrismaModule,
     ProjectsModule,
+    DocumentsModule,
     ObservationsModule,
     MilestoneAssessmentsModule,
     AttachmentsModule,
